@@ -7,10 +7,20 @@
 	import type { ViewMode } from '$lib/ui/types';
 	import { createImageMetadata, getDirectoryFromPath } from '$lib/image/utils';
 
-	let selectedImagePath: string | null = $state(null);
-	let imageMetadata: ImageMetadata | null = $state(null);
-	let selectedDirectory: string | null = $state(null);
-	let viewMode: ViewMode = $state('welcome');
+	// アプリケーション全体の状態を統合
+	type AppState = {
+		viewMode: ViewMode;
+		selectedImagePath: string | null;
+		imageMetadata: ImageMetadata | null;
+		selectedDirectory: string | null;
+	};
+
+	let appState = $state<AppState>({
+		viewMode: 'welcome',
+		selectedImagePath: null,
+		imageMetadata: null,
+		selectedDirectory: null
+	});
 
 	const openFileDialog = async (): Promise<void> => {
 		try {
@@ -25,9 +35,10 @@
 			});
 
 			if (selected && typeof selected === 'string') {
-				updateSelectedImage(selected);
-				selectedDirectory = getDirectoryFromPath(selected);
-				viewMode = 'viewer';
+				appState.selectedImagePath = selected;
+				appState.imageMetadata = createImageMetadata(selected);
+				appState.selectedDirectory = getDirectoryFromPath(selected);
+				appState.viewMode = 'viewer';
 			}
 		} catch (error) {
 			console.error('ファイル選択エラー:', error);
@@ -42,17 +53,18 @@
 			});
 
 			if (selected && typeof selected === 'string') {
-				selectedDirectory = selected;
-				viewMode = 'grid';
+				appState.selectedDirectory = selected;
+				appState.viewMode = 'grid';
 			}
 		} catch (error) {
 			console.error('フォルダ選択エラー:', error);
 		}
 	};
 
+	// 状態更新関数を統合
 	const updateSelectedImage = (imagePath: string): void => {
-		selectedImagePath = imagePath;
-		imageMetadata = createImageMetadata(imagePath);
+		appState.selectedImagePath = imagePath;
+		appState.imageMetadata = createImageMetadata(imagePath);
 	};
 
 	const handleImageChange = (newPath: string): void => {
@@ -60,25 +72,25 @@
 	};
 
 	const handleSwitchToGrid = (): void => {
-		if (selectedDirectory) {
-			viewMode = 'grid';
+		if (appState.selectedDirectory) {
+			appState.viewMode = 'grid';
 		}
 	};
 
 	const handleImageSelect = (imagePath: string): void => {
 		updateSelectedImage(imagePath);
-		viewMode = 'viewer';
+		appState.viewMode = 'viewer';
 	};
 
 	const handleBackToGrid = (): void => {
-		viewMode = 'grid';
+		appState.viewMode = 'grid';
 	};
 
 	const handleBackToWelcome = (): void => {
-		viewMode = 'welcome';
-		selectedImagePath = null;
-		imageMetadata = null;
-		selectedDirectory = null;
+		appState.viewMode = 'welcome';
+		appState.selectedImagePath = null;
+		appState.imageMetadata = null;
+		appState.selectedDirectory = null;
 	};
 </script>
 
@@ -88,23 +100,23 @@
 
 <div class="min-h-screen bg-base-100">
 	<main class="h-screen">
-		{#if viewMode === 'welcome'}
+		{#if appState.viewMode === 'welcome'}
 			<WelcomeScreen {openFileDialog} {openDirectoryDialog} />
-		{:else if viewMode === 'grid' && selectedDirectory}
+		{:else if appState.viewMode === 'grid' && appState.selectedDirectory}
 			<GridView
-				{selectedDirectory}
+				selectedDirectory={appState.selectedDirectory}
 				{handleBackToWelcome}
 				{openDirectoryDialog}
 				{handleImageSelect}
 			/>
-		{:else if viewMode === 'viewer' && imageMetadata && selectedImagePath}
+		{:else if appState.viewMode === 'viewer' && appState.imageMetadata && appState.selectedImagePath}
 			<ImageViewer
-				metadata={imageMetadata}
-				imagePath={selectedImagePath}
+				metadata={appState.imageMetadata}
+				imagePath={appState.selectedImagePath}
 				onImageChange={handleImageChange}
 				{openFileDialog}
-				onBack={selectedDirectory ? handleBackToGrid : handleBackToWelcome}
-				onSwitchToGrid={selectedDirectory ? handleSwitchToGrid : undefined}
+				onBack={appState.selectedDirectory ? handleBackToGrid : handleBackToWelcome}
+				onSwitchToGrid={appState.selectedDirectory ? handleSwitchToGrid : undefined}
 			/>
 		{/if}
 	</main>

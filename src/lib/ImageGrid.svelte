@@ -22,25 +22,37 @@
 		onImageFilesLoaded?: (files: string[]) => void;
 	} = $props();
 
+	// ローディング状態を統合
+	type LoadingState = {
+		isLoading: boolean;
+		isProcessing: boolean;
+		error: string;
+		loadedCount: number;
+		totalCount: number;
+	};
+
 	let imageFiles = $state<string[]>([]);
 	let thumbnails = $state<Map<string, string>>(new Map());
-	let isLoading = $state<boolean>(true);
-	let error = $state<string>('');
-	let loadedCount = $state<number>(0);
-	let isProcessing = $state<boolean>(false);
+	let loadingState = $state<LoadingState>({
+		isLoading: true,
+		isProcessing: false,
+		error: '',
+		loadedCount: 0,
+		totalCount: 0
+	});
 	let lastRefreshTrigger = $state<number>(0);
 
 	const loadImageGrid = async () => {
-		if (isProcessing) {
+		if (loadingState.isProcessing) {
 			console.log('サムネイル処理中のため、スキップします');
 			return;
 		}
 
 		try {
-			isProcessing = true;
-			isLoading = true;
-			error = '';
-			loadedCount = 0;
+			loadingState.isProcessing = true;
+			loadingState.isLoading = true;
+			loadingState.error = '';
+			loadingState.loadedCount = 0;
 			thumbnails.clear();
 
 			// ディレクトリ内の画像ファイル一覧を取得
@@ -52,20 +64,22 @@
 			}
 
 			if (imageFiles.length === 0) {
-				error = '画像ファイルが見つかりません';
+				loadingState.error = '画像ファイルが見つかりません';
 				return;
 			}
+
+			loadingState.totalCount = imageFiles.length;
 
 			// チャンク単位でサムネイル生成（プログレス表示のため）
 			console.log('サムネイル生成開始:', imageFiles.length, '個のファイル');
 
 			await loadThumbnailsInChunks(imageFiles);
 		} catch (err) {
-			error = err instanceof Error ? err.message : 'サムネイルの読み込みに失敗しました';
+			loadingState.error = err instanceof Error ? err.message : 'サムネイルの読み込みに失敗しました';
 			console.error('Failed to load thumbnails:', err);
 		} finally {
-			isLoading = false;
-			isProcessing = false;
+			loadingState.isLoading = false;
+			loadingState.isProcessing = false;
 		}
 	};
 
@@ -101,7 +115,7 @@
 						const blob = new Blob([uint8Array], { type: result.thumbnail.mime_type });
 						const url = URL.createObjectURL(blob);
 						newThumbnails.set(result.path, url);
-						loadedCount++;
+						loadingState.loadedCount++;
 						console.log(`サムネイル生成成功: ${result.path}`);
 					} else if (result.error) {
 						console.warn(`サムネイル生成失敗: ${result.path} - ${result.error}`);
@@ -149,7 +163,7 @@
 
 	// directoryPath が変更された時の処理（watcherとして）
 	$effect(() => {
-		if (directoryPath && directoryPath !== currentDirectory && !isProcessing) {
+		if (directoryPath && directoryPath !== currentDirectory && !loadingState.isProcessing) {
 			console.log('ディレクトリ変更検出:', currentDirectory, '->', directoryPath);
 			currentDirectory = directoryPath;
 			cleanup();
@@ -159,7 +173,7 @@
 
 	// refreshTrigger が変更された時の処理（削除後の再読み込み用）
 	$effect(() => {
-		if (refreshTrigger > 0 && refreshTrigger !== lastRefreshTrigger && !isProcessing) {
+		if (refreshTrigger > 0 && refreshTrigger !== lastRefreshTrigger && !loadingState.isProcessing) {
 			console.log('リフレッシュトリガー検出:', refreshTrigger);
 			lastRefreshTrigger = refreshTrigger;
 			cleanup();
@@ -181,27 +195,27 @@
 </script>
 
 <div class="h-full p-4">
-	{#if isLoading}
+	{#if loadingState.isLoading}
 		<div class="flex h-full flex-col items-center justify-center">
 			<div class="loading mb-4 loading-lg loading-spinner"></div>
 			<p class="text-lg">サムネイルを生成中...</p>
-			{#if imageFiles.length > 0}
+			{#if loadingState.totalCount > 0}
 				<p class="mt-2 text-sm text-base-content/70">
-					{loadedCount} / {imageFiles.length} 完了
+					{loadingState.loadedCount} / {loadingState.totalCount} 完了
 				</p>
 				<div class="mt-4 h-2 w-64 rounded-full bg-base-300">
 					<div
 						class="h-2 rounded-full bg-primary transition-all duration-300"
-						style="width: {(loadedCount / imageFiles.length) * 100}%"
+						style="width: {(loadingState.loadedCount / loadingState.totalCount) * 100}%"
 					></div>
 				</div>
 			{/if}
 		</div>
-	{:else if error}
+	{:else if loadingState.error}
 		<div class="flex h-full flex-col items-center justify-center">
 			<div class="mb-4 text-6xl">⚠️</div>
 			<p class="mb-2 text-lg text-error">エラーが発生しました</p>
-			<p class="text-sm text-base-content/70">{error}</p>
+			<p class="text-sm text-base-content/70">{loadingState.error}</p>
 		</div>
 	{:else if imageFiles.length === 0}
 		<div class="flex h-full flex-col items-center justify-center">

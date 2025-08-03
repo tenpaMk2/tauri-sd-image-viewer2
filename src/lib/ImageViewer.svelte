@@ -23,12 +23,32 @@
 		onSwitchToGrid?: () => void;
 	} = $props();
 
-	let imageUrl = $state<string>('');
-	let isLoading = $state<boolean>(true);
-	let error = $state<string>('');
-	let imageFiles = $state<string[]>([]);
-	let currentIndex = $state<number>(0);
-	let isNavigating = $state<boolean>(false);
+	// 画像表示関連の状態
+	type ImageState = {
+		url: string;
+		isLoading: boolean;
+		error: string;
+	};
+
+	// ナビゲーション関連の状態
+	type NavigationState = {
+		files: string[];
+		currentIndex: number;
+		isNavigating: boolean;
+	};
+
+	let imageState = $state<ImageState>({
+		url: '',
+		isLoading: true,
+		error: ''
+	});
+
+	let navigationState = $state<NavigationState>({
+		files: [],
+		currentIndex: 0,
+		isNavigating: false
+	});
+
 	let isInfoPanelFocused = $state<boolean>(false);
 
 	// プリロード用のキャッシュ
@@ -48,15 +68,15 @@
 
 	const loadCurrentImage = async (path: string) => {
 		try {
-			isLoading = true;
-			error = '';
+			imageState.isLoading = true;
+			imageState.error = '';
 			const url = await preloadImageData(path);
-			imageUrl = url;
+			imageState.url = url;
 		} catch (err) {
-			error = err instanceof Error ? err.message : '画像の読み込みに失敗しました';
+			imageState.error = err instanceof Error ? err.message : '画像の読み込みに失敗しました';
 			console.error('Failed to load image:', err);
 		} finally {
-			isLoading = false;
+			imageState.isLoading = false;
 		}
 	};
 
@@ -67,16 +87,16 @@
 		// 前の画像をプリロード
 		if (index > 0) {
 			promises.push(
-				preloadImageData(imageFiles[index - 1])
+				preloadImageData(navigationState.files[index - 1])
 					.then(() => {})
 					.catch(() => {})
 			);
 		}
 
 		// 次の画像をプリロード
-		if (index < imageFiles.length - 1) {
+		if (index < navigationState.files.length - 1) {
 			promises.push(
-				preloadImageData(imageFiles[index + 1])
+				preloadImageData(navigationState.files[index + 1])
 					.then(() => {})
 					.catch(() => {})
 			);
@@ -86,23 +106,23 @@
 	};
 
 	const navigateToImage = async (index: number): Promise<void> => {
-		if (!(index < 0) && index < imageFiles.length && !isNavigating) {
-			isNavigating = true;
-			currentIndex = index;
-			const newPath = imageFiles[index];
+		if (index >= 0 && index < navigationState.files.length && !navigationState.isNavigating) {
+			navigationState.isNavigating = true;
+			navigationState.currentIndex = index;
+			const newPath = navigationState.files[index];
 
 			// 画像が既にキャッシュされている場合は即座に切り替え
 			if (imageCache.has(newPath)) {
-				imageUrl = imageCache.get(newPath)!;
+				imageState.url = imageCache.get(newPath)!;
 				onImageChange(newPath);
-				isNavigating = false;
+				navigationState.isNavigating = false;
 				// バックグラウンドで隣接画像をプリロード
 				preloadAdjacentImages(index);
 			} else {
 				// キャッシュにない場合は読み込み状態を表示
 				await loadCurrentImage(newPath);
 				onImageChange(newPath);
-				isNavigating = false;
+				navigationState.isNavigating = false;
 				// 読み込み完了後に隣接画像をプリロード
 				preloadAdjacentImages(index);
 			}
@@ -110,29 +130,29 @@
 	};
 
 	const goToPrevious = async (): Promise<void> => {
-		if (!(currentIndex < 1) && !isNavigating) {
-			await navigateToImage(currentIndex - 1);
+		if (navigationState.currentIndex >= 1 && !navigationState.isNavigating) {
+			await navigateToImage(navigationState.currentIndex - 1);
 		}
 	};
 
 	const goToNext = async (): Promise<void> => {
-		if (currentIndex < imageFiles.length - 1 && !isNavigating) {
-			await navigateToImage(currentIndex + 1);
+		if (navigationState.currentIndex < navigationState.files.length - 1 && !navigationState.isNavigating) {
+			await navigateToImage(navigationState.currentIndex + 1);
 		}
 	};
 
 	const initializeImages = async (path: string): Promise<void> => {
 		// 同一ディレクトリの画像ファイル一覧を取得
 		const dirname = path.substring(0, path.lastIndexOf('/'));
-		imageFiles = await getImageFiles(dirname);
-		currentIndex = imageFiles.findIndex((file) => file === path);
+		navigationState.files = await getImageFiles(dirname);
+		navigationState.currentIndex = navigationState.files.findIndex((file) => file === path);
 
 		// 初期画像を読み込み
 		await loadCurrentImage(path);
 
 		// 初期化完了後に隣接画像をプリロード
-		if (!(currentIndex < 0)) {
-			preloadAdjacentImages(currentIndex);
+		if (navigationState.currentIndex >= 0) {
+			preloadAdjacentImages(navigationState.currentIndex);
 		}
 	};
 
@@ -186,15 +206,26 @@
 	<!-- 画像表示エリア (全面) -->
 	<div class="relative flex-1 bg-black">
 		<ToolbarOverlay 
-			{imageFiles} 
-			{currentIndex} 
+			imageFiles={navigationState.files} 
+			currentIndex={navigationState.currentIndex} 
 			{openFileDialog} 
 			{onBack}
 			{onSwitchToGrid}
 		/>
 		
-		<ImageDisplay {imageUrl} {isLoading} {error} {metadata} />
-		<NavigationButtons {imageFiles} {currentIndex} {isNavigating} {goToPrevious} {goToNext} />
+		<ImageDisplay 
+			imageUrl={imageState.url} 
+			isLoading={imageState.isLoading} 
+			error={imageState.error} 
+			{metadata} 
+		/>
+		<NavigationButtons 
+			imageFiles={navigationState.files} 
+			currentIndex={navigationState.currentIndex} 
+			isNavigating={navigationState.isNavigating} 
+			{goToPrevious} 
+			{goToNext} 
+		/>
 	</div>
 
 	<ImageInfoPanel {metadata} onFocus={handleInfoPanelFocus} onBlur={handleInfoPanelBlur} />

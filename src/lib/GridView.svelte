@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { getImageFiles } from './image/image-loader';
 	import ImageGrid from './ImageGrid.svelte';
+	import { deleteSelectedImages as performDelete } from './utils/delete-images';
 
 	const {
 		selectedDirectory,
@@ -54,46 +55,13 @@
 
 	// 選択画像削除
 	const deleteSelectedImages = async () => {
-		if (selectedImages.size === 0) return;
-		
-		const confirmDelete = confirm(`${selectedImages.size}個の画像を削除しますか？\n\n削除された画像は復元できません。`);
-		if (!confirmDelete) return;
-
 		try {
-			const { remove } = await import('@tauri-apps/plugin-fs');
-			
-			console.log('削除開始:', Array.from(selectedImages));
-			
-			let successCount = 0;
-			let errorCount = 0;
-			const errors: string[] = [];
-			
-			for (const imagePath of selectedImages) {
-				try {
-					await remove(imagePath);
-					successCount++;
-					console.log(`削除成功: ${imagePath}`);
-				} catch (fileErr) {
-					errorCount++;
-					const errorMsg = `${imagePath}: ${fileErr}`;
-					errors.push(errorMsg);
-					console.error(`削除失敗: ${errorMsg}`);
-				}
-			}
-			
-			// エラーがある場合のみユーザーに通知
-			if (errorCount > 0) {
-				alert(`削除完了: ${successCount}個成功, ${errorCount}個失敗\n\n失敗したファイル:\n${errors.slice(0, 5).join('\n')}${errors.length > 5 ? '\n...' : ''}`);
-			} else {
-				console.log(`${successCount}個の画像を削除しました。`);
-			}
-			
+			await performDelete(selectedImages);
 			selectedImages = new Set();
 			// ImageGridのリフレッシュをトリガー
 			refreshTrigger = Date.now();
 		} catch (err) {
-			console.error('削除処理エラー:', err);
-			alert(`削除処理に失敗しました: ${err}`);
+			// エラーはperformDelete内で処理済み
 		}
 	};
 

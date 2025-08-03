@@ -22,28 +22,38 @@
 			const selected = await open({
 				multiple: false,
 				filters: [{
-					name: 'PNG Images',
-					extensions: ['png']
+					name: 'Image Files',
+					extensions: ['png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp']
 				}]
 			});
 			
 			if (selected && typeof selected === 'string') {
-				selectedImagePath = selected;
-				
-				// ファイル情報を取得してメタデータを作成
-				const filename = selected.split('/').pop() || 'unknown.png';
-				imageMetadata = {
-					filename,
-					size: '不明',
-					dimensions: '不明',
-					format: 'PNG',
-					created: new Date().toLocaleString('ja-JP'),
-					modified: new Date().toLocaleString('ja-JP')
-				};
+				updateSelectedImage(selected);
 			}
 		} catch (error) {
 			console.error('ファイル選択エラー:', error);
 		}
+	};
+	
+	const updateSelectedImage = (imagePath: string) => {
+		selectedImagePath = imagePath;
+		
+		// ファイル情報を取得してメタデータを作成
+		const filename = imagePath.split('/').pop() || 'unknown';
+		const extension = filename.split('.').pop()?.toUpperCase() || '';
+		
+		imageMetadata = {
+			filename,
+			size: '不明',
+			dimensions: '不明',
+			format: extension,
+			created: new Date().toLocaleString('ja-JP'),
+			modified: new Date().toLocaleString('ja-JP')
+		};
+	};
+	
+	const handleImageChange = (newPath: string) => {
+		updateSelectedImage(newPath);
 	};
 </script>
 
@@ -65,12 +75,12 @@
 	
 	<main class="container mx-auto p-4">
 		{#if imageMetadata && selectedImagePath}
-			<ImageViewer metadata={imageMetadata} imagePath={selectedImagePath} />
+			<ImageViewer metadata={imageMetadata} imagePath={selectedImagePath} onImageChange={handleImageChange} />
 		{:else}
 			<div class="flex flex-col items-center justify-center h-[60vh] text-center">
 				<div class="text-6xl mb-4">📁</div>
 				<h2 class="text-2xl font-bold mb-2">画像を選択してください</h2>
-				<p class="text-base-content/70 mb-6">「ファイルを開く」ボタンをクリックしてPNG画像を選択してください</p>
+				<p class="text-base-content/70 mb-6">「ファイルを開く」ボタンをクリックして画像を選択してください</p>
 				<button class="btn btn-primary btn-lg" onclick={openFileDialog}>
 					ファイルを開く
 				</button>

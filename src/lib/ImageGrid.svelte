@@ -177,9 +177,6 @@
 						style="width: {(loadedCount / imageFiles.length) * 100}%"
 					></div>
 				</div>
-				<p class="text-xs text-base-content/50 mt-2">
-					{Math.round((loadedCount / imageFiles.length) * 100)}%
-				</p>
 			{/if}
 		</div>
 	{:else if error}

@@ -146,16 +146,9 @@ impl ThumbnailHandler {
 
     /// サムネイルを生成
     fn generate_thumbnail(&self, image_path: &str) -> Result<ThumbnailInfo, String> {
-        println!("サムネイル生成開始: {}", image_path);
-        
         // 画像ファイルを読み込み
         let img = image::open(image_path)
-            .map_err(|e| {
-                println!("画像読み込みエラー: {} - {}", image_path, e);
-                format!("画像の読み込みに失敗: {} - {}", image_path, e)
-            })?;
-        
-        println!("画像読み込み成功: {} ({}x{})", image_path, img.width(), img.height());
+            .map_err(|e| format!("画像の読み込みに失敗: {} - {}", image_path, e))?;
 
         // サムネイル生成（アスペクト比を維持）
         let thumbnail = img.thumbnail(self.config.size, self.config.size);
@@ -166,11 +159,9 @@ impl ThumbnailHandler {
         let rgba_data = rgba_image.as_raw();
 
         // WebPに変換
-        println!("WebP変換開始: {}x{}", width, height);
         let encoder = Encoder::from_rgba(rgba_data, width, height);
         let webp_memory = encoder.encode(self.config.quality as f32);
         let webp_data = webp_memory.to_vec();
-        println!("WebP変換完了: {} ({}bytes)", image_path, webp_data.len());
 
         Ok(ThumbnailInfo {
             data: webp_data,
@@ -220,16 +211,13 @@ pub async fn load_thumbnails_batch<R: Runtime>(
     app: AppHandle<R>,
     state: tauri::State<'_, ThumbnailState>,
 ) -> Result<Vec<BatchThumbnailResult>, String> {
-    println!("Tauriコマンド開始: {}個のファイル処理", image_paths.len());
-    for (i, path) in image_paths.iter().enumerate() {
-        println!("  [{}] {}", i + 1, path);
-    }
+    println!("チャンク処理: {}個のファイル", image_paths.len());
     
     let results = state.handler.process_thumbnails_batch(&image_paths, &app);
     
     let success_count = results.iter().filter(|r| r.thumbnail.is_some()).count();
     let error_count = results.iter().filter(|r| r.error.is_some()).count();
-    println!("Tauriコマンド完了: 成功={}, エラー={}", success_count, error_count);
+    println!("チャンク完了: 成功={}, エラー={}", success_count, error_count);
     
     Ok(results)
 }

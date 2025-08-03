@@ -52,21 +52,42 @@
 				return;
 			}
 
-			// Tauriのサムネイル生成コマンドを呼び出し
+			// チャンク単位でサムネイル生成（プログレス表示のため）
 			console.log('サムネイル生成開始:', imageFiles.length, '個のファイル');
-			console.log('ファイルリスト:', imageFiles);
 			
+			await loadThumbnailsInChunks(imageFiles);
+		} catch (err) {
+			error = err instanceof Error ? err.message : 'サムネイルの読み込みに失敗しました';
+			console.error('Failed to load thumbnails:', err);
+		} finally {
+			isLoading = false;
+			isProcessing = false;
+		}
+	};
+
+	// チャンク単位でサムネイルを処理する関数
+	const loadThumbnailsInChunks = async (allImageFiles: string[]) => {
+		const CHUNK_SIZE = 16; // チャンクサイズ
+		const newThumbnails = new Map<string, string>();
+		
+		// 配列をチャンクに分割
+		const chunks: string[][] = [];
+		for (let i = 0; i < allImageFiles.length; i += CHUNK_SIZE) {
+			chunks.push(allImageFiles.slice(i, i + CHUNK_SIZE));
+		}
+		
+		console.log(`チャンク処理開始: ${chunks.length}チャンク, チャンクサイズ: ${CHUNK_SIZE}`);
+		
+		// チャンクごとに処理
+		for (const [chunkIndex, chunk] of chunks.entries()) {
 			try {
+				console.log(`チャンク ${chunkIndex + 1}/${chunks.length} 処理開始 (${chunk.length}ファイル)`);
+				
 				const results: BatchThumbnailResult[] = await invoke('load_thumbnails_batch', {
-					imagePaths: imageFiles
+					imagePaths: chunk
 				});
 				
-				console.log('サムネイル生成結果:', results);
-				console.log('成功したサムネイル数:', results.filter(r => r.thumbnail).length);
-				console.log('失敗したサムネイル数:', results.filter(r => r.error).length);
-
-				// サムネイルデータをBlob URLに変換
-				const newThumbnails = new Map<string, string>();
+				// 結果を即座にUI更新
 				for (const result of results) {
 					if (result.thumbnail && result.thumbnail.data) {
 						// number[]をUint8Arrayに変換
@@ -75,24 +96,26 @@
 						const url = URL.createObjectURL(blob);
 						newThumbnails.set(result.path, url);
 						loadedCount++;
-						console.log(`サムネイル生成成功: ${result.path} (${result.thumbnail.data.length} bytes)`);
+						console.log(`サムネイル生成成功: ${result.path}`);
 					} else if (result.error) {
 						console.warn(`サムネイル生成失敗: ${result.path} - ${result.error}`);
 					}
 				}
 				
-				thumbnails = newThumbnails;
-			} catch (invokeError) {
-				console.error('Tauriコマンド呼び出しエラー:', invokeError);
-				error = `サムネイル生成中にエラーが発生: ${invokeError}`;
+				// UI更新（リアルタイム）
+				thumbnails = new Map(newThumbnails);
+				
+				console.log(`チャンク ${chunkIndex + 1}/${chunks.length} 完了`);
+				
+				// 少し待機（UI更新のため）
+				await new Promise(resolve => setTimeout(resolve, 10));
+				
+			} catch (chunkError) {
+				console.error(`チャンク ${chunkIndex + 1} 処理エラー:`, chunkError);
 			}
-		} catch (err) {
-			error = err instanceof Error ? err.message : 'サムネイルの読み込みに失敗しました';
-			console.error('Failed to load thumbnails:', err);
-		} finally {
-			isLoading = false;
-			isProcessing = false;
 		}
+		
+		console.log('全チャンク処理完了');
 	};
 
 	// クリーンアップ関数
@@ -147,6 +170,15 @@
 			{#if imageFiles.length > 0}
 				<p class="text-sm text-base-content/70 mt-2">
 					{loadedCount} / {imageFiles.length} 完了
+				</p>
+				<div class="w-64 bg-base-300 rounded-full h-2 mt-4">
+					<div 
+						class="bg-primary h-2 rounded-full transition-all duration-300"
+						style="width: {(loadedCount / imageFiles.length) * 100}%"
+					></div>
+				</div>
+				<p class="text-xs text-base-content/50 mt-2">
+					{Math.round((loadedCount / imageFiles.length) * 100)}%
 				</p>
 			{/if}
 		</div>

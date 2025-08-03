@@ -2,6 +2,7 @@
 	import { invoke } from '@tauri-apps/api/core';
 	import { getImageFiles } from './image/image-loader';
 	import type { BatchThumbnailResult } from './image/types';
+	import ImageThumbnail from './ImageThumbnail.svelte';
 
 	const {
 		directoryPath,
@@ -182,16 +183,14 @@
 		}
 	});
 
-	const handleImageClick = (imagePath: string) => {
-		if (isSelectionMode && onToggleSelection) {
-			onToggleSelection(imagePath);
-		} else {
-			onImageSelect(imagePath);
-		}
+	const handleImageClick = (imagePath: string): void => {
+		onImageSelect(imagePath);
 	};
 
-	const getImageName = (path: string) => {
-		return path.split('/').pop() || 'unknown';
+	const handleToggleSelection = (imagePath: string): void => {
+		if (onToggleSelection) {
+			onToggleSelection(imagePath);
+		}
 	};
 </script>
 
@@ -230,56 +229,15 @@
 			>
 				{#each imageFiles as imagePath (imagePath)}
 					{@const isSelected = selectedImages.has(imagePath)}
-					<div class="group relative cursor-pointer">
-						<button
-							class="aspect-square w-full overflow-hidden rounded-lg border-0 bg-base-200 p-0 shadow-md transition-all duration-200 hover:scale-105 hover:shadow-lg"
-							class:ring-4={isSelected}
-							class:ring-blue-500={isSelected}
-							class:opacity-80={isSelected}
-							onclick={() => handleImageClick(imagePath)}
-							onkeydown={(e) => e.key === 'Enter' && handleImageClick(imagePath)}
-							aria-label={isSelectionMode
-								? `画像を選択: ${getImageName(imagePath)}`
-								: `画像を開く: ${getImageName(imagePath)}`}
-						>
-							{#if thumbnails.has(imagePath)}
-								<div class="flex h-full w-full items-center justify-center p-2">
-									<img
-										src={thumbnails.get(imagePath)}
-										alt={getImageName(imagePath)}
-										class="max-h-full max-w-full rounded object-contain"
-										loading="lazy"
-									/>
-								</div>
-							{:else}
-								<div class="flex h-full items-center justify-center">
-									<div class="loading loading-sm loading-spinner"></div>
-								</div>
-							{/if}
-						</button>
-
-						<!-- 選択機能 -->
-						{#if isSelectionMode}
-							<!-- チェックボックス -->
-							<div class="absolute top-2 right-2 z-10">
-								<input
-									type="checkbox"
-									class="checkbox border-2 border-white bg-black/50 checkbox-sm checkbox-primary"
-									checked={isSelected}
-									onchange={(e) => {
-										e.stopPropagation();
-										if (onToggleSelection) {
-											onToggleSelection(imagePath);
-										}
-									}}
-									title={isSelected ? '選択解除' : '選択'}
-								/>
-							</div>
-						{/if}
-						<p class="mt-2 truncate text-xs text-base-content/70" title={getImageName(imagePath)}>
-							{getImageName(imagePath)}
-						</p>
-					</div>
+					<ImageThumbnail
+						{imagePath}
+						thumbnailUrl={thumbnails.get(imagePath)}
+						{isSelected}
+						{isSelectionMode}
+						isLoading={!thumbnails.has(imagePath)}
+						onImageClick={handleImageClick}
+						onToggleSelection={handleToggleSelection}
+					/>
 				{/each}
 			</div>
 		</div>

@@ -2,7 +2,7 @@
 	import { open } from '@tauri-apps/plugin-dialog';
 	import ImageViewer from '$lib/ImageViewer.svelte';
 	import WelcomeScreen from '$lib/WelcomeScreen.svelte';
-	import GridView from '$lib/GridView.svelte';
+	import GridPage from '$lib/GridPage.svelte';
 	import type { ImageMetadata } from '$lib/image/types';
 	import type { ViewMode } from '$lib/ui/types';
 	import { createImageMetadata, getDirectoryFromPath } from '$lib/image/utils';
@@ -103,7 +103,7 @@
 		{#if appState.viewMode === 'welcome'}
 			<WelcomeScreen {openFileDialog} {openDirectoryDialog} />
 		{:else if appState.viewMode === 'grid' && appState.selectedDirectory}
-			<GridView
+			<GridPage
 				selectedDirectory={appState.selectedDirectory}
 				{handleBackToWelcome}
 				{openDirectoryDialog}

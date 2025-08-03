@@ -29,11 +29,11 @@
 				</div>
 			{/if}
 		</div>
-		
+
 		<div class="flex items-center gap-2">
 			{#if onSwitchToGrid}
-				<button 
-					class="btn btn-sm btn-ghost text-white" 
+				<button
+					class="btn text-white btn-ghost btn-sm"
 					onclick={onSwitchToGrid}
 					title="グリッド表示"
 				>

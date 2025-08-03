@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { getImageFiles, loadImage } from './image/image-loader';
+	import type { ImageData, ImageMetadata } from './image/types';
 	import ImageDisplay from './ImageDisplay.svelte';
 	import ImageInfoPanel from './ImageInfoPanel.svelte';
 	import NavigationButtons from './NavigationButtons.svelte';
 	import ToolbarOverlay from './ToolbarOverlay.svelte';
-	import type { ImageMetadata, ImageData } from './image/types';
 
 	const {
 		metadata,
@@ -135,7 +135,10 @@
 	};
 
 	const goToNext = async (): Promise<void> => {
-		if (navigationState.currentIndex < navigationState.files.length - 1 && !navigationState.isNavigating) {
+		if (
+			navigationState.currentIndex < navigationState.files.length - 1 &&
+			!navigationState.isNavigating
+		) {
 			await navigateToImage(navigationState.currentIndex + 1);
 		}
 	};
@@ -172,7 +175,6 @@
 		}
 	};
 
-
 	// 情報ペインのフォーカス状態を管理
 	const handleInfoPanelFocus = (): void => {
 		isInfoPanelFocused = true;
@@ -205,26 +207,26 @@
 <div class="relative flex h-screen">
 	<!-- 画像表示エリア (全面) -->
 	<div class="relative flex-1 bg-black">
-		<ToolbarOverlay 
-			imageFiles={navigationState.files} 
-			currentIndex={navigationState.currentIndex} 
-			{openFileDialog} 
+		<ToolbarOverlay
+			imageFiles={navigationState.files}
+			currentIndex={navigationState.currentIndex}
+			{openFileDialog}
 			{onBack}
 			{onSwitchToGrid}
 		/>
-		
-		<ImageDisplay 
-			imageUrl={imageState.url} 
-			isLoading={imageState.isLoading} 
-			error={imageState.error} 
-			{metadata} 
+
+		<ImageDisplay
+			imageUrl={imageState.url}
+			isLoading={imageState.isLoading}
+			error={imageState.error}
+			{metadata}
 		/>
-		<NavigationButtons 
-			imageFiles={navigationState.files} 
-			currentIndex={navigationState.currentIndex} 
-			isNavigating={navigationState.isNavigating} 
-			{goToPrevious} 
-			{goToNext} 
+		<NavigationButtons
+			imageFiles={navigationState.files}
+			currentIndex={navigationState.currentIndex}
+			isNavigating={navigationState.isNavigating}
+			{goToPrevious}
+			{goToNext}
 		/>
 	</div>
 

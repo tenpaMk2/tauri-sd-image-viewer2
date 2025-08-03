@@ -13,17 +13,11 @@
 </script>
 
 <!-- オーバーレイツールバー -->
-<div
-	class="absolute top-0 right-0 left-0 z-10 bg-gradient-to-b from-black/70 to-transparent p-4"
->
+<div class="absolute top-0 right-0 left-0 z-10 bg-gradient-to-b from-black/70 to-transparent p-4">
 	<div class="flex items-center justify-between text-white">
 		<div class="flex items-center gap-4">
 			{#if onBack}
-				<button 
-					class="btn btn-sm btn-ghost text-white"
-					onclick={onBack}
-					title="戻る"
-				>
+				<button class="btn text-white btn-ghost btn-sm" onclick={onBack} title="戻る">
 					🏠 戻る
 				</button>
 			{/if}

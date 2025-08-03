@@ -1,15 +1,5 @@
 <script lang="ts">
-	type ImageMetadata = {
-		filename: string;
-		size: string;
-		dimensions: string;
-		format: string;
-		created: string;
-		modified: string;
-		camera?: string;
-		lens?: string;
-		settings?: string;
-	};
+	import type { ImageMetadata } from './types';
 
 	const {
 		metadata,
@@ -23,7 +13,7 @@
 </script>
 
 <!-- 右側: 情報ペイン (固定幅) -->
-<div 
+<div
 	class="w-80 overflow-y-auto bg-base-200 shadow-2xl"
 	tabindex="0"
 	role="tabpanel"
@@ -38,7 +28,6 @@
 			<div class="rounded-lg bg-base-300 p-4">
 				<h3 class="mb-3 text-base font-semibold">基本情報</h3>
 				<div class="space-y-2 text-sm">
-
 					<div class="flex justify-between">
 						<div class="text-base-content/70">サイズ:</div>
 						<div>{metadata.size}</div>

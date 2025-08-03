@@ -2,19 +2,7 @@
 	import { onMount } from 'svelte';
 	import { invoke } from '@tauri-apps/api/core';
 	import { getImageFiles } from './image-loader';
-
-	type ThumbnailInfo = {
-		data: number[];
-		width: number;
-		height: number;
-		mime_type: string;
-	};
-
-	type BatchThumbnailResult = {
-		path: string;
-		thumbnail: ThumbnailInfo | null;
-		error: string | null;
-	};
+	import type { BatchThumbnailResult } from './types';
 
 	const {
 		directoryPath,
@@ -46,7 +34,7 @@
 
 			// ディレクトリ内の画像ファイル一覧を取得
 			imageFiles = await getImageFiles(directoryPath);
-			
+
 			if (imageFiles.length === 0) {
 				error = '画像ファイルが見つかりません';
 				return;
@@ -54,7 +42,7 @@
 
 			// チャンク単位でサムネイル生成（プログレス表示のため）
 			console.log('サムネイル生成開始:', imageFiles.length, '個のファイル');
-			
+
 			await loadThumbnailsInChunks(imageFiles);
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'サムネイルの読み込みに失敗しました';
@@ -69,24 +57,26 @@
 	const loadThumbnailsInChunks = async (allImageFiles: string[]) => {
 		const CHUNK_SIZE = 16; // チャンクサイズ
 		const newThumbnails = new Map<string, string>();
-		
+
 		// 配列をチャンクに分割
 		const chunks: string[][] = [];
 		for (let i = 0; i < allImageFiles.length; i += CHUNK_SIZE) {
 			chunks.push(allImageFiles.slice(i, i + CHUNK_SIZE));
 		}
-		
+
 		console.log(`チャンク処理開始: ${chunks.length}チャンク, チャンクサイズ: ${CHUNK_SIZE}`);
-		
+
 		// チャンクごとに処理
 		for (const [chunkIndex, chunk] of chunks.entries()) {
 			try {
-				console.log(`チャンク ${chunkIndex + 1}/${chunks.length} 処理開始 (${chunk.length}ファイル)`);
-				
+				console.log(
+					`チャンク ${chunkIndex + 1}/${chunks.length} 処理開始 (${chunk.length}ファイル)`
+				);
+
 				const results: BatchThumbnailResult[] = await invoke('load_thumbnails_batch', {
 					imagePaths: chunk
 				});
-				
+
 				// 結果を即座にUI更新
 				for (const result of results) {
 					if (result.thumbnail && result.thumbnail.data) {
@@ -101,20 +91,19 @@
 						console.warn(`サムネイル生成失敗: ${result.path} - ${result.error}`);
 					}
 				}
-				
+
 				// UI更新（リアルタイム）
 				thumbnails = new Map(newThumbnails);
-				
+
 				console.log(`チャンク ${chunkIndex + 1}/${chunks.length} 完了`);
-				
+
 				// 少し待機（UI更新のため）
-				await new Promise(resolve => setTimeout(resolve, 10));
-				
+				await new Promise((resolve) => setTimeout(resolve, 10));
 			} catch (chunkError) {
 				console.error(`チャンク ${chunkIndex + 1} 処理エラー:`, chunkError);
 			}
 		}
-		
+
 		console.log('全チャンク処理完了');
 	};
 
@@ -129,19 +118,19 @@
 
 	// コンポーネントマウント時と directoryPath 変更時の処理
 	let currentDirectory = '';
-	
+
 	onMount(() => {
 		if (directoryPath) {
 			currentDirectory = directoryPath;
 			loadImageGrid();
 		}
-		
+
 		// クリーンアップ関数を返す
 		return () => {
 			cleanup();
 		};
 	});
-	
+
 	// directoryPath が変更された時の処理（watcherとして）
 	$effect(() => {
 		if (directoryPath && directoryPath !== currentDirectory && !isProcessing) {
@@ -151,7 +140,6 @@
 			loadImageGrid();
 		}
 	});
-
 
 	const handleImageClick = (imagePath: string) => {
 		onImageSelect(imagePath);
@@ -165,15 +153,15 @@
 <div class="h-full p-4">
 	{#if isLoading}
 		<div class="flex h-full flex-col items-center justify-center">
-			<div class="loading loading-spinner loading-lg mb-4"></div>
+			<div class="loading mb-4 loading-lg loading-spinner"></div>
 			<p class="text-lg">サムネイルを生成中...</p>
 			{#if imageFiles.length > 0}
-				<p class="text-sm text-base-content/70 mt-2">
+				<p class="mt-2 text-sm text-base-content/70">
 					{loadedCount} / {imageFiles.length} 完了
 				</p>
-				<div class="w-64 bg-base-300 rounded-full h-2 mt-4">
-					<div 
-						class="bg-primary h-2 rounded-full transition-all duration-300"
+				<div class="mt-4 h-2 w-64 rounded-full bg-base-300">
+					<div
+						class="h-2 rounded-full bg-primary transition-all duration-300"
 						style="width: {(loadedCount / imageFiles.length) * 100}%"
 					></div>
 				</div>
@@ -181,22 +169,24 @@
 		</div>
 	{:else if error}
 		<div class="flex h-full flex-col items-center justify-center">
-			<div class="text-6xl mb-4">⚠️</div>
-			<p class="text-lg text-error mb-2">エラーが発生しました</p>
+			<div class="mb-4 text-6xl">⚠️</div>
+			<p class="mb-2 text-lg text-error">エラーが発生しました</p>
 			<p class="text-sm text-base-content/70">{error}</p>
 		</div>
 	{:else if imageFiles.length === 0}
 		<div class="flex h-full flex-col items-center justify-center">
-			<div class="text-6xl mb-4">📁</div>
+			<div class="mb-4 text-6xl">📁</div>
 			<p class="text-lg">画像ファイルが見つかりません</p>
 		</div>
 	{:else}
 		<div class="h-full overflow-auto">
-			<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+			<div
+				class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6"
+			>
 				{#each imageFiles as imagePath (imagePath)}
 					<div class="group cursor-pointer">
-						<button 
-							class="aspect-square overflow-hidden rounded-lg bg-base-200 shadow-md transition-all duration-200 hover:shadow-lg hover:scale-105 w-full border-0 p-0"
+						<button
+							class="aspect-square w-full overflow-hidden rounded-lg border-0 bg-base-200 p-0 shadow-md transition-all duration-200 hover:scale-105 hover:shadow-lg"
 							onclick={() => handleImageClick(imagePath)}
 							onkeydown={(e) => e.key === 'Enter' && handleImageClick(imagePath)}
 							aria-label={`画像を開く: ${getImageName(imagePath)}`}
@@ -210,7 +200,7 @@
 								/>
 							{:else}
 								<div class="flex h-full items-center justify-center">
-									<div class="loading loading-spinner loading-sm"></div>
+									<div class="loading loading-sm loading-spinner"></div>
 								</div>
 							{/if}
 						</button>

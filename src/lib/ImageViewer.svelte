@@ -1,22 +1,11 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { getImageFiles, loadImage, type ImageData } from './image-loader';
+	import { getImageFiles, loadImage } from './image-loader';
 	import ImageDisplay from './ImageDisplay.svelte';
 	import ImageInfoPanel from './ImageInfoPanel.svelte';
 	import NavigationButtons from './NavigationButtons.svelte';
 	import ToolbarOverlay from './ToolbarOverlay.svelte';
-
-	type ImageMetadata = {
-		filename: string;
-		size: string;
-		dimensions: string;
-		format: string;
-		created: string;
-		modified: string;
-		camera?: string;
-		lens?: string;
-		settings?: string;
-	};
+	import type { ImageMetadata, ImageData } from './types';
 
 	const {
 		metadata,
@@ -75,19 +64,27 @@
 
 		// 前の画像をプリロード
 		if (index > 0) {
-			promises.push(preloadImageData(imageFiles[index - 1]).then(() => {}).catch(() => {}));
+			promises.push(
+				preloadImageData(imageFiles[index - 1])
+					.then(() => {})
+					.catch(() => {})
+			);
 		}
 
 		// 次の画像をプリロード
 		if (index < imageFiles.length - 1) {
-			promises.push(preloadImageData(imageFiles[index + 1]).then(() => {}).catch(() => {}));
+			promises.push(
+				preloadImageData(imageFiles[index + 1])
+					.then(() => {})
+					.catch(() => {})
+			);
 		}
 
 		await Promise.all(promises);
 	};
 
-	const navigateToImage = async (index: number) => {
-		if (index >= 0 && index < imageFiles.length && !isNavigating) {
+	const navigateToImage = async (index: number): Promise<void> => {
+		if (!(index < 0) && index < imageFiles.length && !isNavigating) {
 			isNavigating = true;
 			currentIndex = index;
 			const newPath = imageFiles[index];
@@ -110,19 +107,19 @@
 		}
 	};
 
-	const goToPrevious = async () => {
-		if (currentIndex > 0 && !isNavigating) {
+	const goToPrevious = async (): Promise<void> => {
+		if (!(currentIndex < 1) && !isNavigating) {
 			await navigateToImage(currentIndex - 1);
 		}
 	};
 
-	const goToNext = async () => {
+	const goToNext = async (): Promise<void> => {
 		if (currentIndex < imageFiles.length - 1 && !isNavigating) {
 			await navigateToImage(currentIndex + 1);
 		}
 	};
 
-	const initializeImages = async (path: string) => {
+	const initializeImages = async (path: string): Promise<void> => {
 		// 同一ディレクトリの画像ファイル一覧を取得
 		const dirname = path.substring(0, path.lastIndexOf('/'));
 		imageFiles = await getImageFiles(dirname);
@@ -132,13 +129,13 @@
 		await loadCurrentImage(path);
 
 		// 初期化完了後に隣接画像をプリロード
-		if (currentIndex >= 0) {
+		if (!(currentIndex < 0)) {
 			preloadAdjacentImages(currentIndex);
 		}
 	};
 
 	// キーボードナビゲーション
-	const handleKeydown = (event: KeyboardEvent) => {
+	const handleKeydown = (event: KeyboardEvent): void => {
 		// 情報ペインにフォーカスがある場合はナビゲーションを無効化
 		if (isInfoPanelFocused) return;
 
@@ -155,20 +152,20 @@
 	};
 
 	// 情報ペインのフォーカス状態を管理
-	const handleInfoPanelFocus = () => {
+	const handleInfoPanelFocus = (): void => {
 		isInfoPanelFocused = true;
 	};
 
-	const handleInfoPanelBlur = () => {
+	const handleInfoPanelBlur = (): void => {
 		isInfoPanelFocused = false;
 	};
 
 	onMount(() => {
 		initializeImages(imagePath);
-		
+
 		// キーボードイベントリスナーを追加
 		document.addEventListener('keydown', handleKeydown);
-		
+
 		return () => {
 			document.removeEventListener('keydown', handleKeydown);
 		};

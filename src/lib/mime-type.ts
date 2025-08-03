@@ -1,4 +1,5 @@
 import { path } from '@tauri-apps/api';
+import type { MimeType } from './types';
 
 export const SUPPORTED_IMAGE_EXTS = [
 	'jpg',
@@ -8,8 +9,6 @@ export const SUPPORTED_IMAGE_EXTS = [
 	'gif',
 	'avif'
 ] as const satisfies string[];
-
-export type MimeType = 'image/jpeg' | 'image/png' | 'image/webp' | 'image/gif' | 'image/avif';
 
 export const detectImageMimeType = async (filename: string): Promise<MimeType | null> => {
 	const ext = (await path.extname(filename)).toLowerCase();

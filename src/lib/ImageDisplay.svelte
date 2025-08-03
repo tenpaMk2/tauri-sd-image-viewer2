@@ -1,15 +1,5 @@
 <script lang="ts">
-	type ImageMetadata = {
-		filename: string;
-		size: string;
-		dimensions: string;
-		format: string;
-		created: string;
-		modified: string;
-		camera?: string;
-		lens?: string;
-		settings?: string;
-	};
+	import type { ImageMetadata } from './types';
 
 	const {
 		imageUrl,

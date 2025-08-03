@@ -1,12 +1,7 @@
 import { readDir, readFile } from '@tauri-apps/plugin-fs';
 import { join } from '@tauri-apps/api/path';
-import { detectImageMimeType, type MimeType } from './mime-type';
-
-export type ImageData = {
-	url: string;
-	mimeType: MimeType;
-	filePath: string;
-};
+import { detectImageMimeType } from './mime-type';
+import type { ImageData, MimeType } from './types';
 
 /**
  * ディレクトリ内の画像ファイル一覧を取得
@@ -27,7 +22,7 @@ export const getImageFiles = async (directoryPath: string): Promise<string[]> =>
 		const imageFiles = await Promise.all(
 			imageEntries
 				.sort((a, b) => a.name.localeCompare(b.name, 'ja', { numeric: true }))
-				.map(async (entry) => await join(directoryPath, entry.name))
+				.map(async (entry): Promise<string> => await join(directoryPath, entry.name))
 		);
 
 		console.log('画像ファイル一覧:', imageFiles);

@@ -16,7 +16,7 @@
 	}: {
 		metadata: ImageMetadata;
 		imagePath: string;
-		onImageChange: (newPath: string) => void;
+		onImageChange: (newPath: string) => Promise<void>;
 		openFileDialog: () => void;
 		onBack?: () => void;
 		onSwitchToGrid?: () => void;
@@ -84,11 +84,13 @@
 		const promises: Promise<void>[] = [];
 
 		// 前の画像をプリロード
-		if (index > 0) {
+		if (0 < index) {
 			promises.push(
 				preloadImageData(navigationState.files[index - 1])
 					.then(() => {})
-					.catch(() => {})
+					.catch((error) => {
+						console.warn(`前の画像のプリロードに失敗: ${navigationState.files[index - 1]}`, error);
+					})
 			);
 		}
 
@@ -97,7 +99,9 @@
 			promises.push(
 				preloadImageData(navigationState.files[index + 1])
 					.then(() => {})
-					.catch(() => {})
+					.catch((error) => {
+						console.warn(`次の画像のプリロードに失敗: ${navigationState.files[index + 1]}`, error);
+					})
 			);
 		}
 
@@ -105,7 +109,7 @@
 	};
 
 	const navigateToImage = async (index: number): Promise<void> => {
-		if (index >= 0 && index < navigationState.files.length && !navigationState.isNavigating) {
+		if (0 <= index && index < navigationState.files.length && !navigationState.isNavigating) {
 			navigationState.isNavigating = true;
 			navigationState.currentIndex = index;
 			const newPath = navigationState.files[index];
@@ -113,14 +117,14 @@
 			// 画像が既にキャッシュされている場合は即座に切り替え
 			if (imageCache.has(newPath)) {
 				imageState.url = imageCache.get(newPath)!;
-				onImageChange(newPath);
+				await onImageChange(newPath);
 				navigationState.isNavigating = false;
 				// バックグラウンドで隣接画像をプリロード
 				preloadAdjacentImages(index);
 			} else {
 				// キャッシュにない場合は読み込み状態を表示
 				await loadCurrentImage(newPath);
-				onImageChange(newPath);
+				await onImageChange(newPath);
 				navigationState.isNavigating = false;
 				// 読み込み完了後に隣接画像をプリロード
 				preloadAdjacentImages(index);
@@ -129,7 +133,7 @@
 	};
 
 	const goToPrevious = async (): Promise<void> => {
-		if (navigationState.currentIndex >= 1 && !navigationState.isNavigating) {
+		if (0 < navigationState.currentIndex && !navigationState.isNavigating) {
 			await navigateToImage(navigationState.currentIndex - 1);
 		}
 	};
@@ -144,17 +148,23 @@
 	};
 
 	const initializeImages = async (path: string): Promise<void> => {
-		// 同一ディレクトリの画像ファイル一覧を取得
-		const dirname = path.substring(0, path.lastIndexOf('/'));
-		navigationState.files = await getImageFiles(dirname);
-		navigationState.currentIndex = navigationState.files.findIndex((file) => file === path);
+		try {
+			// 同一ディレクトリの画像ファイル一覧を取得
+			const dirname = path.substring(0, path.lastIndexOf('/'));
+			navigationState.files = await getImageFiles(dirname);
+			navigationState.currentIndex = navigationState.files.findIndex((file) => file === path);
 
-		// 初期画像を読み込み
-		await loadCurrentImage(path);
+			// 初期画像を読み込み
+			await loadCurrentImage(path);
 
-		// 初期化完了後に隣接画像をプリロード
-		if (navigationState.currentIndex >= 0) {
-			preloadAdjacentImages(navigationState.currentIndex);
+			// 初期化完了後に隣接画像をプリロード
+			if (0 <= navigationState.currentIndex) {
+				preloadAdjacentImages(navigationState.currentIndex);
+			}
+		} catch (error) {
+			imageState.error =
+				error instanceof Error ? error.message : 'ディレクトリの読み込みに失敗しました';
+			console.error('画像の初期化に失敗:', error);
 		}
 	};
 
@@ -184,11 +194,13 @@
 		isInfoPanelFocused = false;
 	};
 
-	// 初期化とキーボードイベントリスナーの設定
+	// 初期化（初回のみ）
 	$effect(() => {
 		initializeImages(imagePath);
+	});
 
-		// キーボードイベントリスナーを追加
+	// キーボードイベントリスナーの設定（初回のみ）
+	$effect(() => {
 		document.addEventListener('keydown', handleKeydown);
 
 		return () => {
@@ -196,10 +208,27 @@
 		};
 	});
 
-	// imagePathが変更された時に再初期化
+	// imagePathが変更された時に必要最小限の処理
+	let previousImagePath = '';
 	$effect(() => {
-		if (imagePath) {
-			initializeImages(imagePath);
+		if (imagePath && imagePath !== previousImagePath) {
+			// 同じディレクトリ内の場合は再初期化をスキップ
+			const currentDir = imagePath.substring(0, imagePath.lastIndexOf('/'));
+			const previousDir = previousImagePath
+				? previousImagePath.substring(0, previousImagePath.lastIndexOf('/'))
+				: '';
+
+			if (currentDir === previousDir && 0 < navigationState.files.length) {
+				// 同じディレクトリなので、インデックスの更新と画像読み込みのみ
+				navigationState.currentIndex = navigationState.files.findIndex(
+					(file) => file === imagePath
+				);
+				loadCurrentImage(imagePath);
+			} else {
+				// 異なるディレクトリの場合は完全な再初期化
+				initializeImages(imagePath);
+			}
+			previousImagePath = imagePath;
 		}
 	});
 </script>

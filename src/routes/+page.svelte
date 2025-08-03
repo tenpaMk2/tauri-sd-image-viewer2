@@ -36,7 +36,7 @@
 
 			if (selected && typeof selected === 'string') {
 				appState.selectedImagePath = selected;
-				appState.imageMetadata = createImageMetadata(selected);
+				appState.imageMetadata = await createImageMetadata(selected);
 				appState.selectedDirectory = getDirectoryFromPath(selected);
 				appState.viewMode = 'viewer';
 			}
@@ -62,13 +62,13 @@
 	};
 
 	// 状態更新関数を統合
-	const updateSelectedImage = (imagePath: string): void => {
+	const updateSelectedImage = async (imagePath: string): Promise<void> => {
 		appState.selectedImagePath = imagePath;
-		appState.imageMetadata = createImageMetadata(imagePath);
+		appState.imageMetadata = await createImageMetadata(imagePath);
 	};
 
-	const handleImageChange = (newPath: string): void => {
-		updateSelectedImage(newPath);
+	const handleImageChange = async (newPath: string): Promise<void> => {
+		await updateSelectedImage(newPath);
 	};
 
 	const handleSwitchToGrid = (): void => {
@@ -77,8 +77,8 @@
 		}
 	};
 
-	const handleImageSelect = (imagePath: string): void => {
-		updateSelectedImage(imagePath);
+	const handleImageSelect = async (imagePath: string): Promise<void> => {
+		await updateSelectedImage(imagePath);
 		appState.viewMode = 'viewer';
 	};
 

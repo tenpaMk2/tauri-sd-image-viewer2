@@ -1,4 +1,10 @@
-export type MimeType = 'image/jpeg' | 'image/png' | 'image/webp' | 'image/gif' | 'image/avif';
+export type MimeType =
+	| 'image/jpeg'
+	| 'image/png'
+	| 'image/webp'
+	| 'image/gif'
+	| 'image/bmp'
+	| 'image/avif';
 
 export type ImageData = {
 	url: string;

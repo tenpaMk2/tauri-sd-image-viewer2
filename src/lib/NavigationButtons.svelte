@@ -15,9 +15,9 @@
 </script>
 
 <!-- ナビゲーションボタン -->
-{#if imageFiles.length >= 2}
+{#if 2 <= imageFiles.length}
 	<!-- 前の画像ボタン -->
-	{#if currentIndex >= 1}
+	{#if 0 < currentIndex}
 		<div class="absolute top-0 left-6 flex h-full items-center">
 			<button
 				class="btn btn-circle btn-ghost btn-lg"

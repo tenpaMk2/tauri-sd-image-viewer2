@@ -7,6 +7,7 @@ export const SUPPORTED_IMAGE_EXTS = [
 	'png',
 	'webp',
 	'gif',
+	'bmp',
 	'avif'
 ] as const satisfies string[];
 
@@ -22,6 +23,8 @@ export const detectImageMimeType = async (filename: string): Promise<MimeType | 
 			return 'image/webp';
 		case 'gif':
 			return 'image/gif';
+		case 'bmp':
+			return 'image/bmp';
 		case 'avif':
 			return 'image/avif';
 		default:

@@ -64,7 +64,6 @@
 			// エラーはperformDelete内で処理済み
 		}
 	};
-
 </script>
 
 <div class="flex h-full flex-col">
@@ -77,7 +76,7 @@
 			<h1 class="truncate text-lg font-semibold">
 				{selectedDirectory.split('/').pop() || 'フォルダ'}
 			</h1>
-			{#if imageFiles.length > 0}
+			{#if 0 < imageFiles.length}
 				<div class="text-sm opacity-80">
 					{imageFiles.length}個の画像
 				</div>
@@ -86,25 +85,25 @@
 
 		<div class="flex items-center gap-2">
 			<!-- 選択モード切り替えボタン -->
-			<button 
-				class="btn btn-sm btn-ghost" 
+			<button
+				class="btn btn-ghost btn-sm"
 				onclick={toggleSelectionMode}
 				title={isSelectionMode ? '選択モードを終了' : '選択モードに切り替え'}
 			>
 				{isSelectionMode ? '✓' : '☐'} 選択
 			</button>
-			
+
 			<!-- 全選択ボタン -->
 			{#if isSelectionMode}
-				<button 
-					class="btn btn-sm btn-ghost" 
+				<button
+					class="btn btn-ghost btn-sm"
 					onclick={toggleSelectAll}
 					title={selectedImages.size === imageFiles.length ? '全選択解除' : '全選択'}
 				>
 					{selectedImages.size === imageFiles.length ? '☑ 全選択解除' : '☐ 全選択'}
 				</button>
 			{/if}
-			
+
 			<button class="btn btn-sm btn-primary" onclick={openDirectoryDialog}>
 				別のフォルダを開く
 			</button>
@@ -113,8 +112,8 @@
 
 	<!-- グリッド表示 -->
 	<div class="flex-1">
-		<ImageGrid 
-			directoryPath={selectedDirectory} 
+		<ImageGrid
+			directoryPath={selectedDirectory}
 			onImageSelect={handleImageSelect}
 			{isSelectionMode}
 			{selectedImages}
@@ -126,19 +125,16 @@
 </div>
 
 <!-- 選択時の下部ツールバー -->
-{#if selectedImages.size > 0}
-	<div class="fixed bottom-0 left-0 right-0 bg-gray-900/95 backdrop-blur-sm border-t border-gray-700 p-4 z-20">
-		<div class="flex items-center justify-between max-w-4xl mx-auto">
+{#if 0 < selectedImages.size}
+	<div
+		class="fixed right-0 bottom-0 left-0 z-20 border-t border-gray-700 bg-gray-900/95 p-4 backdrop-blur-sm"
+	>
+		<div class="mx-auto flex max-w-4xl items-center justify-between">
 			<div class="text-white">
 				{selectedImages.size}個の画像を選択中
 			</div>
 			<div class="flex items-center gap-4">
-				<button 
-					class="btn btn-sm btn-error"
-					onclick={deleteSelectedImages}
-				>
-					🗑️ 削除
-				</button>
+				<button class="btn btn-sm btn-error" onclick={deleteSelectedImages}> 🗑️ 削除 </button>
 			</div>
 		</div>
 	</div>

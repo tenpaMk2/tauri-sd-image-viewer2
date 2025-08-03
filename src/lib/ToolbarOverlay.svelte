@@ -23,7 +23,7 @@
 					🏠 戻る
 				</button>
 			{/if}
-			{#if imageFiles.length > 1}
+			{#if 1 < imageFiles.length}
 				<div class="text-sm opacity-80">
 					{currentIndex + 1} / {imageFiles.length}
 				</div>

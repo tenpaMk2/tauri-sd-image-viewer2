@@ -1,6 +1,6 @@
 import { readDir, readFile } from '@tauri-apps/plugin-fs';
 import { join } from '@tauri-apps/api/path';
-import { detectImageMimeType } from './mime-type';
+import { detectImageMimeType, SUPPORTED_IMAGE_EXTS } from './mime-type';
 import type { ImageData, MimeType } from './types';
 
 /**
@@ -12,7 +12,7 @@ export const getImageFiles = async (directoryPath: string): Promise<string[]> =>
 		const entries = await readDir(directoryPath);
 		console.log('ディレクトリエントリ数:', entries.length);
 
-		const imageExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp', '.avif'];
+		const imageExtensions = SUPPORTED_IMAGE_EXTS.map((ext) => `.${ext}`);
 		const imageEntries = entries.filter(
 			(entry) =>
 				entry.isFile && imageExtensions.some((ext) => entry.name.toLowerCase().endsWith(ext))
@@ -28,8 +28,8 @@ export const getImageFiles = async (directoryPath: string): Promise<string[]> =>
 		console.log('画像ファイル一覧:', imageFiles);
 		return imageFiles;
 	} catch (error) {
-		console.error('Failed to read directory:', error);
-		return [];
+		console.error('ディレクトリの読み込みに失敗しました:', directoryPath, error);
+		throw new Error(`ディレクトリの読み込みに失敗しました: ${directoryPath}`);
 	}
 };
 
@@ -39,7 +39,11 @@ export const getImageFiles = async (directoryPath: string): Promise<string[]> =>
 export const loadImage = async (filePath: string): Promise<ImageData> => {
 	try {
 		const imageData = await readFile(filePath);
-		const mimeType: MimeType = (await detectImageMimeType(filePath)) ?? 'image/jpeg';
+		const detectedMimeType = await detectImageMimeType(filePath);
+		if (!detectedMimeType) {
+			throw new Error(`サポートされていない画像形式: ${filePath}`);
+		}
+		const mimeType: MimeType = detectedMimeType;
 
 		const blob = new Blob([new Uint8Array(imageData)], { type: mimeType });
 		const url = URL.createObjectURL(blob);

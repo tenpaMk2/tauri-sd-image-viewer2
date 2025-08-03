@@ -74,7 +74,8 @@
 
 			await loadThumbnailsInChunks(imageFiles);
 		} catch (err) {
-			loadingState.error = err instanceof Error ? err.message : 'サムネイルの読み込みに失敗しました';
+			loadingState.error =
+				err instanceof Error ? err.message : 'サムネイルの読み込みに失敗しました';
 			console.error('Failed to load thumbnails:', err);
 		} finally {
 			loadingState.isLoading = false;
@@ -173,7 +174,7 @@
 
 	// refreshTrigger が変更された時の処理（削除後の再読み込み用）
 	$effect(() => {
-		if (refreshTrigger > 0 && refreshTrigger !== lastRefreshTrigger && !loadingState.isProcessing) {
+		if (0 < refreshTrigger && refreshTrigger !== lastRefreshTrigger && !loadingState.isProcessing) {
 			console.log('リフレッシュトリガー検出:', refreshTrigger);
 			lastRefreshTrigger = refreshTrigger;
 			cleanup();
@@ -199,7 +200,7 @@
 		<div class="flex h-full flex-col items-center justify-center">
 			<div class="loading mb-4 loading-lg loading-spinner"></div>
 			<p class="text-lg">サムネイルを生成中...</p>
-			{#if loadingState.totalCount > 0}
+			{#if 0 < loadingState.totalCount}
 				<p class="mt-2 text-sm text-base-content/70">
 					{loadingState.loadedCount} / {loadingState.totalCount} 完了
 				</p>
@@ -229,7 +230,7 @@
 			>
 				{#each imageFiles as imagePath (imagePath)}
 					{@const isSelected = selectedImages.has(imagePath)}
-					<div class="group cursor-pointer relative">
+					<div class="group relative cursor-pointer">
 						<button
 							class="aspect-square w-full overflow-hidden rounded-lg border-0 bg-base-200 p-0 shadow-md transition-all duration-200 hover:scale-105 hover:shadow-lg"
 							class:ring-4={isSelected}
@@ -237,14 +238,16 @@
 							class:opacity-80={isSelected}
 							onclick={() => handleImageClick(imagePath)}
 							onkeydown={(e) => e.key === 'Enter' && handleImageClick(imagePath)}
-							aria-label={isSelectionMode ? `画像を選択: ${getImageName(imagePath)}` : `画像を開く: ${getImageName(imagePath)}`}
+							aria-label={isSelectionMode
+								? `画像を選択: ${getImageName(imagePath)}`
+								: `画像を開く: ${getImageName(imagePath)}`}
 						>
 							{#if thumbnails.has(imagePath)}
 								<div class="flex h-full w-full items-center justify-center p-2">
 									<img
 										src={thumbnails.get(imagePath)}
 										alt={getImageName(imagePath)}
-										class="max-h-full max-w-full object-contain rounded"
+										class="max-h-full max-w-full rounded object-contain"
 										loading="lazy"
 									/>
 								</div>
@@ -254,14 +257,14 @@
 								</div>
 							{/if}
 						</button>
-						
+
 						<!-- 選択機能 -->
 						{#if isSelectionMode}
 							<!-- チェックボックス -->
 							<div class="absolute top-2 right-2 z-10">
-								<input 
+								<input
 									type="checkbox"
-									class="checkbox checkbox-sm checkbox-primary bg-black/50 border-white border-2"
+									class="checkbox border-2 border-white bg-black/50 checkbox-sm checkbox-primary"
 									checked={isSelected}
 									onchange={(e) => {
 										e.stopPropagation();

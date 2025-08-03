@@ -38,3 +38,8 @@ Thumbs.db
 
 # SvelteKit
 .svelte-kit/
+
+# Tauri
+src-tauri/target/
+src-tauri/Cargo.lock
+src-tauri/gen/

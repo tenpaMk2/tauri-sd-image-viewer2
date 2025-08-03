@@ -1,4 +1,7 @@
 <script lang="ts">
+	import { loadImage, type ImageData } from './image-loader';
+	import { onMount } from 'svelte';
+	
 	type ImageMetadata = {
 		filename: string;
 		size: string;
@@ -11,9 +14,25 @@
 		settings?: string;
 	}
 	
-	const { metadata }: { metadata: ImageMetadata } = $props();
+	const { metadata, imagePath }: { metadata: ImageMetadata; imagePath: string } = $props();
 	
-	const getImageUrl = (filename: string) => `/${filename}`;
+	let imageUrl = $state<string>('');
+	let isLoading = $state<boolean>(true);
+	let error = $state<string>('');
+	
+	onMount(async () => {
+		try {
+			isLoading = true;
+			error = '';
+			const imageData: ImageData = await loadImage(imagePath);
+			imageUrl = imageData.url;
+		} catch (err) {
+			error = err instanceof Error ? err.message : '画像の読み込みに失敗しました';
+			console.error('Failed to load image:', err);
+		} finally {
+			isLoading = false;
+		}
+	});
 </script>
 
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[calc(100vh-8rem)]">
@@ -22,11 +41,25 @@
 		<div class="card-body p-4">
 			<h2 class="card-title text-lg mb-4">画像表示</h2>
 			<div class="flex-1 flex items-center justify-center bg-base-300 rounded-lg overflow-hidden">
-				<img 
-					src={getImageUrl(metadata.filename)} 
-					alt={metadata.filename}
-					class="max-w-full max-h-full object-contain"
-				/>
+				{#if isLoading}
+					<div class="flex flex-col items-center gap-2">
+						<span class="loading loading-spinner loading-lg"></span>
+						<span class="text-base-content/70">画像を読み込み中...</span>
+					</div>
+				{:else if error}
+					<div class="flex flex-col items-center gap-2 text-error">
+						<svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+						</svg>
+						<span class="text-center">{error}</span>
+					</div>
+				{:else if imageUrl}
+					<img 
+						src={imageUrl} 
+						alt={metadata.filename}
+						class="max-w-full max-h-full object-contain"
+					/>
+				{/if}
 			</div>
 		</div>
 	</div>

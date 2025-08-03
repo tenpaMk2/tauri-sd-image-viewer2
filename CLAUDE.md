@@ -3,6 +3,7 @@
 ## プロジェクト概要
 
 SPAの画像ビュワーアプリ。
+Tauriを使ったデスクトップアプリで、MacとWindowsに対応。
 
 ## 全体ルール
 
@@ -12,9 +13,10 @@ SPAの画像ビュワーアプリ。
 
 - Bun
 - TypeScript
-- SvelteKit
-- Tailwind CSS
+- SvelteKit v5
+- Tailwind CSS v4
 - DaisyUI
+- Tauri v2
 
 ## コーディング規約
 

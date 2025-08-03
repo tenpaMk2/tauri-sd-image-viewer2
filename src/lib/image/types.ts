@@ -1,3 +1,11 @@
+export type MimeType = 'image/jpeg' | 'image/png' | 'image/webp' | 'image/gif' | 'image/avif';
+
+export type ImageData = {
+	url: string;
+	mimeType: MimeType;
+	filePath: string;
+};
+
 export type ImageMetadata = {
 	filename: string;
 	size: string;
@@ -9,16 +17,6 @@ export type ImageMetadata = {
 	lens?: string;
 	settings?: string;
 };
-
-export type ViewMode = 'welcome' | 'grid' | 'viewer';
-
-export type ImageData = {
-	url: string;
-	mimeType: MimeType;
-	filePath: string;
-};
-
-export type MimeType = 'image/jpeg' | 'image/png' | 'image/webp' | 'image/gif' | 'image/avif';
 
 export type ThumbnailInfo = {
 	data: number[];

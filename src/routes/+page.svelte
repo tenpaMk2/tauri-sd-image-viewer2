@@ -3,8 +3,9 @@
 	import ImageViewer from '$lib/ImageViewer.svelte';
 	import WelcomeScreen from '$lib/WelcomeScreen.svelte';
 	import GridView from '$lib/GridView.svelte';
-	import type { ImageMetadata, ViewMode } from '$lib/types';
-	import { createImageMetadata, getDirectoryFromPath } from '$lib/utils/image-utils';
+	import type { ImageMetadata } from '$lib/image/types';
+	import type { ViewMode } from '$lib/ui/types';
+	import { createImageMetadata, getDirectoryFromPath } from '$lib/image/utils';
 
 	let selectedImagePath: string | null = $state(null);
 	let imageMetadata: ImageMetadata | null = $state(null);

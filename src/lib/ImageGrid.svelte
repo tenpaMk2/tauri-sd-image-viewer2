@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { invoke } from '@tauri-apps/api/core';
-	import { getImageFiles } from './image-loader';
-	import type { BatchThumbnailResult } from './types';
+	import { getImageFiles } from './image/image-loader';
+	import type { BatchThumbnailResult } from './image/types';
 
 	const {
 		directoryPath,

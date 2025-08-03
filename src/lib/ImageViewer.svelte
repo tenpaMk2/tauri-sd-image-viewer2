@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { getImageFiles, loadImage } from './image-loader';
+	import { getImageFiles, loadImage } from './image/image-loader';
 	import ImageDisplay from './ImageDisplay.svelte';
 	import ImageInfoPanel from './ImageInfoPanel.svelte';
 	import NavigationButtons from './NavigationButtons.svelte';
 	import ToolbarOverlay from './ToolbarOverlay.svelte';
-	import type { ImageMetadata, ImageData } from './types';
+	import type { ImageMetadata, ImageData } from './image/types';
 
 	const {
 		metadata,

@@ -1,4 +1,4 @@
-import type { ImageMetadata } from '../types';
+import type { ImageMetadata } from './types';
 
 export const createImageMetadata = (imagePath: string): ImageMetadata => {
 	const filename = imagePath.split('/').pop() || 'unknown';

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { getImageFiles } from './image/image-loader';
-	import ImageGrid from './ImageGrid.svelte';
+	import ThumbnailGrid from './ThumbnailGrid.svelte';
 	import { deleteSelectedImages as performDelete } from './utils/delete-images';
 
 	const {
@@ -20,7 +20,7 @@
 	let refreshTrigger = $state<number>(0);
 	let imageFiles = $state<string[]>([]);
 
-	// ImageGridから画像ファイル一覧を受け取る
+	// ThumbnailGridから画像ファイル一覧を受け取る
 	const handleImageFilesLoaded = (files: string[]) => {
 		imageFiles = files;
 	};
@@ -58,7 +58,7 @@
 		try {
 			await performDelete(selectedImages);
 			selectedImages = new Set();
-			// ImageGridのリフレッシュをトリガー
+			// ThumbnailGridのリフレッシュをトリガー
 			refreshTrigger = Date.now();
 		} catch (err) {
 			// エラーはperformDelete内で処理済み
@@ -112,7 +112,7 @@
 
 	<!-- グリッド表示 -->
 	<div class="flex-1">
-		<ImageGrid
+		<ThumbnailGrid
 			directoryPath={selectedDirectory}
 			onImageSelect={handleImageSelect}
 			{isSelectionMode}

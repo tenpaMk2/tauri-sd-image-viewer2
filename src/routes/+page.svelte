@@ -1,7 +1,7 @@
 <script lang="ts">
 	import ImageViewer from '$lib/ImageViewer.svelte';
 	
-	interface ImageMetadata {
+	type ImageMetadata = {
 		filename: string;
 		size: string;
 		dimensions: string;
@@ -14,7 +14,7 @@
 	}
 	
 	const sampleImageData: ImageMetadata = {
-		filename: 'sample-image.jpg',
+		filename: 'sample-image.png',
 		size: '2.3 MB',
 		dimensions: '1920 × 1080',
 		format: 'JPEG',

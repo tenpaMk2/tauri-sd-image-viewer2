@@ -1,5 +1,5 @@
 <script lang="ts">
-	interface ImageMetadata {
+	type ImageMetadata = {
 		filename: string;
 		size: string;
 		dimensions: string;
@@ -11,9 +11,9 @@
 		settings?: string;
 	}
 	
-	export let metadata: ImageMetadata;
+	const { metadata }: { metadata: ImageMetadata } = $props();
 	
-	const placeholderUrl = "https://via.placeholder.com/800x600/4a5568/ffffff?text=画像プレースホルダー";
+	const getImageUrl = (filename: string) => `/${filename}`;
 </script>
 
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[calc(100vh-8rem)]">
@@ -23,7 +23,7 @@
 			<h2 class="card-title text-lg mb-4">画像表示</h2>
 			<div class="flex-1 flex items-center justify-center bg-base-300 rounded-lg overflow-hidden">
 				<img 
-					src={placeholderUrl} 
+					src={getImageUrl(metadata.filename)} 
 					alt={metadata.filename}
 					class="max-w-full max-h-full object-contain"
 				/>

@@ -38,10 +38,6 @@
 			<div class="rounded-lg bg-base-300 p-4">
 				<h3 class="mb-3 text-base font-semibold">基本情報</h3>
 				<div class="space-y-2 text-sm">
-					<div class="flex flex-col gap-1">
-						<div class="text-base-content/70">ファイル名:</div>
-						<div class="font-mono text-xs break-all">{metadata.filename}</div>
-					</div>
 
 					<div class="flex justify-between">
 						<div class="text-base-content/70">サイズ:</div>

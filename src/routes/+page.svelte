@@ -154,41 +154,13 @@
 				</div>
 			</div>
 		{:else if viewMode === 'viewer' && imageMetadata && selectedImagePath}
-			<div class="relative h-full">
-				<!-- ビューアーヘッダー -->
-				<div class="absolute top-0 left-0 right-0 z-10 bg-base-200/90 backdrop-blur">
-					<div class="flex items-center gap-2 p-2">
-						{#if selectedDirectory}
-							<button 
-								class="btn btn-sm btn-ghost"
-								onclick={handleBackToGrid}
-								title="グリッドに戻る"
-							>
-								🏠 戻る
-							</button>
-						{:else}
-							<button 
-								class="btn btn-sm btn-ghost"
-								onclick={handleBackToWelcome}
-								title="ホームに戻る"
-							>
-								🏠 ホーム
-							</button>
-						{/if}
-						<span class="text-sm font-medium truncate">
-							{imageMetadata.filename}
-						</span>
-					</div>
-				</div>
-				
-				<!-- 画像ビューア -->
-				<ImageViewer
-					metadata={imageMetadata}
-					imagePath={selectedImagePath}
-					onImageChange={handleImageChange}
-					{openFileDialog}
-				/>
-			</div>
+			<ImageViewer
+				metadata={imageMetadata}
+				imagePath={selectedImagePath}
+				onImageChange={handleImageChange}
+				{openFileDialog}
+				onBack={selectedDirectory ? handleBackToGrid : handleBackToWelcome}
+			/>
 		{/if}
 	</main>
 </div>

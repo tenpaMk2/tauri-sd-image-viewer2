@@ -22,12 +22,14 @@
 		metadata,
 		imagePath,
 		onImageChange,
-		openFileDialog
+		openFileDialog,
+		onBack
 	}: {
 		metadata: ImageMetadata;
 		imagePath: string;
 		onImageChange: (newPath: string) => void;
 		openFileDialog: () => void;
+		onBack?: () => void;
 	} = $props();
 
 	let imageUrl = $state<string>('');
@@ -183,7 +185,7 @@
 <div class="relative flex h-screen">
 	<!-- 画像表示エリア (全面) -->
 	<div class="relative flex-1 bg-black">
-		<ToolbarOverlay {imageFiles} {currentIndex} {openFileDialog} />
+		<ToolbarOverlay {imageFiles} {currentIndex} {openFileDialog} {onBack} />
 		<ImageDisplay {imageUrl} {isLoading} {error} {metadata} />
 		<NavigationButtons {imageFiles} {currentIndex} {isNavigating} {goToPrevious} {goToNext} />
 	</div>

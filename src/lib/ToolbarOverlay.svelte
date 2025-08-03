@@ -2,11 +2,13 @@
 	const {
 		imageFiles,
 		currentIndex,
-		openFileDialog
+		openFileDialog,
+		onBack
 	}: {
 		imageFiles: string[];
 		currentIndex: number;
 		openFileDialog: () => void;
+		onBack?: () => void;
 	} = $props();
 </script>
 
@@ -16,7 +18,15 @@
 >
 	<div class="flex items-center justify-between text-white">
 		<div class="flex items-center gap-4">
-			<h1 class="text-xl font-bold">画像ビュワー</h1>
+			{#if onBack}
+				<button 
+					class="btn btn-sm btn-ghost text-white"
+					onclick={onBack}
+					title="戻る"
+				>
+					🏠 戻る
+				</button>
+			{/if}
 			{#if imageFiles.length > 1}
 				<div class="text-sm opacity-80">
 					{currentIndex + 1} / {imageFiles.length}

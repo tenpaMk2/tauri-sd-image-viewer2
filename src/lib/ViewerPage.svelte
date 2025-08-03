@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { getImageFiles, loadImage } from './image/image-loader';
 	import type { ImageData, ImageMetadata } from './image/types';
-	import ImageDisplay from './ImageDisplay.svelte';
-	import ImageInfoPanel from './ImageInfoPanel.svelte';
+	import ImageCanvas from './ImageCanvas.svelte';
+	import MetadataPanel from './MetadataPanel.svelte';
 	import NavigationButtons from './NavigationButtons.svelte';
 	import ToolbarOverlay from './ToolbarOverlay.svelte';
 
@@ -244,7 +244,7 @@
 			{onSwitchToGrid}
 		/>
 
-		<ImageDisplay
+		<ImageCanvas
 			imageUrl={imageState.url}
 			isLoading={imageState.isLoading}
 			error={imageState.error}
@@ -259,5 +259,5 @@
 		/>
 	</div>
 
-	<ImageInfoPanel {metadata} onFocus={handleInfoPanelFocus} onBlur={handleInfoPanelBlur} />
+	<MetadataPanel {metadata} onFocus={handleInfoPanelFocus} onBlur={handleInfoPanelBlur} />
 </div>

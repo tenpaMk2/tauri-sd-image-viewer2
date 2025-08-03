@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { open } from '@tauri-apps/plugin-dialog';
-	import ImageViewer from '$lib/ImageViewer.svelte';
+	import ViewerPage from '$lib/ViewerPage.svelte';
 	import WelcomeScreen from '$lib/WelcomeScreen.svelte';
 	import GridPage from '$lib/GridPage.svelte';
 	import type { ImageMetadata } from '$lib/image/types';
@@ -110,7 +110,7 @@
 				{handleImageSelect}
 			/>
 		{:else if appState.viewMode === 'viewer' && appState.imageMetadata && appState.selectedImagePath}
-			<ImageViewer
+			<ViewerPage
 				metadata={appState.imageMetadata}
 				imagePath={appState.selectedImagePath}
 				onImageChange={handleImageChange}

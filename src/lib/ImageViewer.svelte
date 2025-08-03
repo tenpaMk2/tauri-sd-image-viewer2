@@ -37,12 +37,28 @@
 	let currentIndex = $state<number>(0);
 	let isNavigating = $state<boolean>(false);
 
+	// プリロード用のキャッシュ
+	const imageCache = new Map<string, string>();
+	let preloadImage: HTMLImageElement | null = null;
+
+	// プリロード機能付きの画像読み込み
+	const preloadImageData = async (path: string): Promise<string> => {
+		// キャッシュに存在する場合はそれを返す
+		if (imageCache.has(path)) {
+			return imageCache.get(path)!;
+		}
+
+		const imageData: ImageData = await loadImage(path);
+		imageCache.set(path, imageData.url);
+		return imageData.url;
+	};
+
 	const loadCurrentImage = async (path: string) => {
 		try {
 			isLoading = true;
 			error = '';
-			const imageData: ImageData = await loadImage(path);
-			imageUrl = imageData.url;
+			const url = await preloadImageData(path);
+			imageUrl = url;
 		} catch (err) {
 			error = err instanceof Error ? err.message : '画像の読み込みに失敗しました';
 			console.error('Failed to load image:', err);
@@ -51,14 +67,44 @@
 		}
 	};
 
+	// 隣接する画像をプリロード
+	const preloadAdjacentImages = async (index: number) => {
+		const promises: Promise<void>[] = [];
+
+		// 前の画像をプリロード
+		if (index > 0) {
+			promises.push(preloadImageData(imageFiles[index - 1]).catch(() => {}));
+		}
+
+		// 次の画像をプリロード
+		if (index < imageFiles.length - 1) {
+			promises.push(preloadImageData(imageFiles[index + 1]).catch(() => {}));
+		}
+
+		await Promise.all(promises);
+	};
+
 	const navigateToImage = async (index: number) => {
 		if (index >= 0 && index < imageFiles.length && !isNavigating) {
 			isNavigating = true;
 			currentIndex = index;
 			const newPath = imageFiles[index];
-			await loadCurrentImage(newPath);
-			onImageChange(newPath);
-			isNavigating = false;
+
+			// 画像が既にキャッシュされている場合は即座に切り替え
+			if (imageCache.has(newPath)) {
+				imageUrl = imageCache.get(newPath)!;
+				onImageChange(newPath);
+				isNavigating = false;
+				// バックグラウンドで隣接画像をプリロード
+				preloadAdjacentImages(index);
+			} else {
+				// キャッシュにない場合は読み込み状態を表示
+				await loadCurrentImage(newPath);
+				onImageChange(newPath);
+				isNavigating = false;
+				// 読み込み完了後に隣接画像をプリロード
+				preloadAdjacentImages(index);
+			}
 		}
 	};
 
@@ -81,6 +127,11 @@
 
 		// 初期画像を読み込み
 		await loadCurrentImage(path);
+
+		// 初期化完了後に隣接画像をプリロード
+		if (currentIndex >= 0) {
+			preloadAdjacentImages(currentIndex);
+		}
 	};
 
 	onMount(async () => {

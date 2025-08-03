@@ -25,12 +25,7 @@
 </script>
 
 <div class="absolute inset-0 flex items-center justify-center">
-	{#if isLoading}
-		<div class="flex flex-col items-center gap-2 text-white">
-			<span class="loading loading-lg loading-spinner"></span>
-			<span class="opacity-80">画像を読み込み中...</span>
-		</div>
-	{:else if error}
+	{#if error}
 		<div class="flex flex-col items-center gap-2 text-red-400">
 			<svg class="h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 				<path
@@ -44,5 +39,10 @@
 		</div>
 	{:else if imageUrl}
 		<img src={imageUrl} alt={metadata.filename} class="max-h-full max-w-full object-contain" />
+	{:else if isLoading}
+		<div class="flex flex-col items-center gap-2 text-white">
+			<span class="loading loading-lg loading-spinner"></span>
+			<span class="opacity-80">画像を読み込み中...</span>
+		</div>
 	{/if}
 </div>

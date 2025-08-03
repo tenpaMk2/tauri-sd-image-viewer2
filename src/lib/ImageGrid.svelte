@@ -192,12 +192,14 @@
 							aria-label={`画像を開く: ${getImageName(imagePath)}`}
 						>
 							{#if thumbnails.has(imagePath)}
-								<img
-									src={thumbnails.get(imagePath)}
-									alt={getImageName(imagePath)}
-									class="h-full w-full object-cover"
-									loading="lazy"
-								/>
+								<div class="flex h-full w-full items-center justify-center p-2">
+									<img
+										src={thumbnails.get(imagePath)}
+										alt={getImageName(imagePath)}
+										class="max-h-full max-w-full object-contain rounded"
+										loading="lazy"
+									/>
+								</div>
 							{:else}
 								<div class="flex h-full items-center justify-center">
 									<div class="loading loading-sm loading-spinner"></div>

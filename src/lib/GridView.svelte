@@ -101,7 +101,7 @@
 					onclick={toggleSelectAll}
 					title={selectedImages.size === imageFiles.length ? '全選択解除' : '全選択'}
 				>
-					{selectedImages.size === imageFiles.length ? '☑' : '☐'} 全選択
+					{selectedImages.size === imageFiles.length ? '☑ 全選択解除' : '☐ 全選択'}
 				</button>
 			{/if}
 			
@@ -133,12 +133,6 @@
 				{selectedImages.size}個の画像を選択中
 			</div>
 			<div class="flex items-center gap-4">
-				<button 
-					class="btn btn-sm btn-ghost text-white"
-					onclick={() => selectedImages = new Set()}
-				>
-					選択解除
-				</button>
 				<button 
 					class="btn btn-sm btn-error"
 					onclick={deleteSelectedImages}

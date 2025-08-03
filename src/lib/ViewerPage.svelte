@@ -11,14 +11,12 @@
 		imagePath,
 		onImageChange,
 		openFileDialog,
-		onBack,
 		onSwitchToGrid
 	}: {
 		metadata: ImageMetadata;
 		imagePath: string;
 		onImageChange: (newPath: string) => Promise<void>;
 		openFileDialog: () => void;
-		onBack?: () => void;
 		onSwitchToGrid?: () => void;
 	} = $props();
 
@@ -240,7 +238,6 @@
 			imageFiles={navigationState.files}
 			currentIndex={navigationState.currentIndex}
 			{openFileDialog}
-			{onBack}
 			{onSwitchToGrid}
 		/>
 

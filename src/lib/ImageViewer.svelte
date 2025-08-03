@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import { getImageFiles, loadImage } from './image/image-loader';
 	import ImageDisplay from './ImageDisplay.svelte';
 	import ImageInfoPanel from './ImageInfoPanel.svelte';
@@ -183,7 +182,8 @@
 		isInfoPanelFocused = false;
 	};
 
-	onMount(() => {
+	// 初期化とキーボードイベントリスナーの設定
+	$effect(() => {
 		initializeImages(imagePath);
 
 		// キーボードイベントリスナーを追加

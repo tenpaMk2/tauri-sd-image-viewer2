@@ -1,4 +1,5 @@
 import { readDir, readFile } from '@tauri-apps/plugin-fs';
+import { join } from '@tauri-apps/api/path';
 import { detectImageMimeType, type MimeType } from './mime-type';
 
 export type ImageData = {
@@ -8,22 +9,28 @@ export type ImageData = {
 };
 
 /**
- * 同一ディレクトリ内の画像ファイル一覧を取得
+ * ディレクトリ内の画像ファイル一覧を取得
  */
-export const getImageFiles = async (imagePath: string): Promise<string[]> => {
+export const getImageFiles = async (directoryPath: string): Promise<string[]> => {
 	try {
-		const dirname = imagePath.substring(0, imagePath.lastIndexOf('/'));
-		const entries = await readDir(dirname);
+		console.log('ディレクトリ読み込み:', directoryPath);
+		const entries = await readDir(directoryPath);
+		console.log('ディレクトリエントリ数:', entries.length);
 
-		const imageExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp'];
-		const imageFiles = entries
-			.filter(
-				(entry) =>
-					entry.isFile && imageExtensions.some((ext) => entry.name.toLowerCase().endsWith(ext))
-			)
-			.map((entry) => `${dirname}/${entry.name}`)
-			.sort((a, b) => a.localeCompare(b, 'ja', { numeric: true }));
+		const imageExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp', '.avif'];
+		const imageEntries = entries.filter(
+			(entry) =>
+				entry.isFile && imageExtensions.some((ext) => entry.name.toLowerCase().endsWith(ext))
+		);
 
+		// path.joinを使って正しいパスを構築
+		const imageFiles = await Promise.all(
+			imageEntries
+				.sort((a, b) => a.name.localeCompare(b.name, 'ja', { numeric: true }))
+				.map(async (entry) => await join(directoryPath, entry.name))
+		);
+
+		console.log('画像ファイル一覧:', imageFiles);
 		return imageFiles;
 	} catch (error) {
 		console.error('Failed to read directory:', error);

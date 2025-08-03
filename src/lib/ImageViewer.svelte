@@ -122,7 +122,8 @@
 
 	const initializeImages = async (path: string) => {
 		// 同一ディレクトリの画像ファイル一覧を取得
-		imageFiles = await getImageFiles(path);
+		const dirname = path.substring(0, path.lastIndexOf('/'));
+		imageFiles = await getImageFiles(dirname);
 		currentIndex = imageFiles.findIndex((file) => file === path);
 
 		// 初期画像を読み込み

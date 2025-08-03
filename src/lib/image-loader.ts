@@ -39,7 +39,7 @@ export const loadImage = async (filePath: string): Promise<ImageData> => {
 		const imageData = await readFile(filePath);
 		const mimeType: MimeType = (await detectImageMimeType(filePath)) ?? 'image/jpeg';
 
-		const blob = new Blob([imageData], { type: mimeType });
+		const blob = new Blob([new Uint8Array(imageData)], { type: mimeType });
 		const url = URL.createObjectURL(blob);
 
 		return {

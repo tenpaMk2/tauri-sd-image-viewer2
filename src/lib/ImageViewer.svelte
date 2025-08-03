@@ -31,6 +31,7 @@
 	let error = $state<string>('');
 	let imageFiles = $state<string[]>([]);
 	let currentIndex = $state<number>(0);
+	let isNavigating = $state<boolean>(false);
 
 	const loadCurrentImage = async (path: string) => {
 		try {
@@ -47,22 +48,24 @@
 	};
 
 	const navigateToImage = async (index: number) => {
-		if (index >= 0 && index < imageFiles.length) {
+		if (index >= 0 && index < imageFiles.length && !isNavigating) {
+			isNavigating = true;
 			currentIndex = index;
 			const newPath = imageFiles[index];
 			await loadCurrentImage(newPath);
 			onImageChange(newPath);
+			isNavigating = false;
 		}
 	};
 
 	const goToPrevious = async () => {
-		if (currentIndex > 0) {
+		if (currentIndex > 0 && !isNavigating) {
 			await navigateToImage(currentIndex - 1);
 		}
 	};
 
 	const goToNext = async () => {
-		if (currentIndex < imageFiles.length - 1) {
+		if (currentIndex < imageFiles.length - 1 && !isNavigating) {
 			await navigateToImage(currentIndex + 1);
 		}
 	};
@@ -130,46 +133,60 @@
 			{:else if imageUrl}
 				<img src={imageUrl} alt={metadata.filename} class="max-h-full max-w-full object-contain" />
 			{/if}
+		</div>
 
-			<!-- ナビゲーションボタン -->
-			{#if imageFiles.length > 1 && imageUrl}
-				<!-- 前の画像ボタン -->
-				{#if currentIndex > 0}
+		<!-- ナビゲーションボタン -->
+		{#if imageFiles.length > 1}
+			<!-- 前の画像ボタン -->
+			{#if currentIndex > 0}
+				<div class="absolute top-0 left-6 flex h-full items-center">
 					<button
-						class="btn absolute top-1/2 left-6 btn-circle -translate-y-1/2 transform border-white/20 bg-black/30 text-white opacity-60 transition-opacity btn-lg hover:bg-black/50 hover:opacity-100"
+						class="btn btn-circle btn-ghost btn-lg"
+						class:btn-disabled={isNavigating}
 						aria-label="前の画像"
 						onclick={goToPrevious}
 					>
-						<svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M15 19l-7-7 7-7"
-							/>
-						</svg>
+						{#if isNavigating}
+							<span class="loading loading-sm loading-spinner"></span>
+						{:else}
+							<svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M15 19l-7-7 7-7"
+								/>
+							</svg>
+						{/if}
 					</button>
-				{/if}
+				</div>
+			{/if}
 
-				<!-- 次の画像ボタン -->
-				{#if currentIndex < imageFiles.length - 1}
+			<!-- 次の画像ボタン -->
+			{#if currentIndex < imageFiles.length - 1}
+				<div class="absolute top-0 right-6 flex h-full items-center">
 					<button
-						class="btn absolute top-1/2 right-6 btn-circle -translate-y-1/2 transform border-white/20 bg-black/30 text-white opacity-60 transition-opacity btn-lg hover:bg-black/50 hover:opacity-100"
+						class="btn btn-circle btn-ghost btn-lg"
+						class:btn-disabled={isNavigating}
 						aria-label="次の画像"
 						onclick={goToNext}
 					>
-						<svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M9 5l7 7-7 7"
-							/>
-						</svg>
+						{#if isNavigating}
+							<span class="loading loading-sm loading-spinner"></span>
+						{:else}
+							<svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M9 5l7 7-7 7"
+								/>
+							</svg>
+						{/if}
 					</button>
-				{/if}
+				</div>
 			{/if}
-		</div>
+		{/if}
 	</div>
 
 	<!-- 右側: 情報ペイン (固定幅) -->

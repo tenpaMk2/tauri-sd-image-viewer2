@@ -3,12 +3,14 @@
 		imageFiles,
 		currentIndex,
 		openFileDialog,
-		onBack
+		onBack,
+		onSwitchToGrid
 	}: {
 		imageFiles: string[];
 		currentIndex: number;
 		openFileDialog: () => void;
 		onBack?: () => void;
+		onSwitchToGrid?: () => void;
 	} = $props();
 </script>
 
@@ -27,6 +29,18 @@
 				</div>
 			{/if}
 		</div>
-		<button class="btn btn-sm btn-primary" onclick={openFileDialog}> ファイルを開く </button>
+		
+		<div class="flex items-center gap-2">
+			{#if onSwitchToGrid}
+				<button 
+					class="btn btn-sm btn-ghost text-white" 
+					onclick={onSwitchToGrid}
+					title="グリッド表示"
+				>
+					⊞
+				</button>
+			{/if}
+			<button class="btn btn-sm btn-primary" onclick={openFileDialog}> ファイルを開く </button>
+		</div>
 	</div>
 </div>

@@ -59,6 +59,12 @@
 		updateSelectedImage(newPath);
 	};
 
+	const handleSwitchToGrid = (): void => {
+		if (selectedDirectory) {
+			viewMode = 'grid';
+		}
+	};
+
 	const handleImageSelect = (imagePath: string): void => {
 		updateSelectedImage(imagePath);
 		viewMode = 'viewer';
@@ -98,6 +104,7 @@
 				onImageChange={handleImageChange}
 				{openFileDialog}
 				onBack={selectedDirectory ? handleBackToGrid : handleBackToWelcome}
+				onSwitchToGrid={selectedDirectory ? handleSwitchToGrid : undefined}
 			/>
 		{/if}
 	</main>

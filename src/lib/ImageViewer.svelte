@@ -12,13 +12,15 @@
 		imagePath,
 		onImageChange,
 		openFileDialog,
-		onBack
+		onBack,
+		onSwitchToGrid
 	}: {
 		metadata: ImageMetadata;
 		imagePath: string;
 		onImageChange: (newPath: string) => void;
 		openFileDialog: () => void;
 		onBack?: () => void;
+		onSwitchToGrid?: () => void;
 	} = $props();
 
 	let imageUrl = $state<string>('');
@@ -151,6 +153,7 @@
 		}
 	};
 
+
 	// 情報ペインのフォーカス状態を管理
 	const handleInfoPanelFocus = (): void => {
 		isInfoPanelFocused = true;
@@ -182,7 +185,14 @@
 <div class="relative flex h-screen">
 	<!-- 画像表示エリア (全面) -->
 	<div class="relative flex-1 bg-black">
-		<ToolbarOverlay {imageFiles} {currentIndex} {openFileDialog} {onBack} />
+		<ToolbarOverlay 
+			{imageFiles} 
+			{currentIndex} 
+			{openFileDialog} 
+			{onBack}
+			{onSwitchToGrid}
+		/>
+		
 		<ImageDisplay {imageUrl} {isLoading} {error} {metadata} />
 		<NavigationButtons {imageFiles} {currentIndex} {isNavigating} {goToPrevious} {goToNext} />
 	</div>

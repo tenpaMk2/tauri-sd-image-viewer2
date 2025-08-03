@@ -11,6 +11,10 @@
 			"allow": ["/**"]
 		},
 		{
+			"identifier": "fs:write-all",
+			"allow": ["/**"]
+		},
+		{
 			"identifier": "fs:scope",
 			"allow": ["/**"]
 		}

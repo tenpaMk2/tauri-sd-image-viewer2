@@ -6,10 +6,20 @@
 
 	const {
 		directoryPath,
-		onImageSelect
+		onImageSelect,
+		isSelectionMode = false,
+		selectedImages = new Set(),
+		onToggleSelection,
+		refreshTrigger = 0,
+		onImageFilesLoaded
 	}: {
 		directoryPath: string;
 		onImageSelect: (imagePath: string) => void;
+		isSelectionMode?: boolean;
+		selectedImages?: Set<string>;
+		onToggleSelection?: (imagePath: string) => void;
+		refreshTrigger?: number;
+		onImageFilesLoaded?: (files: string[]) => void;
 	} = $props();
 
 	let imageFiles = $state<string[]>([]);
@@ -18,6 +28,7 @@
 	let error = $state<string>('');
 	let loadedCount = $state<number>(0);
 	let isProcessing = $state<boolean>(false);
+	let lastRefreshTrigger = $state<number>(0);
 
 	const loadImageGrid = async () => {
 		if (isProcessing) {
@@ -34,6 +45,11 @@
 
 			// ディレクトリ内の画像ファイル一覧を取得
 			imageFiles = await getImageFiles(directoryPath);
+
+			// 親コンポーネントに画像ファイル一覧を通知
+			if (onImageFilesLoaded) {
+				onImageFilesLoaded(imageFiles);
+			}
 
 			if (imageFiles.length === 0) {
 				error = '画像ファイルが見つかりません';
@@ -141,8 +157,22 @@
 		}
 	});
 
+	// refreshTrigger が変更された時の処理（削除後の再読み込み用）
+	$effect(() => {
+		if (refreshTrigger > 0 && refreshTrigger !== lastRefreshTrigger && !isProcessing) {
+			console.log('リフレッシュトリガー検出:', refreshTrigger);
+			lastRefreshTrigger = refreshTrigger;
+			cleanup();
+			loadImageGrid();
+		}
+	});
+
 	const handleImageClick = (imagePath: string) => {
-		onImageSelect(imagePath);
+		if (isSelectionMode && onToggleSelection) {
+			onToggleSelection(imagePath);
+		} else {
+			onImageSelect(imagePath);
+		}
 	};
 
 	const getImageName = (path: string) => {
@@ -184,12 +214,16 @@
 				class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6"
 			>
 				{#each imageFiles as imagePath (imagePath)}
-					<div class="group cursor-pointer">
+					{@const isSelected = selectedImages.has(imagePath)}
+					<div class="group cursor-pointer relative">
 						<button
 							class="aspect-square w-full overflow-hidden rounded-lg border-0 bg-base-200 p-0 shadow-md transition-all duration-200 hover:scale-105 hover:shadow-lg"
+							class:ring-4={isSelected}
+							class:ring-blue-500={isSelected}
+							class:opacity-80={isSelected}
 							onclick={() => handleImageClick(imagePath)}
 							onkeydown={(e) => e.key === 'Enter' && handleImageClick(imagePath)}
-							aria-label={`画像を開く: ${getImageName(imagePath)}`}
+							aria-label={isSelectionMode ? `画像を選択: ${getImageName(imagePath)}` : `画像を開く: ${getImageName(imagePath)}`}
 						>
 							{#if thumbnails.has(imagePath)}
 								<div class="flex h-full w-full items-center justify-center p-2">
@@ -206,6 +240,25 @@
 								</div>
 							{/if}
 						</button>
+						
+						<!-- 選択機能 -->
+						{#if isSelectionMode}
+							<!-- チェックボックス -->
+							<div class="absolute top-2 right-2 z-10">
+								<input 
+									type="checkbox"
+									class="checkbox checkbox-sm checkbox-primary bg-black/50 border-white border-2"
+									checked={isSelected}
+									onchange={(e) => {
+										e.stopPropagation();
+										if (onToggleSelection) {
+											onToggleSelection(imagePath);
+										}
+									}}
+									title={isSelected ? '選択解除' : '選択'}
+								/>
+							</div>
+						{/if}
 						<p class="mt-2 truncate text-xs text-base-content/70" title={getImageName(imagePath)}>
 							{getImageName(imagePath)}
 						</p>

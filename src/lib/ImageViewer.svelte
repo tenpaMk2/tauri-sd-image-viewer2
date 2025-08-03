@@ -36,10 +36,10 @@
 	let imageFiles = $state<string[]>([]);
 	let currentIndex = $state<number>(0);
 	let isNavigating = $state<boolean>(false);
+	let isInfoPanelFocused = $state<boolean>(false);
 
 	// プリロード用のキャッシュ
 	const imageCache = new Map<string, string>();
-	let preloadImage: HTMLImageElement | null = null;
 
 	// プリロード機能付きの画像読み込み
 	const preloadImageData = async (path: string): Promise<string> => {
@@ -73,12 +73,12 @@
 
 		// 前の画像をプリロード
 		if (index > 0) {
-			promises.push(preloadImageData(imageFiles[index - 1]).catch(() => {}));
+			promises.push(preloadImageData(imageFiles[index - 1]).then(() => {}).catch(() => {}));
 		}
 
 		// 次の画像をプリロード
 		if (index < imageFiles.length - 1) {
-			promises.push(preloadImageData(imageFiles[index + 1]).catch(() => {}));
+			promises.push(preloadImageData(imageFiles[index + 1]).then(() => {}).catch(() => {}));
 		}
 
 		await Promise.all(promises);
@@ -134,8 +134,41 @@
 		}
 	};
 
-	onMount(async () => {
-		await initializeImages(imagePath);
+	// キーボードナビゲーション
+	const handleKeydown = (event: KeyboardEvent) => {
+		// 情報ペインにフォーカスがある場合はナビゲーションを無効化
+		if (isInfoPanelFocused) return;
+
+		switch (event.key) {
+			case 'ArrowLeft':
+				event.preventDefault();
+				goToPrevious();
+				break;
+			case 'ArrowRight':
+				event.preventDefault();
+				goToNext();
+				break;
+		}
+	};
+
+	// 情報ペインのフォーカス状態を管理
+	const handleInfoPanelFocus = () => {
+		isInfoPanelFocused = true;
+	};
+
+	const handleInfoPanelBlur = () => {
+		isInfoPanelFocused = false;
+	};
+
+	onMount(() => {
+		initializeImages(imagePath);
+		
+		// キーボードイベントリスナーを追加
+		document.addEventListener('keydown', handleKeydown);
+		
+		return () => {
+			document.removeEventListener('keydown', handleKeydown);
+		};
 	});
 
 	// imagePathが変更された時に再初期化
@@ -154,5 +187,5 @@
 		<NavigationButtons {imageFiles} {currentIndex} {isNavigating} {goToPrevious} {goToNext} />
 	</div>
 
-	<ImageInfoPanel {metadata} />
+	<ImageInfoPanel {metadata} onFocus={handleInfoPanelFocus} onBlur={handleInfoPanelBlur} />
 </div>

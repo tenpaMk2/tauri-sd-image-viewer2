@@ -12,14 +12,25 @@
 	};
 
 	const {
-		metadata
+		metadata,
+		onFocus,
+		onBlur
 	}: {
 		metadata: ImageMetadata;
+		onFocus?: () => void;
+		onBlur?: () => void;
 	} = $props();
 </script>
 
 <!-- 右側: 情報ペイン (固定幅) -->
-<div class="w-80 overflow-y-auto bg-base-200 shadow-2xl">
+<div 
+	class="w-80 overflow-y-auto bg-base-200 shadow-2xl"
+	tabindex="0"
+	role="tabpanel"
+	aria-label="画像情報パネル"
+	onfocus={onFocus}
+	onblur={onBlur}
+>
 	<div class="p-4">
 		<h2 class="mb-4 text-lg font-bold">画像情報</h2>
 		<div class="space-y-4">

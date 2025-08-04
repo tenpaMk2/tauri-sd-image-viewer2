@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte';
+	import { basename } from '@tauri-apps/api/path';
 	import { getImageFiles } from './image/image-loader';
 	import ThumbnailGrid from './ThumbnailGrid.svelte';
 	import { deleteSelectedImages as performDelete } from './utils/delete-images';
@@ -74,9 +75,11 @@
 			<button class="btn btn-ghost btn-sm" onclick={handleBackToWelcome} title="ホームに戻る">
 				<Icon icon="lucide:home" class="w-4 h-4" />
 			</button>
-			<h1 class="truncate text-lg font-semibold">
-				{selectedDirectory.split('/').pop() || 'フォルダ'}
-			</h1>
+			{#await basename(selectedDirectory) then folderName}
+				<h1 class="truncate text-lg font-semibold">
+					{folderName || 'フォルダ'}
+				</h1>
+			{/await}
 			{#if 0 < imageFiles.length}
 				<div class="text-sm opacity-80">
 					{imageFiles.length}個の画像

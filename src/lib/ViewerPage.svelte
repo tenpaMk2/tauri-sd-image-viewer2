@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { dirname } from '@tauri-apps/api/path';
 	import { getImageFiles, loadImage } from './image/image-loader';
 	import type { ImageData, ImageMetadata } from './image/types';
 	import ImageCanvas from './ImageCanvas.svelte';
@@ -148,8 +149,8 @@
 	const initializeImages = async (path: string): Promise<void> => {
 		try {
 			// 同一ディレクトリの画像ファイル一覧を取得
-			const dirname = path.substring(0, path.lastIndexOf('/'));
-			navigationState.files = await getImageFiles(dirname);
+			const dirPath = await dirname(path);
+			navigationState.files = await getImageFiles(dirPath);
 			navigationState.currentIndex = navigationState.files.findIndex((file) => file === path);
 
 			// 初期画像を読み込み
@@ -210,22 +211,26 @@
 	let previousImagePath = '';
 	$effect(() => {
 		if (imagePath && imagePath !== previousImagePath) {
-			// 同じディレクトリ内の場合は再初期化をスキップ
-			const currentDir = imagePath.substring(0, imagePath.lastIndexOf('/'));
-			const previousDir = previousImagePath
-				? previousImagePath.substring(0, previousImagePath.lastIndexOf('/'))
-				: '';
+			const handleImagePathChange = async () => {
+				// 同じディレクトリ内の場合は再初期化をスキップ
+				const currentDir = await dirname(imagePath);
+				const previousDir = previousImagePath
+					? await dirname(previousImagePath)
+					: '';
 
-			if (currentDir === previousDir && 0 < navigationState.files.length) {
-				// 同じディレクトリなので、インデックスの更新と画像読み込みのみ
-				navigationState.currentIndex = navigationState.files.findIndex(
-					(file) => file === imagePath
-				);
-				loadCurrentImage(imagePath);
-			} else {
-				// 異なるディレクトリの場合は完全な再初期化
-				initializeImages(imagePath);
-			}
+				if (currentDir === previousDir && 0 < navigationState.files.length) {
+					// 同じディレクトリなので、インデックスの更新と画像読み込みのみ
+					navigationState.currentIndex = navigationState.files.findIndex(
+						(file) => file === imagePath
+					);
+					loadCurrentImage(imagePath);
+				} else {
+					// 異なるディレクトリの場合は完全な再初期化
+					initializeImages(imagePath);
+				}
+			};
+
+			handleImagePathChange();
 			previousImagePath = imagePath;
 		}
 	});

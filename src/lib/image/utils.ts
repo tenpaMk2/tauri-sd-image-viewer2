@@ -1,4 +1,5 @@
 import { stat } from '@tauri-apps/plugin-fs';
+import { dirname, basename } from '@tauri-apps/api/path';
 import { loadImageWithMetadata } from './image-loader';
 import type { ImageMetadata } from './types';
 
@@ -6,7 +7,7 @@ import type { ImageMetadata } from './types';
  * 画像メタデータを効率的に作成（1回のIO操作で済む統合版）
  */
 export const createImageMetadata = async (imagePath: string): Promise<ImageMetadata> => {
-	const filename = imagePath.split('/').pop() || 'unknown';
+	const filename = await basename(imagePath);
 	const extension = filename.split('.').pop()?.toUpperCase() || '';
 
 	try {
@@ -19,11 +20,12 @@ export const createImageMetadata = async (imagePath: string): Promise<ImageMetad
 
 		// ハイブリッドアプローチで画像とメタデータを効率取得
 		const { imageInfo } = await loadImageWithMetadata(imagePath);
-		
+
 		const sizeFormatted = formatFileSize(imageInfo.file_size);
-		const dimensions = imageInfo.width > 0 && imageInfo.height > 0 
-			? `${imageInfo.width} × ${imageInfo.height}` 
-			: '不明';
+		const dimensions =
+			imageInfo.width > 0 && imageInfo.height > 0
+				? `${imageInfo.width} × ${imageInfo.height}`
+				: '不明';
 
 		return {
 			filename,
@@ -57,6 +59,6 @@ const formatFileSize = (bytes: number): string => {
 	return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
 };
 
-export const getDirectoryFromPath = (path: string): string => {
-	return path.substring(0, path.lastIndexOf('/'));
+export const getDirectoryFromPath = async (path: string): Promise<string> => {
+	return await dirname(path);
 };

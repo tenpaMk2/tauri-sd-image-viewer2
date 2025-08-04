@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { basename } from '@tauri-apps/api/path';
+
 	const {
 		imagePath,
 		thumbnailUrl,
@@ -17,8 +19,12 @@
 		onToggleSelection?: (imagePath: string) => void;
 	} = $props();
 
-	const getImageName = (path: string): string => {
-		return path.split('/').pop() || 'unknown';
+	const getImageName = async (path: string): Promise<string> => {
+		try {
+			return await basename(path);
+		} catch {
+			return 'unknown';
+		}
 	};
 
 	const handleClick = (): void => {
@@ -46,14 +52,14 @@
 		onclick={handleClick}
 		onkeydown={(e) => e.key === 'Enter' && handleClick()}
 		aria-label={isSelectionMode
-			? `画像を選択: ${getImageName(imagePath)}`
-			: `画像を開く: ${getImageName(imagePath)}`}
+			? `画像を選択: ${imagePath.split('/').pop() || 'unknown'}`
+			: `画像を開く: ${imagePath.split('/').pop() || 'unknown'}`}
 	>
 		{#if thumbnailUrl}
 			<div class="flex h-full w-full items-center justify-center p-2">
 				<img
 					src={thumbnailUrl}
-					alt={getImageName(imagePath)}
+					alt={imagePath.split('/').pop() || 'unknown'}
 					class="max-h-full max-w-full rounded object-contain"
 					loading="lazy"
 				/>
@@ -82,7 +88,9 @@
 		</div>
 	{/if}
 
-	<p class="mt-2 truncate text-xs text-base-content/70" title={getImageName(imagePath)}>
-		{getImageName(imagePath)}
-	</p>
+	{#await getImageName(imagePath) then imageName}
+		<p class="mt-2 truncate text-xs text-base-content/70" title={imageName}>
+			{imageName}
+		</p>
+	{/await}
 </div>

@@ -1,6 +1,6 @@
+use crate::types::{ThumbnailInfo, BatchThumbnailResult};
 use image::GenericImageView;
 use rayon::prelude::*;
-use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::fs;
 use std::path::PathBuf;
@@ -23,22 +23,6 @@ impl Default for ThumbnailConfig {
     }
 }
 
-/// サムネイル情報
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ThumbnailInfo {
-    pub data: Vec<u8>,
-    pub width: u32,
-    pub height: u32,
-    pub mime_type: String,
-}
-
-/// バッチサムネイル結果
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct BatchThumbnailResult {
-    pub path: String,
-    pub thumbnail: Option<ThumbnailInfo>,
-    pub error: Option<String>,
-}
 
 /// サムネイルハンドラー
 pub struct ThumbnailHandler {

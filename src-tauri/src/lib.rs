@@ -1,3 +1,6 @@
+mod common;
+mod types;
+mod image_processor;
 mod thumbnail;
 mod sd_parameters;
 mod png_handler;

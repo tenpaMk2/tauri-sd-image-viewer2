@@ -1,4 +1,5 @@
-use crate::types::{ThumbnailInfo, BatchThumbnailResult};
+use crate::types::{ThumbnailInfo, BatchThumbnailResult, CachedMetadata};
+use crate::image_info::read_image_metadata_internal;
 use image::GenericImageView;
 use rayon::prelude::*;
 use sha2::{Digest, Sha256};
@@ -28,19 +29,32 @@ impl Default for ThumbnailConfig {
 pub struct ThumbnailHandler {
     config: ThumbnailConfig,
     cache_dir: PathBuf,
+    metadata_cache_dir: PathBuf,
 }
 
 impl ThumbnailHandler {
     /// 新しいサムネイルハンドラーを作成
     pub fn new<R: Runtime>(config: ThumbnailConfig, app: &AppHandle<R>) -> Result<Self, String> {
         let cache_dir = Self::get_cache_directory(app)?;
+        let metadata_cache_dir = cache_dir.join("metadata");
 
+        // 画像キャッシュディレクトリ作成
         if !cache_dir.exists() {
             fs::create_dir_all(&cache_dir)
                 .map_err(|e| format!("キャッシュディレクトリの作成に失敗: {}", e))?;
         }
 
-        Ok(Self { config, cache_dir })
+        // メタデータキャッシュディレクトリ作成
+        if !metadata_cache_dir.exists() {
+            fs::create_dir_all(&metadata_cache_dir)
+                .map_err(|e| format!("メタデータキャッシュディレクトリの作成に失敗: {}", e))?;
+        }
+
+        Ok(Self { 
+            config, 
+            cache_dir,
+            metadata_cache_dir 
+        })
     }
 
     /// キャッシュディレクトリのパスを取得
@@ -76,26 +90,72 @@ impl ThumbnailHandler {
         cache_path.exists() && std::path::Path::new(original_path).exists()
     }
 
+    /// メタデータキャッシュのパスを取得
+    fn get_metadata_cache_path(&self, cache_key: &str) -> PathBuf {
+        self.metadata_cache_dir.join(format!("{}.json", cache_key))
+    }
+
+    /// メタデータをキャッシュから読み込み
+    fn load_cached_metadata(&self, cache_key: &str) -> Option<CachedMetadata> {
+        let metadata_path = self.get_metadata_cache_path(cache_key);
+        if !metadata_path.exists() {
+            return None;
+        }
+
+        match fs::read_to_string(&metadata_path) {
+            Ok(json_str) => {
+                match serde_json::from_str::<CachedMetadata>(&json_str) {
+                    Ok(metadata) => Some(metadata),
+                    Err(_) => None,
+                }
+            }
+            Err(_) => None,
+        }
+    }
+
+    /// メタデータをキャッシュに保存
+    fn save_metadata_cache(&self, cache_key: &str, metadata: &CachedMetadata) -> Result<(), String> {
+        let metadata_path = self.get_metadata_cache_path(cache_key);
+        let json_str = serde_json::to_string(metadata)
+            .map_err(|e| format!("メタデータのJSON変換に失敗: {}", e))?;
+        
+        fs::write(&metadata_path, json_str)
+            .map_err(|e| format!("メタデータキャッシュの保存に失敗: {}", e))?;
+        
+        Ok(())
+    }
+
     /// バッチでサムネイルを処理（並列読み込み・生成）
     pub fn process_thumbnails_batch<R: Runtime>(
         &self,
         image_paths: &[String],
         _app: &AppHandle<R>,
     ) -> Vec<BatchThumbnailResult> {
-        // 並列処理でサムネイルを生成
+        // 並列処理でサムネイルとメタデータを生成
         image_paths
             .par_iter()
-            .map(|path| match self.load_or_generate_thumbnail(path) {
-                Ok(thumbnail) => BatchThumbnailResult {
-                    path: path.clone(),
-                    thumbnail: Some(thumbnail),
-                    error: None,
-                },
-                Err(e) => BatchThumbnailResult {
-                    path: path.clone(),
-                    thumbnail: None,
-                    error: Some(e),
-                },
+            .map(|path| {
+                let cache_key = self.generate_cache_key(path);
+                
+                match self.load_or_generate_thumbnail(path) {
+                    Ok(thumbnail) => {
+                        // メタデータもロードまたは生成
+                        let cached_metadata = self.load_or_generate_metadata(path, &cache_key);
+                        
+                        BatchThumbnailResult {
+                            path: path.clone(),
+                            thumbnail: Some(thumbnail),
+                            cached_metadata,
+                            error: None,
+                        }
+                    },
+                    Err(e) => BatchThumbnailResult {
+                        path: path.clone(),
+                        thumbnail: None,
+                        cached_metadata: None,
+                        error: Some(e),
+                    },
+                }
             })
             .collect()
     }
@@ -128,6 +188,43 @@ impl ThumbnailHandler {
         Ok(thumbnail_info)
     }
 
+    /// メタデータをロードまたは生成（キャッシュ優先）
+    fn load_or_generate_metadata(&self, image_path: &str, cache_key: &str) -> Option<CachedMetadata> {
+        // キャッシュから読み込み試行
+        if let Some(cached) = self.load_cached_metadata(cache_key) {
+            return Some(cached);
+        }
+
+        // 新しいメタデータを生成
+        match self.generate_metadata(image_path) {
+            Ok(metadata) => {
+                // キャッシュに保存
+                let _ = self.save_metadata_cache(cache_key, &metadata);
+                Some(metadata)
+            }
+            Err(_) => None,
+        }
+    }
+
+    /// メタデータを生成
+    fn generate_metadata(&self, image_path: &str) -> Result<CachedMetadata, String> {
+        match read_image_metadata_internal(image_path) {
+            Ok(image_metadata) => {
+                let current_time = std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap_or_default()
+                    .as_secs();
+
+                Ok(CachedMetadata {
+                    rating: image_metadata.exif_info.as_ref().and_then(|exif| exif.rating),
+                    exif_info: image_metadata.exif_info,
+                    cached_at: current_time,
+                })
+            }
+            Err(e) => Err(format!("メタデータ生成に失敗: {}", e)),
+        }
+    }
+
     /// サムネイルを生成
     fn generate_thumbnail(&self, image_path: &str) -> Result<ThumbnailInfo, String> {
         // 画像ファイルを読み込み
@@ -157,17 +254,29 @@ impl ThumbnailHandler {
 
     /// キャッシュをクリア
     pub fn clear_cache<R: Runtime>(&self, _app: &AppHandle<R>) -> Result<(), String> {
-        if !self.cache_dir.exists() {
-            return Ok(());
+        // 画像キャッシュをクリア
+        if self.cache_dir.exists() {
+            let entries = fs::read_dir(&self.cache_dir)
+                .map_err(|e| format!("キャッシュディレクトリの読み取りに失敗: {}", e))?;
+
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path.is_file() {
+                    let _ = fs::remove_file(&path);
+                }
+            }
         }
 
-        let entries = fs::read_dir(&self.cache_dir)
-            .map_err(|e| format!("キャッシュディレクトリの読み取りに失敗: {}", e))?;
+        // メタデータキャッシュをクリア
+        if self.metadata_cache_dir.exists() {
+            let entries = fs::read_dir(&self.metadata_cache_dir)
+                .map_err(|e| format!("メタデータキャッシュディレクトリの読み取りに失敗: {}", e))?;
 
-        for entry in entries.flatten() {
-            let path = entry.path();
-            if path.is_file() {
-                let _ = fs::remove_file(&path);
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path.is_file() {
+                    let _ = fs::remove_file(&path);
+                }
             }
         }
 

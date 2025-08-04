@@ -9,7 +9,7 @@ pub fn read_image_metadata_info(path: String) -> Result<ImageMetadataInfo, Strin
     read_image_metadata_internal(&path).map_err(|e| e.to_string())
 }
 
-fn read_image_metadata_internal(path: &str) -> AppResult<ImageMetadataInfo> {
+pub fn read_image_metadata_internal(path: &str) -> AppResult<ImageMetadataInfo> {
     let data = read_file_safe(path)?;
     let file_size = data.len() as u64;
     

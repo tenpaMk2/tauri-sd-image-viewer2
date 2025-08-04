@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Icon from '@iconify/svelte';
 	import { getImageFiles } from './image/image-loader';
 	import ThumbnailGrid from './ThumbnailGrid.svelte';
 	import { deleteSelectedImages as performDelete } from './utils/delete-images';
@@ -71,7 +72,7 @@
 	<div class="flex items-center justify-between bg-base-200 p-4">
 		<div class="flex items-center gap-4">
 			<button class="btn btn-ghost btn-sm" onclick={handleBackToWelcome} title="ホームに戻る">
-				🏠
+				<Icon icon="lucide:home" class="w-4 h-4" />
 			</button>
 			<h1 class="truncate text-lg font-semibold">
 				{selectedDirectory.split('/').pop() || 'フォルダ'}
@@ -90,7 +91,8 @@
 				onclick={toggleSelectionMode}
 				title={isSelectionMode ? '選択モードを終了' : '選択モードに切り替え'}
 			>
-				{isSelectionMode ? '✓' : '☐'} 選択
+				<Icon icon={isSelectionMode ? "lucide:check-square" : "lucide:square"} class="w-4 h-4 mr-1" />
+				選択
 			</button>
 
 			<!-- 全選択ボタン -->
@@ -100,7 +102,8 @@
 					onclick={toggleSelectAll}
 					title={selectedImages.size === imageFiles.length ? '全選択解除' : '全選択'}
 				>
-					{selectedImages.size === imageFiles.length ? '☑ 全選択解除' : '☐ 全選択'}
+					<Icon icon={selectedImages.size === imageFiles.length ? "lucide:check-square-2" : "lucide:square"} class="w-4 h-4 mr-1" />
+					{selectedImages.size === imageFiles.length ? '全選択解除' : '全選択'}
 				</button>
 			{/if}
 
@@ -134,7 +137,10 @@
 				{selectedImages.size}個の画像を選択中
 			</div>
 			<div class="flex items-center gap-4">
-				<button class="btn btn-sm btn-error" onclick={deleteSelectedImages}> 🗑️ 削除 </button>
+				<button class="btn btn-sm btn-error" onclick={deleteSelectedImages}>
+					<Icon icon="lucide:trash-2" class="w-4 h-4" />
+					削除
+				</button>
 			</div>
 		</div>
 	</div>

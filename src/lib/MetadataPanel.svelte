@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Icon from '@iconify/svelte';
 	import type { ImageMetadata } from './image/types';
 	import type { SdTag } from './types/shared-types';
 
@@ -88,6 +89,7 @@
 							onclick={() => copyToClipboard(metadata.sdParameters?.raw || '')}
 							title="原文をコピー"
 						>
+							<Icon icon="lucide:copy" class="w-3 h-3 mr-1" />
 							コピー
 						</button>
 					</h3>
@@ -102,7 +104,7 @@
 										onclick={() => copyToClipboard(formatTags(metadata.sdParameters?.positive_sd_tags || []))}
 										title="プロンプトをコピー"
 									>
-										📋
+										<Icon icon="lucide:copy" class="w-3 h-3" />
 									</button>
 								</div>
 								<div class="bg-base-100 rounded p-2 font-mono text-xs leading-relaxed">
@@ -121,7 +123,7 @@
 										onclick={() => copyToClipboard(formatTags(metadata.sdParameters?.negative_sd_tags || []))}
 										title="ネガティブプロンプトをコピー"
 									>
-										📋
+										<Icon icon="lucide:copy" class="w-3 h-3" />
 									</button>
 								</div>
 								<div class="bg-base-100 rounded p-2 font-mono text-xs leading-relaxed">

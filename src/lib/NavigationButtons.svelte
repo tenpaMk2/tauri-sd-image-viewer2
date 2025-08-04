@@ -1,4 +1,6 @@
 <script lang="ts">
+	import Icon from '@iconify/svelte';
+
 	const {
 		imageFiles,
 		currentIndex,
@@ -28,14 +30,7 @@
 				{#if isNavigating}
 					<span class="loading loading-sm loading-spinner"></span>
 				{:else}
-					<svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M15 19l-7-7 7-7"
-						/>
-					</svg>
+					<Icon icon="lucide:chevron-left" class="w-6 h-6" />
 				{/if}
 			</button>
 		</div>
@@ -53,14 +48,7 @@
 				{#if isNavigating}
 					<span class="loading loading-sm loading-spinner"></span>
 				{:else}
-					<svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M9 5l7 7-7 7"
-						/>
-					</svg>
+					<Icon icon="lucide:chevron-right" class="w-6 h-6" />
 				{/if}
 			</button>
 		</div>

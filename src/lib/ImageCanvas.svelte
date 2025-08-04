@@ -152,7 +152,7 @@
 					<input
 						type="radio"
 						name="rating-overlay-{imagePath}"
-						class="mask bg-yellow-400 mask-star hover:bg-yellow-300"
+						class="mask bg-white mask-star-2 hover:bg-gray-200"
 						checked={i + 1 === (metadata.exifInfo.rating || 0)}
 						onchange={() => updateRating(i + 1)}
 						aria-label="{i + 1}つ星"

@@ -1,26 +1,38 @@
 import { stat } from '@tauri-apps/plugin-fs';
+import { loadComprehensiveImageInfo } from './image-loader';
 import type { ImageMetadata } from './types';
 
+/**
+ * 画像メタデータを効率的に作成（1回のIO操作で済む統合版）
+ */
 export const createImageMetadata = async (imagePath: string): Promise<ImageMetadata> => {
 	const filename = imagePath.split('/').pop() || 'unknown';
 	const extension = filename.split('.').pop()?.toUpperCase() || '';
 
 	try {
+		// ファイルシステム情報を取得
 		const fileStats = await stat(imagePath);
-		const fileSizeBytes = fileStats.size;
-		const sizeFormatted = formatFileSize(fileSizeBytes);
 		const created = fileStats.birthtime
 			? new Date(fileStats.birthtime).toLocaleString('ja-JP')
 			: '不明';
 		const modified = fileStats.mtime ? new Date(fileStats.mtime).toLocaleString('ja-JP') : '不明';
 
+		// 画像の包括的情報を1回のIO操作で取得
+		const { imageInfo } = await loadComprehensiveImageInfo(imagePath);
+		
+		const sizeFormatted = formatFileSize(imageInfo.file_size);
+		const dimensions = imageInfo.width > 0 && imageInfo.height > 0 
+			? `${imageInfo.width} × ${imageInfo.height}` 
+			: '不明';
+
 		return {
 			filename,
 			size: sizeFormatted,
-			dimensions: '不明', // 画像の実際の解像度は別途取得が必要
+			dimensions,
 			format: extension,
 			created,
-			modified
+			modified,
+			sdParameters: imageInfo.sd_parameters
 		};
 	} catch (error) {
 		console.warn('ファイル情報の取得に失敗:', error);

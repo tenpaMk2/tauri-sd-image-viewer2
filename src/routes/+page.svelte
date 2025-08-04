@@ -115,7 +115,6 @@
 				imagePath={appState.selectedImagePath}
 				onImageChange={handleImageChange}
 				{openFileDialog}
-				onBack={appState.selectedDirectory ? handleBackToGrid : handleBackToWelcome}
 				onSwitchToGrid={appState.selectedDirectory ? handleSwitchToGrid : undefined}
 			/>
 		{/if}

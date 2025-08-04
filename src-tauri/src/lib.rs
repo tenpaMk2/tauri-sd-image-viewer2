@@ -1,4 +1,7 @@
 mod thumbnail;
+mod sd_parameters;
+mod png_handler;
+mod image_info;
 
 use tauri::Manager;
 use thumbnail::{ThumbnailState, ThumbnailConfig};
@@ -25,6 +28,9 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             thumbnail::load_thumbnails_batch,
             thumbnail::clear_thumbnail_cache,
+            png_handler::read_png_image_info,
+            png_handler::read_png_sd_parameters,
+            image_info::read_comprehensive_image_info,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

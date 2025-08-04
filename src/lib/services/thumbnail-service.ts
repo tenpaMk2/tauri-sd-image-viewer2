@@ -90,6 +90,41 @@ export class ThumbnailService {
 		return metadata?.rating;
 	}
 
+	// 画像のRating情報を更新
+	async updateImageRating(imagePath: string, newRating: number): Promise<boolean> {
+		try {
+			// Rustにrating書き込みを依頼
+			await invoke('write_exif_image_rating', {
+				path: imagePath,
+				rating: newRating
+			});
+
+			// キャッシュを更新
+			const existingMetadata = this.metadataCache.get(imagePath);
+			if (existingMetadata) {
+				const updatedMetadata = {
+					...existingMetadata,
+					rating: newRating,
+					cached_at: Date.now() / 1000 // UNIXタイムスタンプで更新
+				};
+				this.metadataCache.set(imagePath, updatedMetadata);
+			} else {
+				// 新しいメタデータを作成
+				this.metadataCache.set(imagePath, {
+					rating: newRating,
+					exif_info: undefined,
+					cached_at: Date.now() / 1000
+				});
+			}
+
+			console.log(`Rating updated: ${imagePath} -> ${newRating}`);
+			return true;
+		} catch (error) {
+			console.error('Rating更新に失敗:', imagePath, error);
+			return false;
+		}
+	}
+
 	// Blob URLをクリーンアップ
 	cleanupThumbnails(thumbnails: Map<string, string>): void {
 		for (const url of thumbnails.values()) {

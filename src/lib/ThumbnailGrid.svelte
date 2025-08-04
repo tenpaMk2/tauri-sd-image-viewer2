@@ -43,6 +43,7 @@
 		totalCount: 0
 	});
 	let lastRefreshTrigger = $state<number>(0);
+	let ratingUpdateTrigger = $state<number>(0); // Rating更新をトリガーするためのstate
 
 	const loadImageGrid = async () => {
 		if (loadingState.isProcessing) {
@@ -144,6 +145,18 @@
 			onToggleSelection(imagePath);
 		}
 	};
+
+	const handleRatingChange = async (imagePath: string, newRating: number): Promise<void> => {
+		const success = await thumbnailService.updateImageRating(imagePath, newRating);
+		if (success) {
+			// 成功時にリアクティブ更新をトリガー
+			ratingUpdateTrigger = Date.now();
+			console.log('Rating更新成功:', imagePath, newRating);
+		} else {
+			// エラー時の処理
+			console.warn('Rating更新に失敗しました:', imagePath);
+		}
+	};
 </script>
 
 <div class="h-full p-4">
@@ -181,7 +194,11 @@
 			>
 				{#each imageFiles as imagePath (imagePath)}
 					{@const isSelected = selectedImages.has(imagePath)}
-					{@const rating = thumbnailService.getImageRating(imagePath)}
+					{@const rating = (() => {
+						// ratingUpdateTriggerを参照することで、Rating更新時にリアクティブに再計算される
+						ratingUpdateTrigger;
+						return thumbnailService.getImageRating(imagePath);
+					})()}
 					<ImageThumbnail
 						{imagePath}
 						thumbnailUrl={thumbnails.get(imagePath)}
@@ -191,6 +208,7 @@
 						isLoading={!thumbnails.has(imagePath)}
 						onImageClick={handleImageClick}
 						onToggleSelection={handleToggleSelection}
+						onRatingChange={handleRatingChange}
 					/>
 				{/each}
 			</div>

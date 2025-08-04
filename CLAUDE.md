@@ -55,6 +55,12 @@ Stable Diffusionの生成メタデータを表示可能。
 - `bun run format` - Prettier実行
 - `bun run format:check` - Prettier整形チェック
 
+### 推奨開発フロー
+
+1. `bun run tauri:dev` で開発環境起動
+2. 変更後は `bun run check` で型チェック実行
+3. コミット前に `bun run format` で整形
+
 ## アーキテクチャ
 
 ### SPAアーキテクチャ
@@ -62,22 +68,48 @@ Stable Diffusionの生成メタデータを表示可能。
 - SvelteKitでSPA構成（`ssr = false`）
 - `@sveltejs/adapter-static`で静的サイト生成
 - Tauri v2でデスクトップアプリ化
+- ViewMode状態管理：'welcome' → 'grid' → 'viewer'の3つのモード
 
 ### 主要コンポーネント
 
-- `/src/routes/+page.svelte` - メインページ（ファイル選択とImageViewer表示）
-- `/src/lib/ImageViewer.svelte` - 画像表示・ナビゲーション機能
-- `/src/lib/image-loader.ts` - ファイル読み込みとディレクトリナビゲーション
-- `/src/lib/mime-type.ts` - 画像MIME型検出
+- `/src/routes/+page.svelte` - アプリケーション状態統合とモード管理
+- `/src/lib/ViewerPage.svelte` - 画像表示・ナビゲーション機能（プリロード/キャッシュ対応）
+- `/src/lib/GridPage.svelte` - ディレクトリ内画像のサムネイル一覧表示
+- `/src/lib/ImageCanvas.svelte` - 画像表示とズーム・パン機能
+- `/src/lib/MetadataPanel.svelte` - Exif/SDメタデータ表示
+- `/src/lib/image/image-loader.ts` - 統合画像読み込み（1回のIO操作で全情報取得）
 
-### Tauri統合
+### Tauri統合とRust-TypeScript型同期
 
 - `@tauri-apps/plugin-dialog` - ファイル選択ダイアログ
 - `@tauri-apps/plugin-fs` - ファイルシステムアクセス
 - セキュリティ権限は`src-tauri/capabilities/default.json`で管理
+- **重要**: `src/lib/types/shared-types.ts`はRust側の構造体と完全同期が必要
+- 型変更時は必ず対応するRustファイルも同時修正すること
 
 ### 画像ナビゲーション機能
 
 - 選択画像と同ディレクトリ内の画像ファイル自動検出
 - 対応形式: PNG, JPG, JPEG, GIF, BMP, WebP, AVIF
-- 前後画像への移動機能
+- キーボードナビゲーション（←→キー）
+- 隣接画像のプリロード機能とキャッシュ
+
+### Stable Diffusion メタデータ対応
+
+- PNG画像からSDパラメータを抽出・表示
+- Positive/Negative プロンプト、Seed、CFG Scale等の表示
+- 生成設定の詳細情報をサイドパネルで確認可能
+
+## 重要な設計パターン
+
+### パフォーマンス最適化
+
+- Rust側で1回のIO操作で全画像情報を取得（`read_comprehensive_image_info`）
+- 隣接画像の事前読み込み・キャッシュによる高速ナビゲーション
+- サムネイル生成の効率化
+
+### 型安全性の確保
+
+- Rust-TypeScript間の型同期は`src/lib/types/shared-types.ts`で管理
+- フロントエンド専用型は`src/lib/image/types.ts`で分離管理
+- 型変更時は必ずRust側と同時更新すること（詳細はTYPE_SYNC_GUIDE.md参照）

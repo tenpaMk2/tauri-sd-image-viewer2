@@ -1,11 +1,11 @@
 <script lang="ts">
-	import { open } from '@tauri-apps/plugin-dialog';
-	import ViewerPage from '$lib/ViewerPage.svelte';
-	import WelcomeScreen from '$lib/WelcomeScreen.svelte';
 	import GridPage from '$lib/GridPage.svelte';
 	import type { ImageMetadata } from '$lib/image/types';
-	import type { ViewMode } from '$lib/ui/types';
 	import { createImageMetadata, getDirectoryFromPath } from '$lib/image/utils';
+	import type { ViewMode } from '$lib/ui/types';
+	import ViewerPage from '$lib/ViewerPage.svelte';
+	import WelcomeScreen from '$lib/WelcomeScreen.svelte';
+	import { open } from '@tauri-apps/plugin-dialog';
 
 	// アプリケーション全体の状態を統合
 	type AppState = {
@@ -37,7 +37,7 @@
 			if (selected && typeof selected === 'string') {
 				appState.selectedImagePath = selected;
 				appState.imageMetadata = await createImageMetadata(selected);
-				appState.selectedDirectory = getDirectoryFromPath(selected);
+				appState.selectedDirectory = await getDirectoryFromPath(selected);
 				appState.viewMode = 'viewer';
 			}
 		} catch (error) {

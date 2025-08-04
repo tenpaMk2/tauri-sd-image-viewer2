@@ -1,8 +1,11 @@
 <script lang="ts">
-	import Icon from '@iconify/svelte';
-	import { invoke } from '@tauri-apps/api/core';
 	import type { ImageMetadata } from './image/types';
-	import type { SdTag } from './types/shared-types';
+	import { updateImageRating } from './utils/rating-utils';
+	import BasicInfoSection from './components/metadata/BasicInfoSection.svelte';
+	import DateTimeSection from './components/metadata/DateTimeSection.svelte';
+	import SdParamsSection from './components/metadata/SdParamsSection.svelte';
+	import ExifInfoSection from './components/metadata/ExifInfoSection.svelte';
+	import CameraInfoSection from './components/metadata/CameraInfoSection.svelte';
 
 	const {
 		metadata,
@@ -18,37 +21,16 @@
 		onBlur?: () => void;
 	} = $props();
 
-	// クリップボードコピー機能
-	const copyToClipboard = async (text: string) => {
-		try {
-			await navigator.clipboard.writeText(text);
-		} catch (error) {
-			console.error('クリップボードへのコピーに失敗:', error);
-		}
-	};
-
-	// タグをフォーマット
-	const formatTags = (tags: SdTag[]): string => {
-		return tags.map((tag) => (tag.weight ? `(${tag.name}:${tag.weight})` : tag.name)).join(', ');
-	};
-
 	// Rating更新機能
 	const updateRating = async (rating: number) => {
-		if (!imagePath) {
-			console.warn('画像パスが指定されていません');
-			return;
-		}
+		if (!imagePath) return;
 
 		try {
-			await invoke('write_exif_image_rating', {
-				path: imagePath,
-				rating: rating
-			});
-
+			await updateImageRating(imagePath, rating);
 			// Rating更新後のコールバック実行
 			onRatingUpdate?.();
 		} catch (error) {
-			console.error('Rating更新に失敗:', error);
+			// エラーハンドリングは共通関数内で処理済み
 		}
 	};
 </script>
@@ -65,224 +47,11 @@
 	<div class="p-4">
 		<h2 class="mb-4 text-lg font-bold">画像情報</h2>
 		<div class="space-y-4">
-			<!-- 基本情報 -->
-			<div class="rounded-lg bg-base-300 p-4">
-				<h3 class="mb-3 text-base font-semibold">基本情報</h3>
-				<div class="space-y-2 text-sm">
-					<div class="flex justify-between">
-						<div class="text-base-content/70">サイズ:</div>
-						<div>{metadata.size}</div>
-					</div>
-
-					<div class="flex justify-between">
-						<div class="text-base-content/70">解像度:</div>
-						<div>{metadata.dimensions}</div>
-					</div>
-
-					<div class="flex justify-between">
-						<div class="text-base-content/70">形式:</div>
-						<div>{metadata.format}</div>
-					</div>
-				</div>
-			</div>
-
-			<!-- 日時情報 -->
-			<div class="rounded-lg bg-base-300 p-4">
-				<h3 class="mb-3 text-base font-semibold">日時情報</h3>
-				<div class="space-y-2 text-sm">
-					<div class="flex flex-col gap-1">
-						<div class="text-base-content/70">作成日時:</div>
-						<div class="font-mono text-xs">{metadata.created}</div>
-					</div>
-
-					<div class="flex flex-col gap-1">
-						<div class="text-base-content/70">更新日時:</div>
-						<div class="font-mono text-xs">{metadata.modified}</div>
-					</div>
-				</div>
-			</div>
-
-			<!-- Stable Diffusion情報 (任意) -->
-			{#if metadata.sdParameters}
-				<div class="rounded-lg bg-base-300 p-4">
-					<h3 class="mb-3 flex items-center gap-2 text-base font-semibold">
-						Stable Diffusion
-						<button
-							class="badge badge-outline text-xs hover:badge-primary"
-							onclick={() => copyToClipboard(metadata.sdParameters?.raw || '')}
-							title="原文をコピー"
-						>
-							<Icon icon="lucide:copy" class="mr-1 h-3 w-3" />
-							コピー
-						</button>
-					</h3>
-					<div class="space-y-3 text-sm">
-						<!-- プロンプト -->
-						{#if metadata.sdParameters.positive_sd_tags.length > 0}
-							<div class="space-y-1">
-								<div class="flex items-center gap-2">
-									<div class="font-medium text-base-content/70">プロンプト:</div>
-									<button
-										class="btn btn-ghost btn-xs"
-										onclick={() =>
-											copyToClipboard(formatTags(metadata.sdParameters?.positive_sd_tags || []))}
-										title="プロンプトをコピー"
-									>
-										<Icon icon="lucide:copy" class="h-3 w-3" />
-									</button>
-								</div>
-								<div class="rounded bg-base-100 p-2 font-mono text-xs leading-relaxed">
-									{formatTags(metadata.sdParameters.positive_sd_tags)}
-								</div>
-							</div>
-						{/if}
-
-						<!-- ネガティブプロンプト -->
-						{#if metadata.sdParameters.negative_sd_tags.length > 0}
-							<div class="space-y-1">
-								<div class="flex items-center gap-2">
-									<div class="font-medium text-base-content/70">ネガティブプロンプト:</div>
-									<button
-										class="btn btn-ghost btn-xs"
-										onclick={() =>
-											copyToClipboard(formatTags(metadata.sdParameters?.negative_sd_tags || []))}
-										title="ネガティブプロンプトをコピー"
-									>
-										<Icon icon="lucide:copy" class="h-3 w-3" />
-									</button>
-								</div>
-								<div class="rounded bg-base-100 p-2 font-mono text-xs leading-relaxed">
-									{formatTags(metadata.sdParameters.negative_sd_tags)}
-								</div>
-							</div>
-						{/if}
-
-						<!-- パラメータ一覧 -->
-						<div class="grid grid-cols-1 gap-2 text-xs">
-							{#if metadata.sdParameters.steps}
-								<div class="flex justify-between">
-									<div class="text-base-content/70">Steps:</div>
-									<div class="font-mono">{metadata.sdParameters.steps}</div>
-								</div>
-							{/if}
-
-							{#if metadata.sdParameters.sampler}
-								<div class="flex justify-between">
-									<div class="text-base-content/70">Sampler:</div>
-									<div class="font-mono">{metadata.sdParameters.sampler}</div>
-								</div>
-							{/if}
-
-							{#if metadata.sdParameters.cfg_scale}
-								<div class="flex justify-between">
-									<div class="text-base-content/70">CFG Scale:</div>
-									<div class="font-mono">{metadata.sdParameters.cfg_scale}</div>
-								</div>
-							{/if}
-
-							{#if metadata.sdParameters.seed}
-								<div class="flex justify-between">
-									<div class="text-base-content/70">Seed:</div>
-									<div class="font-mono">{metadata.sdParameters.seed}</div>
-								</div>
-							{/if}
-
-							{#if metadata.sdParameters.size}
-								<div class="flex justify-between">
-									<div class="text-base-content/70">Size:</div>
-									<div class="font-mono">{metadata.sdParameters.size}</div>
-								</div>
-							{/if}
-
-							{#if metadata.sdParameters.model}
-								<div class="flex justify-between">
-									<div class="text-base-content/70">Model:</div>
-									<div class="font-mono break-all">{metadata.sdParameters.model}</div>
-								</div>
-							{/if}
-
-							{#if metadata.sdParameters.denoising_strength}
-								<div class="flex justify-between">
-									<div class="text-base-content/70">Denoising Strength:</div>
-									<div class="font-mono">{metadata.sdParameters.denoising_strength}</div>
-								</div>
-							{/if}
-
-							{#if metadata.sdParameters.clip_skip}
-								<div class="flex justify-between">
-									<div class="text-base-content/70">Clip Skip:</div>
-									<div class="font-mono">{metadata.sdParameters.clip_skip}</div>
-								</div>
-							{/if}
-						</div>
-					</div>
-				</div>
-			{/if}
-
-			<!-- Exif情報 (任意) -->
-			{#if metadata.exifInfo}
-				<div class="rounded-lg bg-base-300 p-4">
-					<h3 class="mb-3 text-base font-semibold">Exif情報</h3>
-					<div class="space-y-2 text-sm">
-						{#if metadata.exifInfo.date_time_original}
-							<div class="flex justify-between">
-								<div class="text-base-content/70">Date/Time Original:</div>
-								<div class="font-mono text-xs">{metadata.exifInfo.date_time_original}</div>
-							</div>
-						{/if}
-
-						{#if metadata.exifInfo.create_date}
-							<div class="flex justify-between">
-								<div class="text-base-content/70">Create Date:</div>
-								<div class="font-mono text-xs">{metadata.exifInfo.create_date}</div>
-							</div>
-						{/if}
-
-						{#if metadata.exifInfo.modify_date}
-							<div class="flex justify-between">
-								<div class="text-base-content/70">Modify Date:</div>
-								<div class="font-mono text-xs">{metadata.exifInfo.modify_date}</div>
-							</div>
-						{/if}
-
-						{#if metadata.exifInfo.rating !== undefined && metadata.exifInfo.rating !== null}
-							<div class="flex justify-between">
-								<div class="text-base-content/70">Rating:</div>
-								<div>{metadata.exifInfo.rating || 0}/5</div>
-							</div>
-						{/if}
-					</div>
-				</div>
-			{/if}
-
-			<!-- 撮影情報 (任意) -->
-			{#if metadata.camera || metadata.lens || metadata.settings}
-				<div class="rounded-lg bg-base-300 p-4">
-					<h3 class="mb-3 text-base font-semibold">撮影情報</h3>
-					<div class="space-y-2 text-sm">
-						{#if metadata.camera}
-							<div class="flex justify-between">
-								<div class="text-base-content/70">カメラ:</div>
-								<div>{metadata.camera}</div>
-							</div>
-						{/if}
-
-						{#if metadata.lens}
-							<div class="flex justify-between">
-								<div class="text-base-content/70">レンズ:</div>
-								<div>{metadata.lens}</div>
-							</div>
-						{/if}
-
-						{#if metadata.settings}
-							<div class="flex flex-col gap-1">
-								<div class="text-base-content/70">設定:</div>
-								<div class="font-mono text-xs">{metadata.settings}</div>
-							</div>
-						{/if}
-					</div>
-				</div>
-			{/if}
+			<BasicInfoSection {metadata} />
+			<DateTimeSection {metadata} />
+			<SdParamsSection {metadata} />
+			<ExifInfoSection {metadata} />
+			<CameraInfoSection {metadata} />
 		</div>
 	</div>
 </div>

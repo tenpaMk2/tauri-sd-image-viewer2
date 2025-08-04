@@ -1,11 +1,11 @@
 <script lang="ts">
-	import { dirname } from '@tauri-apps/api/path';
-	import { getImageFiles, loadImage } from './image/image-loader';
-	import type { ImageData, ImageMetadata } from './image/types';
+	import type { ImageMetadata } from './image/types';
 	import ImageCanvas from './ImageCanvas.svelte';
 	import MetadataPanel from './MetadataPanel.svelte';
 	import NavigationButtons from './NavigationButtons.svelte';
 	import ToolbarOverlay from './ToolbarOverlay.svelte';
+	import { NavigationService, type NavigationState } from './services/navigation-service';
+	import { createKeyboardNavigationHandler } from './hooks/use-keyboard-navigation';
 
 	const {
 		metadata,
@@ -28,12 +28,8 @@
 		error: string;
 	};
 
-	// ナビゲーション関連の状態
-	type NavigationState = {
-		files: string[];
-		currentIndex: number;
-		isNavigating: boolean;
-	};
+	// サービスインスタンス
+	const navigationService = new NavigationService();
 
 	let imageState = $state<ImageState>({
 		url: '',
@@ -49,19 +45,9 @@
 
 	let isInfoPanelFocused = $state<boolean>(false);
 
-	// プリロード用のキャッシュ
-	const imageCache = new Map<string, string>();
-
 	// プリロード機能付きの画像読み込み
 	const preloadImageData = async (path: string): Promise<string> => {
-		// キャッシュに存在する場合はそれを返す
-		if (imageCache.has(path)) {
-			return imageCache.get(path)!;
-		}
-
-		const imageData: ImageData = await loadImage(path);
-		imageCache.set(path, imageData.url);
-		return imageData.url;
+		return await navigationService.loadImage(path);
 	};
 
 	const loadCurrentImage = async (path: string) => {
@@ -80,31 +66,7 @@
 
 	// 隣接する画像をプリロード
 	const preloadAdjacentImages = async (index: number) => {
-		const promises: Promise<void>[] = [];
-
-		// 前の画像をプリロード
-		if (0 < index) {
-			promises.push(
-				preloadImageData(navigationState.files[index - 1])
-					.then(() => {})
-					.catch((error) => {
-						console.warn(`前の画像のプリロードに失敗: ${navigationState.files[index - 1]}`, error);
-					})
-			);
-		}
-
-		// 次の画像をプリロード
-		if (index < navigationState.files.length - 1) {
-			promises.push(
-				preloadImageData(navigationState.files[index + 1])
-					.then(() => {})
-					.catch((error) => {
-						console.warn(`次の画像のプリロードに失敗: ${navigationState.files[index + 1]}`, error);
-					})
-			);
-		}
-
-		await Promise.all(promises);
+		await navigationService.preloadAdjacentImages(navigationState.files, index);
 	};
 
 	const navigateToImage = async (index: number): Promise<void> => {
@@ -114,8 +76,8 @@
 			const newPath = navigationState.files[index];
 
 			// 画像が既にキャッシュされている場合は即座に切り替え
-			if (imageCache.has(newPath)) {
-				imageState.url = imageCache.get(newPath)!;
+			if (navigationService.isCached(newPath)) {
+				imageState.url = navigationService.getCachedImageUrl(newPath)!;
 				await onImageChange(newPath);
 				navigationState.isNavigating = false;
 				// バックグラウンドで隣接画像をプリロード
@@ -148,10 +110,8 @@
 
 	const initializeImages = async (path: string): Promise<void> => {
 		try {
-			// 同一ディレクトリの画像ファイル一覧を取得
-			const dirPath = await dirname(path);
-			navigationState.files = await getImageFiles(dirPath);
-			navigationState.currentIndex = navigationState.files.findIndex((file) => file === path);
+			// NavigationServiceを使用してナビゲーション状態を初期化
+			navigationState = await navigationService.initializeNavigation(path);
 
 			// 初期画像を読み込み
 			await loadCurrentImage(path);
@@ -168,21 +128,11 @@
 	};
 
 	// キーボードナビゲーション
-	const handleKeydown = (event: KeyboardEvent): void => {
-		// 情報ペインにフォーカスがある場合はナビゲーションを無効化
-		if (isInfoPanelFocused) return;
-
-		switch (event.key) {
-			case 'ArrowLeft':
-				event.preventDefault();
-				goToPrevious();
-				break;
-			case 'ArrowRight':
-				event.preventDefault();
-				goToNext();
-				break;
-		}
-	};
+	const handleKeydown = createKeyboardNavigationHandler(
+		goToPrevious,
+		goToNext,
+		() => isInfoPanelFocused
+	);
 
 	// 情報ペインのフォーカス状態を管理
 	const handleInfoPanelFocus = (): void => {
@@ -221,8 +171,10 @@
 		if (imagePath && imagePath !== previousImagePath) {
 			const handleImagePathChange = async () => {
 				// 同じディレクトリ内の場合は再初期化をスキップ
-				const currentDir = await dirname(imagePath);
-				const previousDir = previousImagePath ? await dirname(previousImagePath) : '';
+				const currentDir = await navigationService.getDirname(imagePath);
+				const previousDir = previousImagePath
+					? await navigationService.getDirname(previousImagePath)
+					: '';
 
 				if (currentDir === previousDir && 0 < navigationState.files.length) {
 					// 同じディレクトリなので、インデックスの更新と画像読み込みのみ

@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { invoke } from '@tauri-apps/api/core';
 	import type { ImageMetadata } from './image/types';
 	import {
 		createImageViewState,
@@ -11,6 +10,7 @@
 		endDrag,
 		type ImageViewState
 	} from './image/image-manipulation';
+	import { updateImageRating } from './utils/rating-utils';
 
 	const {
 		imageUrl,
@@ -80,21 +80,14 @@
 
 	// Rating更新機能
 	const updateRating = async (rating: number) => {
-		if (!imagePath) {
-			console.warn('画像パスが指定されていません');
-			return;
-		}
+		if (!imagePath) return;
 
 		try {
-			await invoke('write_exif_image_rating', {
-				path: imagePath,
-				rating: rating
-			});
-
+			await updateImageRating(imagePath, rating);
 			// Rating更新後のコールバック実行
 			onRatingUpdate?.();
 		} catch (error) {
-			console.error('Rating更新に失敗:', error);
+			// エラーハンドリングは共通関数内で処理済み
 		}
 	};
 </script>

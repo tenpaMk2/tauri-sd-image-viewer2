@@ -1,8 +1,7 @@
 <script lang="ts">
-	import { invoke } from '@tauri-apps/api/core';
-	import { getImageFiles } from './image/image-loader';
 	import type { BatchThumbnailResult } from './image/types';
 	import ImageThumbnail from './ImageThumbnail.svelte';
+	import { ThumbnailService } from './services/thumbnail-service';
 
 	const {
 		directoryPath,
@@ -31,6 +30,9 @@
 		totalCount: number;
 	};
 
+	// サービスインスタンス
+	const thumbnailService = new ThumbnailService();
+
 	let imageFiles = $state<string[]>([]);
 	let thumbnails = $state<Map<string, string>>(new Map());
 	let loadingState = $state<LoadingState>({
@@ -56,7 +58,7 @@
 			thumbnails.clear();
 
 			// ディレクトリ内の画像ファイル一覧を取得
-			imageFiles = await getImageFiles(directoryPath);
+			imageFiles = await thumbnailService.getImageFiles(directoryPath);
 
 			// 親コンポーネントに画像ファイル一覧を通知
 			if (onImageFilesLoaded) {
@@ -73,7 +75,14 @@
 			// チャンク単位でサムネイル生成（プログレス表示のため）
 			console.log('サムネイル生成開始:', imageFiles.length, '個のファイル');
 
-			await loadThumbnailsInChunks(imageFiles);
+			thumbnails = await thumbnailService.loadThumbnailsInChunks(
+				imageFiles,
+				16,
+				(loadedCount, totalCount) => {
+					loadingState.loadedCount = loadedCount;
+					loadingState.totalCount = totalCount;
+				}
+			);
 		} catch (err) {
 			loadingState.error =
 				err instanceof Error ? err.message : 'サムネイルの読み込みに失敗しました';
@@ -84,66 +93,9 @@
 		}
 	};
 
-	// チャンク単位でサムネイルを処理する関数
-	const loadThumbnailsInChunks = async (allImageFiles: string[]) => {
-		const CHUNK_SIZE = 16; // チャンクサイズ
-		const newThumbnails = new Map<string, string>();
-
-		// 配列をチャンクに分割
-		const chunks: string[][] = [];
-		for (let i = 0; i < allImageFiles.length; i += CHUNK_SIZE) {
-			chunks.push(allImageFiles.slice(i, i + CHUNK_SIZE));
-		}
-
-		console.log(`チャンク処理開始: ${chunks.length}チャンク, チャンクサイズ: ${CHUNK_SIZE}`);
-
-		// チャンクごとに処理
-		for (const [chunkIndex, chunk] of chunks.entries()) {
-			try {
-				console.log(
-					`チャンク ${chunkIndex + 1}/${chunks.length} 処理開始 (${chunk.length}ファイル)`
-				);
-
-				const results: BatchThumbnailResult[] = await invoke('load_thumbnails_batch', {
-					imagePaths: chunk
-				});
-
-				// 結果を即座にUI更新
-				for (const result of results) {
-					if (result.thumbnail && result.thumbnail.data) {
-						// number[]をUint8Arrayに変換
-						const uint8Array = new Uint8Array(result.thumbnail.data);
-						const blob = new Blob([uint8Array], { type: result.thumbnail.mime_type });
-						const url = URL.createObjectURL(blob);
-						newThumbnails.set(result.path, url);
-						loadingState.loadedCount++;
-						console.log(`サムネイル生成成功: ${result.path}`);
-					} else if (result.error) {
-						console.warn(`サムネイル生成失敗: ${result.path} - ${result.error}`);
-					}
-				}
-
-				// UI更新（リアルタイム）
-				thumbnails = new Map(newThumbnails);
-
-				console.log(`チャンク ${chunkIndex + 1}/${chunks.length} 完了`);
-
-				// 少し待機（UI更新のため）
-				await new Promise((resolve) => setTimeout(resolve, 10));
-			} catch (chunkError) {
-				console.error(`チャンク ${chunkIndex + 1} 処理エラー:`, chunkError);
-			}
-		}
-
-		console.log('全チャンク処理完了');
-	};
-
 	// クリーンアップ関数
 	const cleanup = () => {
-		// Blob URLをクリーンアップ
-		for (const url of thumbnails.values()) {
-			URL.revokeObjectURL(url);
-		}
+		thumbnailService.cleanupThumbnails(thumbnails);
 		thumbnails.clear();
 	};
 

@@ -1,4 +1,5 @@
 use crate::sd_parameters::SdParameters;
+use crate::exif_info::ExifInfo;
 use png::Decoder;
 use std::io::Cursor;
 use serde::{Deserialize, Serialize};
@@ -10,6 +11,7 @@ pub struct ImageMetadataInfo {
     pub file_size: u64,
     pub mime_type: String,
     pub sd_parameters: Option<SdParameters>,
+    pub exif_info: Option<ExifInfo>,
     // 画像データは除外してメタデータのみ
 }
 
@@ -22,7 +24,7 @@ pub fn read_image_metadata_info(path: String) -> Result<ImageMetadataInfo, Strin
     // MIME型を拡張子から推定
     let mime_type = detect_mime_type_from_path(&path);
     
-    // PNG画像の場合のみメタデータを解析
+    // 画像の基本情報とメタデータを解析
     let (width, height, sd_parameters) = if mime_type == "image/png" {
         match extract_png_info(&data) {
             Ok((w, h, sd)) => (w, h, sd),
@@ -38,6 +40,14 @@ pub fn read_image_metadata_info(path: String) -> Result<ImageMetadataInfo, Strin
             Err(_) => (0, 0, None)
         }
     };
+
+    // Exif情報を抽出（JPEG、TIFF、PNG形式の場合）
+    let exif_info = if mime_type == "image/jpeg" || mime_type == "image/tiff" || mime_type == "image/png" {
+        let extension = path.split('.').last().unwrap_or("");
+        ExifInfo::from_bytes(&data, extension)
+    } else {
+        None
+    };
     
     Ok(ImageMetadataInfo {
         width,
@@ -45,6 +55,7 @@ pub fn read_image_metadata_info(path: String) -> Result<ImageMetadataInfo, Strin
         file_size,
         mime_type,
         sd_parameters,
+        exif_info,
         // 画像データは返さない（メタデータのみ）
     })
 }
@@ -58,6 +69,7 @@ fn detect_mime_type_from_path(path: &str) -> String {
         "bmp" => "image/bmp".to_string(),
         "webp" => "image/webp".to_string(),
         "avif" => "image/avif".to_string(),
+        "tiff" | "tif" => "image/tiff".to_string(),
         _ => "application/octet-stream".to_string(),
     }
 }

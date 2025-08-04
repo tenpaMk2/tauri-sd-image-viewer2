@@ -1,14 +1,19 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte';
+	import { invoke } from '@tauri-apps/api/core';
 	import type { ImageMetadata } from './image/types';
 	import type { SdTag } from './types/shared-types';
 
 	const {
 		metadata,
+		imagePath,
+		onRatingUpdate,
 		onFocus,
 		onBlur
 	}: {
 		metadata: ImageMetadata;
+		imagePath?: string;
+		onRatingUpdate?: () => void;
 		onFocus?: () => void;
 		onBlur?: () => void;
 	} = $props();
@@ -27,6 +32,26 @@
 		return tags
 			.map((tag) => (tag.weight ? `(${tag.name}:${tag.weight})` : tag.name))
 			.join(', ');
+	};
+
+	// Rating更新機能
+	const updateRating = async (rating: number) => {
+		if (!imagePath) {
+			console.warn('画像パスが指定されていません');
+			return;
+		}
+
+		try {
+			await invoke('write_exif_image_rating', {
+				path: imagePath,
+				rating: rating
+			});
+			
+			// Rating更新後のコールバック実行
+			onRatingUpdate?.();
+		} catch (error) {
+			console.error('Rating更新に失敗:', error);
+		}
 	};
 </script>
 
@@ -190,6 +215,57 @@
 								</div>
 							{/if}
 						</div>
+					</div>
+				</div>
+			{/if}
+
+			<!-- Exif情報 (任意) -->
+			{#if metadata.exifInfo}
+				<div class="rounded-lg bg-base-300 p-4">
+					<h3 class="mb-3 text-base font-semibold">Exif情報</h3>
+					<div class="space-y-2 text-sm">
+						{#if metadata.exifInfo.date_time_original}
+							<div class="flex justify-between">
+								<div class="text-base-content/70">Date/Time Original:</div>
+								<div class="font-mono text-xs">{metadata.exifInfo.date_time_original}</div>
+							</div>
+						{/if}
+
+						{#if metadata.exifInfo.create_date}
+							<div class="flex justify-between">
+								<div class="text-base-content/70">Create Date:</div>
+								<div class="font-mono text-xs">{metadata.exifInfo.create_date}</div>
+							</div>
+						{/if}
+
+						{#if metadata.exifInfo.modify_date}
+							<div class="flex justify-between">
+								<div class="text-base-content/70">Modify Date:</div>
+								<div class="font-mono text-xs">{metadata.exifInfo.modify_date}</div>
+							</div>
+						{/if}
+
+						{#if metadata.exifInfo.rating !== undefined && metadata.exifInfo.rating !== null}
+							<div class="flex justify-between">
+								<div class="text-base-content/70">Rating:</div>
+								<div class="flex items-center gap-1">
+									{#each Array(5) as _, i}
+										<button
+											class="w-3 h-3 transition-colors hover:scale-110"
+											onclick={() => updateRating(i + 1)}
+											title="評価を{i + 1}に設定"
+										>
+											<Icon 
+												icon="lucide:star" 
+												class="w-full h-full {i < (metadata.exifInfo.rating || 0) ? 'text-yellow-400' : 'text-base-content/30 hover:text-yellow-200'}"
+											/>
+										</button>
+									{/each}
+									<span class="ml-1 text-xs">({metadata.exifInfo.rating || 0}/5)</span>
+								</div>
+							</div>
+						{/if}
+
 					</div>
 				</div>
 			{/if}

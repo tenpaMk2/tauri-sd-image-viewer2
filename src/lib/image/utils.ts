@@ -34,7 +34,8 @@ export const createImageMetadata = async (imagePath: string): Promise<ImageMetad
 			format: extension,
 			created,
 			modified,
-			sdParameters: imageInfo.sd_parameters
+			sdParameters: imageInfo.sd_parameters,
+			exifInfo: imageInfo.exif_info
 		};
 	} catch (error) {
 		console.warn('ファイル情報の取得に失敗:', error);

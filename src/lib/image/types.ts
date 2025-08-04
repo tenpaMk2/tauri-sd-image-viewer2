@@ -17,7 +17,7 @@ export type ImageData = {
 // Rust同期が必要な型は ../types/shared-types.ts を使用
 // ==========================================
 
-import type { SdParameters } from '../types/shared-types';
+import type { SdParameters, ExifInfo } from '../types/shared-types';
 
 export type ImageMetadata = {
 	filename: string;
@@ -30,6 +30,7 @@ export type ImageMetadata = {
 	lens?: string;
 	settings?: string;
 	sdParameters?: SdParameters;
+	exifInfo?: ExifInfo;
 };
 
 export type ThumbnailInfo = {

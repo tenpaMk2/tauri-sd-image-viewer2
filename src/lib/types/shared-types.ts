@@ -56,6 +56,22 @@ export type PngImageInfo = {
 };
 
 // ==========================================
+// Exif情報
+// 対応ファイル: src-tauri/src/exif_info.rs (予定)
+// ==========================================
+
+/**
+ * Exif情報
+ * 対応: `struct ExifInfo`
+ */
+export type ExifInfo = {
+	date_time_original?: string;        // Rust: Option<String>
+	create_date?: string;               // Rust: Option<String>
+	modify_date?: string;               // Rust: Option<String>
+	rating?: number;                    // Rust: Option<u8>
+};
+
+// ==========================================
 // 画像メタデータ情報（軽量版）
 // 対応ファイル: src-tauri/src/image_info.rs
 // ==========================================
@@ -71,6 +87,7 @@ export type ImageMetadataInfo = {
 	file_size: number;              // Rust: u64
 	mime_type: string;              // Rust: String
 	sd_parameters?: SdParameters;   // Rust: Option<SdParameters>
+	exif_info?: ExifInfo;           // Rust: Option<ExifInfo>
 	// image_data は除外（パフォーマンス最適化のため）
 };
 

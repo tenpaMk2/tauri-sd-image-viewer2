@@ -2,6 +2,7 @@ mod thumbnail;
 mod sd_parameters;
 mod png_handler;
 mod image_info;
+mod exif_info;
 
 use tauri::Manager;
 use thumbnail::{ThumbnailState, ThumbnailConfig};
@@ -31,6 +32,7 @@ pub fn run() {
             png_handler::read_png_image_info,
             png_handler::read_png_sd_parameters,
             image_info::read_image_metadata_info,
+            exif_info::write_exif_image_rating,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

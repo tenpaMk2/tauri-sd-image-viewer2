@@ -193,6 +193,14 @@
 		isInfoPanelFocused = false;
 	};
 
+	// 現在の画像情報を再読み込み
+	const refreshCurrentImage = async (): Promise<void> => {
+		if (navigationState.files[navigationState.currentIndex]) {
+			// 親コンポーネントに画像変更を通知（メタデータも再取得される）
+			await onImageChange(navigationState.files[navigationState.currentIndex]);
+		}
+	};
+
 	// 初期化（初回のみ）
 	$effect(() => {
 		initializeImages(imagePath);
@@ -261,5 +269,11 @@
 		/>
 	</div>
 
-	<MetadataPanel {metadata} onFocus={handleInfoPanelFocus} onBlur={handleInfoPanelBlur} />
+	<MetadataPanel 
+		{metadata} 
+		imagePath={navigationState.files[navigationState.currentIndex]}
+		onRatingUpdate={() => refreshCurrentImage()}
+		onFocus={handleInfoPanelFocus} 
+		onBlur={handleInfoPanelBlur} 
+	/>
 </div>

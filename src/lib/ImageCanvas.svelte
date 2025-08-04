@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { invoke } from '@tauri-apps/api/core';
 	import type { ImageMetadata } from './image/types';
 	import {
 		createImageViewState,
@@ -15,16 +16,20 @@
 		imageUrl,
 		isLoading,
 		error,
-		metadata
+		metadata,
+		imagePath,
+		onRatingUpdate
 	}: {
 		imageUrl: string;
 		isLoading: boolean;
 		error: string;
 		metadata: ImageMetadata;
+		imagePath?: string;
+		onRatingUpdate?: () => void;
 	} = $props();
 
 	let containerRef: HTMLDivElement;
-	let imageRef: HTMLImageElement;
+	let imageRef = $state<HTMLImageElement>();
 	let viewState = $state<ImageViewState>(createImageViewState());
 	let isImageChanging = $state(false);
 	let previousImageUrl = '';
@@ -64,17 +69,44 @@
 	};
 
 	const onImageLoad = () => {
-		viewState.fitScale = calculateFitScale(imageRef, containerRef);
+		if (imageRef) {
+			viewState.fitScale = calculateFitScale(imageRef, containerRef);
+		}
 		// 次フレームでトランジション再有効化
 		requestAnimationFrame(() => {
 			isImageChanging = false;
 		});
 	};
+
+	// Rating更新機能
+	const updateRating = async (rating: number) => {
+		if (!imagePath) {
+			console.warn('画像パスが指定されていません');
+			return;
+		}
+
+		try {
+			await invoke('write_exif_image_rating', {
+				path: imagePath,
+				rating: rating
+			});
+
+			// Rating更新後のコールバック実行
+			onRatingUpdate?.();
+		} catch (error) {
+			console.error('Rating更新に失敗:', error);
+		}
+	};
 </script>
 
-<div 
-	class="absolute inset-0 flex items-center justify-center overflow-hidden" 
-	bind:this={containerRef} 
+<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+<div
+	class="absolute inset-0 flex items-center justify-center overflow-hidden"
+	bind:this={containerRef}
+	role="img"
+	tabindex="0"
+	aria-label="画像表示キャンバス"
 	onwheel={handleWheel}
 	onmousedown={handleMouseDown}
 	onmousemove={handleMouseMove}
@@ -94,18 +126,39 @@
 			<span class="text-center">{error}</span>
 		</div>
 	{:else if imageUrl}
-		<img 
+		<img
 			bind:this={imageRef}
-			src={imageUrl} 
-			alt={metadata.filename} 
-			class="{viewState.isDragging || isImageChanging ? '' : 'transition-transform duration-200'}"
-			style="transform: translate({viewState.panX}px, {viewState.panY}px) scale({viewState.fitScale * viewState.zoomLevel}); transform-origin: center center; cursor: grab; max-width: none; max-height: none;"
+			src={imageUrl}
+			alt={metadata.filename}
+			class={viewState.isDragging || isImageChanging ? '' : 'transition-transform duration-200'}
+			style="transform: translate({viewState.panX}px, {viewState.panY}px) scale({viewState.fitScale *
+				viewState.zoomLevel}); transform-origin: center center; cursor: grab; max-width: none; max-height: none;"
 			onload={onImageLoad}
 		/>
 	{:else if isLoading}
 		<div class="flex flex-col items-center gap-2 text-white">
 			<span class="loading loading-lg loading-spinner"></span>
 			<span class="opacity-80">画像を読み込み中...</span>
+		</div>
+	{/if}
+
+	<!-- Rating オーバーレイバー -->
+	{#if imageUrl && metadata.exifInfo?.rating !== undefined}
+		<div
+			class="absolute bottom-4 left-1/2 -translate-x-1/2 transform rounded-lg bg-black/60 px-4 py-2 backdrop-blur-sm"
+		>
+			<div class="rating-lg rating">
+				{#each Array(5) as _, i}
+					<input
+						type="radio"
+						name="rating-overlay-{imagePath}"
+						class="mask bg-yellow-400 mask-star hover:bg-yellow-300"
+						checked={i + 1 === (metadata.exifInfo.rating || 0)}
+						onchange={() => updateRating(i + 1)}
+						aria-label="{i + 1}つ星"
+					/>
+				{/each}
+			</div>
 		</div>
 	{/if}
 </div>

@@ -1,6 +1,7 @@
 # RustとTypeScriptの型定義同期ガイド
 
 ## 現在の課題
+
 現在、RustとTypeScriptで同じ構造体を手動で管理しており、型の不整合が発生する可能性があります。
 
 ## 推奨解決策
@@ -55,7 +56,7 @@ cp generated/bindings/*.ts ../src/lib/types/
 
 ```toml
 # Cargo.toml
-[dependencies] 
+[dependencies]
 tauri-specta = { version = "1.0", features = ["typescript"] }
 specta = { version = "1.0", features = ["typescript"] }
 ```
@@ -92,14 +93,14 @@ fn main() {
 
 ### Rust → TypeScript 型対応表
 
-| Rust型 | TypeScript型 | 注意点 |
-|--------|-------------|--------|
-| `String` | `string` | - |
-| `Option<T>` | `T \| undefined` | `null`ではなく`undefined` |
-| `Vec<T>` | `T[]` | - |
-| `u32, u64` | `number` | JavaScriptの数値精度に注意 |
-| `f32, f64` | `number` | - |
-| `bool` | `boolean` | - |
+| Rust型      | TypeScript型     | 注意点                     |
+| ----------- | ---------------- | -------------------------- |
+| `String`    | `string`         | -                          |
+| `Option<T>` | `T \| undefined` | `null`ではなく`undefined`  |
+| `Vec<T>`    | `T[]`            | -                          |
+| `u32, u64`  | `number`         | JavaScriptの数値精度に注意 |
+| `f32, f64`  | `number`         | -                          |
+| `bool`      | `boolean`        | -                          |
 
 ### ファイル対応関係
 

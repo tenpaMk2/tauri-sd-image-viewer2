@@ -34,19 +34,19 @@ export const calculateFitScale = (
 	containerElement: HTMLDivElement
 ): number => {
 	if (!imageElement || !containerElement) return 1;
-	
+
 	const containerRect = containerElement.getBoundingClientRect();
 	const availableWidth = containerRect.width;
 	const availableHeight = containerRect.height;
-	
+
 	const imageNaturalWidth = imageElement.naturalWidth;
 	const imageNaturalHeight = imageElement.naturalHeight;
-	
+
 	if (imageNaturalWidth === 0 || imageNaturalHeight === 0) return 1;
-	
+
 	const scaleX = availableWidth / imageNaturalWidth;
 	const scaleY = availableHeight / imageNaturalHeight;
-	
+
 	return Math.min(scaleX, scaleY);
 };
 
@@ -81,7 +81,7 @@ export const startDrag = (state: ImageViewState, clientX: number, clientY: numbe
 // ドラッグ移動の処理
 export const updateDrag = (state: ImageViewState, clientX: number, clientY: number): void => {
 	if (!state.isDragging) return;
-	
+
 	const deltaX = clientX - state.dragStartX;
 	const deltaY = clientY - state.dragStartY;
 	state.panX += deltaX;

@@ -222,9 +222,7 @@
 			const handleImagePathChange = async () => {
 				// 同じディレクトリ内の場合は再初期化をスキップ
 				const currentDir = await dirname(imagePath);
-				const previousDir = previousImagePath
-					? await dirname(previousImagePath)
-					: '';
+				const previousDir = previousImagePath ? await dirname(previousImagePath) : '';
 
 				if (currentDir === previousDir && 0 < navigationState.files.length) {
 					// 同じディレクトリなので、インデックスの更新と画像読み込みのみ
@@ -259,6 +257,8 @@
 			isLoading={imageState.isLoading}
 			error={imageState.error}
 			{metadata}
+			imagePath={navigationState.files[navigationState.currentIndex]}
+			onRatingUpdate={() => refreshCurrentImage()}
 		/>
 		<NavigationButtons
 			imageFiles={navigationState.files}
@@ -269,11 +269,11 @@
 		/>
 	</div>
 
-	<MetadataPanel 
-		{metadata} 
+	<MetadataPanel
+		{metadata}
 		imagePath={navigationState.files[navigationState.currentIndex]}
 		onRatingUpdate={() => refreshCurrentImage()}
-		onFocus={handleInfoPanelFocus} 
-		onBlur={handleInfoPanelBlur} 
+		onFocus={handleInfoPanelFocus}
+		onBlur={handleInfoPanelBlur}
 	/>
 </div>

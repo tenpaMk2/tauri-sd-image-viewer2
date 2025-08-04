@@ -73,7 +73,7 @@
 	<div class="flex items-center justify-between bg-base-200 p-4">
 		<div class="flex items-center gap-4">
 			<button class="btn btn-ghost btn-sm" onclick={handleBackToWelcome} title="ホームに戻る">
-				<Icon icon="lucide:home" class="w-4 h-4" />
+				<Icon icon="lucide:home" class="h-4 w-4" />
 			</button>
 			{#await basename(selectedDirectory) then folderName}
 				<h1 class="truncate text-lg font-semibold">
@@ -94,7 +94,10 @@
 				onclick={toggleSelectionMode}
 				title={isSelectionMode ? '選択モードを終了' : '選択モードに切り替え'}
 			>
-				<Icon icon={isSelectionMode ? "lucide:check-square" : "lucide:square"} class="w-4 h-4 mr-1" />
+				<Icon
+					icon={isSelectionMode ? 'lucide:check-square' : 'lucide:square'}
+					class="mr-1 h-4 w-4"
+				/>
 				選択
 			</button>
 
@@ -105,7 +108,12 @@
 					onclick={toggleSelectAll}
 					title={selectedImages.size === imageFiles.length ? '全選択解除' : '全選択'}
 				>
-					<Icon icon={selectedImages.size === imageFiles.length ? "lucide:check-square-2" : "lucide:square"} class="w-4 h-4 mr-1" />
+					<Icon
+						icon={selectedImages.size === imageFiles.length
+							? 'lucide:check-square-2'
+							: 'lucide:square'}
+						class="mr-1 h-4 w-4"
+					/>
 					{selectedImages.size === imageFiles.length ? '全選択解除' : '全選択'}
 				</button>
 			{/if}
@@ -141,7 +149,7 @@
 			</div>
 			<div class="flex items-center gap-4">
 				<button class="btn btn-sm btn-error" onclick={deleteSelectedImages}>
-					<Icon icon="lucide:trash-2" class="w-4 h-4" />
+					<Icon icon="lucide:trash-2" class="h-4 w-4" />
 					削除
 				</button>
 			</div>

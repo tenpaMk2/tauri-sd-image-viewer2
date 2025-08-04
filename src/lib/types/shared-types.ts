@@ -1,6 +1,6 @@
 // ==========================================
 // Rust側との型定義同期専用ファイル
-// 
+//
 // 🚨 重要: このファイルの型はRust側の構造体と完全一致させること
 // 変更時は必ず対応するRustファイルも同時に修正すること
 // ==========================================
@@ -15,8 +15,8 @@
  * 対応: `struct SdTag`
  */
 export type SdTag = {
-	name: string;           // Rust: String
-	weight?: number;        // Rust: Option<f32>
+	name: string; // Rust: String
+	weight?: number; // Rust: Option<f32>
 };
 
 /**
@@ -24,18 +24,18 @@ export type SdTag = {
  * 対応: `struct SdParameters`
  */
 export type SdParameters = {
-	positive_sd_tags: SdTag[];      // Rust: Vec<SdTag>
-	negative_sd_tags: SdTag[];      // Rust: Vec<SdTag>
-	steps?: string;                 // Rust: Option<String>
-	sampler?: string;               // Rust: Option<String>
-	schedule_type?: string;         // Rust: Option<String>
-	cfg_scale?: string;             // Rust: Option<String>
-	seed?: string;                  // Rust: Option<String>
-	size?: string;                  // Rust: Option<String>
-	model?: string;                 // Rust: Option<String>
-	denoising_strength?: string;    // Rust: Option<String>
-	clip_skip?: string;             // Rust: Option<String>
-	raw: string;                    // Rust: String
+	positive_sd_tags: SdTag[]; // Rust: Vec<SdTag>
+	negative_sd_tags: SdTag[]; // Rust: Vec<SdTag>
+	steps?: string; // Rust: Option<String>
+	sampler?: string; // Rust: Option<String>
+	schedule_type?: string; // Rust: Option<String>
+	cfg_scale?: string; // Rust: Option<String>
+	seed?: string; // Rust: Option<String>
+	size?: string; // Rust: Option<String>
+	model?: string; // Rust: Option<String>
+	denoising_strength?: string; // Rust: Option<String>
+	clip_skip?: string; // Rust: Option<String>
+	raw: string; // Rust: String
 };
 
 // ==========================================
@@ -48,11 +48,11 @@ export type SdParameters = {
  * 対応: `struct PngImageInfo`
  */
 export type PngImageInfo = {
-	width: number;                  // Rust: u32
-	height: number;                 // Rust: u32
-	bit_depth: number;              // Rust: u8
-	color_type: string;             // Rust: String (formatted from enum)
-	sd_parameters?: SdParameters;   // Rust: Option<SdParameters>
+	width: number; // Rust: u32
+	height: number; // Rust: u32
+	bit_depth: number; // Rust: u8
+	color_type: string; // Rust: String (formatted from enum)
+	sd_parameters?: SdParameters; // Rust: Option<SdParameters>
 };
 
 // ==========================================
@@ -65,10 +65,10 @@ export type PngImageInfo = {
  * 対応: `struct ExifInfo`
  */
 export type ExifInfo = {
-	date_time_original?: string;        // Rust: Option<String>
-	create_date?: string;               // Rust: Option<String>
-	modify_date?: string;               // Rust: Option<String>
-	rating?: number;                    // Rust: Option<u8>
+	date_time_original?: string; // Rust: Option<String>
+	create_date?: string; // Rust: Option<String>
+	modify_date?: string; // Rust: Option<String>
+	rating?: number; // Rust: Option<u8>
 };
 
 // ==========================================
@@ -82,12 +82,12 @@ export type ExifInfo = {
  * 注意: 画像データは含まず、メタデータのみで軽量
  */
 export type ImageMetadataInfo = {
-	width: number;                  // Rust: u32
-	height: number;                 // Rust: u32
-	file_size: number;              // Rust: u64
-	mime_type: string;              // Rust: String
-	sd_parameters?: SdParameters;   // Rust: Option<SdParameters>
-	exif_info?: ExifInfo;           // Rust: Option<ExifInfo>
+	width: number; // Rust: u32
+	height: number; // Rust: u32
+	file_size: number; // Rust: u64
+	mime_type: string; // Rust: String
+	sd_parameters?: SdParameters; // Rust: Option<SdParameters>
+	exif_info?: ExifInfo; // Rust: Option<ExifInfo>
 	// image_data は除外（パフォーマンス最適化のため）
 };
 

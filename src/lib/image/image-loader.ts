@@ -87,7 +87,9 @@ export const loadSdParameters = async (filePath: string): Promise<SdParameters |
  * ハイブリッドアプローチ: 画像とメタデータを並行取得
  * 画像データはフロントエンド、メタデータはRustで効率的に処理
  */
-export const loadImageWithMetadata = async (filePath: string): Promise<{
+export const loadImageWithMetadata = async (
+	filePath: string
+): Promise<{
 	imageData: ImageData;
 	imageInfo: ImageMetadataInfo;
 }> => {

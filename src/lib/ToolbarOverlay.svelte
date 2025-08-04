@@ -32,7 +32,7 @@
 					onclick={onSwitchToGrid}
 					title="グリッド表示"
 				>
-					<Icon icon="lucide:layout-grid" class="w-4 h-4" />
+					<Icon icon="lucide:layout-grid" class="h-4 w-4" />
 				</button>
 			{/if}
 			<button class="btn btn-sm btn-primary" onclick={openFileDialog}> ファイルを開く </button>

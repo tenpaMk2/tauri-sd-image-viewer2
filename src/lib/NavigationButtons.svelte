@@ -30,7 +30,7 @@
 				{#if isNavigating}
 					<span class="loading loading-sm loading-spinner"></span>
 				{:else}
-					<Icon icon="lucide:chevron-left" class="w-6 h-6" />
+					<Icon icon="lucide:chevron-left" class="h-6 w-6" />
 				{/if}
 			</button>
 		</div>
@@ -48,7 +48,7 @@
 				{#if isNavigating}
 					<span class="loading loading-sm loading-spinner"></span>
 				{:else}
-					<Icon icon="lucide:chevron-right" class="w-6 h-6" />
+					<Icon icon="lucide:chevron-right" class="h-6 w-6" />
 				{/if}
 			</button>
 		</div>

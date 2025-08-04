@@ -29,9 +29,7 @@
 
 	// タグをフォーマット
 	const formatTags = (tags: SdTag[]): string => {
-		return tags
-			.map((tag) => (tag.weight ? `(${tag.name}:${tag.weight})` : tag.name))
-			.join(', ');
+		return tags.map((tag) => (tag.weight ? `(${tag.name}:${tag.weight})` : tag.name)).join(', ');
 	};
 
 	// Rating更新機能
@@ -46,7 +44,7 @@
 				path: imagePath,
 				rating: rating
 			});
-			
+
 			// Rating更新後のコールバック実行
 			onRatingUpdate?.();
 		} catch (error) {
@@ -114,7 +112,7 @@
 							onclick={() => copyToClipboard(metadata.sdParameters?.raw || '')}
 							title="原文をコピー"
 						>
-							<Icon icon="lucide:copy" class="w-3 h-3 mr-1" />
+							<Icon icon="lucide:copy" class="mr-1 h-3 w-3" />
 							コピー
 						</button>
 					</h3>
@@ -123,16 +121,17 @@
 						{#if metadata.sdParameters.positive_sd_tags.length > 0}
 							<div class="space-y-1">
 								<div class="flex items-center gap-2">
-									<div class="text-base-content/70 font-medium">プロンプト:</div>
+									<div class="font-medium text-base-content/70">プロンプト:</div>
 									<button
 										class="btn btn-ghost btn-xs"
-										onclick={() => copyToClipboard(formatTags(metadata.sdParameters?.positive_sd_tags || []))}
+										onclick={() =>
+											copyToClipboard(formatTags(metadata.sdParameters?.positive_sd_tags || []))}
 										title="プロンプトをコピー"
 									>
-										<Icon icon="lucide:copy" class="w-3 h-3" />
+										<Icon icon="lucide:copy" class="h-3 w-3" />
 									</button>
 								</div>
-								<div class="bg-base-100 rounded p-2 font-mono text-xs leading-relaxed">
+								<div class="rounded bg-base-100 p-2 font-mono text-xs leading-relaxed">
 									{formatTags(metadata.sdParameters.positive_sd_tags)}
 								</div>
 							</div>
@@ -142,16 +141,17 @@
 						{#if metadata.sdParameters.negative_sd_tags.length > 0}
 							<div class="space-y-1">
 								<div class="flex items-center gap-2">
-									<div class="text-base-content/70 font-medium">ネガティブプロンプト:</div>
+									<div class="font-medium text-base-content/70">ネガティブプロンプト:</div>
 									<button
 										class="btn btn-ghost btn-xs"
-										onclick={() => copyToClipboard(formatTags(metadata.sdParameters?.negative_sd_tags || []))}
+										onclick={() =>
+											copyToClipboard(formatTags(metadata.sdParameters?.negative_sd_tags || []))}
 										title="ネガティブプロンプトをコピー"
 									>
-										<Icon icon="lucide:copy" class="w-3 h-3" />
+										<Icon icon="lucide:copy" class="h-3 w-3" />
 									</button>
 								</div>
-								<div class="bg-base-100 rounded p-2 font-mono text-xs leading-relaxed">
+								<div class="rounded bg-base-100 p-2 font-mono text-xs leading-relaxed">
 									{formatTags(metadata.sdParameters.negative_sd_tags)}
 								</div>
 							</div>
@@ -248,24 +248,9 @@
 						{#if metadata.exifInfo.rating !== undefined && metadata.exifInfo.rating !== null}
 							<div class="flex justify-between">
 								<div class="text-base-content/70">Rating:</div>
-								<div class="flex items-center gap-1">
-									{#each Array(5) as _, i}
-										<button
-											class="w-3 h-3 transition-colors hover:scale-110"
-											onclick={() => updateRating(i + 1)}
-											title="評価を{i + 1}に設定"
-										>
-											<Icon 
-												icon="lucide:star" 
-												class="w-full h-full {i < (metadata.exifInfo.rating || 0) ? 'text-yellow-400' : 'text-base-content/30 hover:text-yellow-200'}"
-											/>
-										</button>
-									{/each}
-									<span class="ml-1 text-xs">({metadata.exifInfo.rating || 0}/5)</span>
-								</div>
+								<div>{metadata.exifInfo.rating || 0}/5</div>
 							</div>
 						{/if}
-
 					</div>
 				</div>
 			{/if}

@@ -1,9 +1,8 @@
 <script lang="ts">
-	import { basename } from '@tauri-apps/api/path';
-
 	const {
 		imagePath,
 		thumbnailUrl,
+		rating,
 		isSelected = false,
 		isSelectionMode = false,
 		isLoading = false,
@@ -12,20 +11,13 @@
 	}: {
 		imagePath: string;
 		thumbnailUrl?: string;
+		rating?: number;
 		isSelected?: boolean;
 		isSelectionMode?: boolean;
 		isLoading?: boolean;
 		onImageClick: (imagePath: string) => void;
 		onToggleSelection?: (imagePath: string) => void;
 	} = $props();
-
-	const getImageName = async (path: string): Promise<string> => {
-		try {
-			return await basename(path);
-		} catch {
-			return 'unknown';
-		}
-	};
 
 	const handleClick = (): void => {
 		if (isSelectionMode && onToggleSelection) {
@@ -41,6 +33,14 @@
 			onToggleSelection(imagePath);
 		}
 	};
+
+	// Rating星表示を生成（白黒表示用）
+	const generateStars = (rating?: number): string => {
+		if (!rating || rating < 1 || rating > 5) {
+			return '';
+		}
+		return '★'.repeat(rating);
+	};
 </script>
 
 <div class="group relative cursor-pointer">
@@ -51,18 +51,25 @@
 		class:opacity-80={isSelected}
 		onclick={handleClick}
 		onkeydown={(e) => e.key === 'Enter' && handleClick()}
-		aria-label={isSelectionMode
-			? `画像を選択: ${imagePath.split('/').pop() || 'unknown'}`
-			: `画像を開く: ${imagePath.split('/').pop() || 'unknown'}`}
+		aria-label={isSelectionMode ? '画像を選択' : '画像を開く'}
 	>
 		{#if thumbnailUrl}
-			<div class="flex h-full w-full items-center justify-center p-2">
+			<div class="relative flex h-full w-full items-center justify-center p-2">
 				<img
 					src={thumbnailUrl}
-					alt={imagePath.split('/').pop() || 'unknown'}
+					alt="thumbnail"
 					class="max-h-full max-w-full rounded object-contain"
 					loading="lazy"
 				/>
+				
+				<!-- Rating オーバーレイ表示 -->
+				{#if rating && rating >= 1 && rating <= 5}
+					<div class="absolute bottom-1 left-1/2 -translate-x-1/2 rounded bg-black/30 px-1 py-0.5">
+						<span class="text-sm text-white drop-shadow-lg" title={`Rating: ${rating}/5`}>
+							{generateStars(rating)}
+						</span>
+					</div>
+				{/if}
 			</div>
 		{:else if isLoading}
 			<div class="flex h-full items-center justify-center">
@@ -87,10 +94,4 @@
 			/>
 		</div>
 	{/if}
-
-	{#await getImageName(imagePath) then imageName}
-		<p class="mt-2 truncate text-xs text-base-content/70" title={imageName}>
-			{imageName}
-		</p>
-	{/await}
 </div>

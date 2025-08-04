@@ -1,10 +1,13 @@
 import { invoke } from '@tauri-apps/api/core';
 import { getImageFiles } from '../image/image-loader';
-import type { BatchThumbnailResult } from '../image/types';
+import type { BatchThumbnailResult, CachedMetadata } from '../types/shared-types';
 
 // サムネイル処理のサービス
 export class ThumbnailService {
-	// チャンク単位でサムネイルを処理
+	// メタデータキャッシュ
+	private metadataCache = new Map<string, CachedMetadata>();
+
+	// チャンク単位でサムネイルとメタデータを処理
 	async loadThumbnailsInChunks(
 		allImageFiles: string[],
 		chunkSize: number = 16,
@@ -35,11 +38,17 @@ export class ThumbnailService {
 				// 結果を処理
 				for (const result of results) {
 					if (result.thumbnail && result.thumbnail.data) {
-						// number[]をUint8Arrayに変換
+						// サムネイル画像の処理
 						const uint8Array = new Uint8Array(result.thumbnail.data);
 						const blob = new Blob([uint8Array], { type: result.thumbnail.mime_type });
 						const url = URL.createObjectURL(blob);
 						newThumbnails.set(result.path, url);
+						
+						// メタデータをキャッシュに保存
+						if (result.cached_metadata) {
+							this.metadataCache.set(result.path, result.cached_metadata);
+						}
+						
 						loadedCount++;
 						console.log(`サムネイル生成成功: ${result.path}`);
 					} else if (result.error) {
@@ -70,10 +79,23 @@ export class ThumbnailService {
 		return await getImageFiles(directoryPath);
 	}
 
+	// 画像のメタデータを取得
+	getImageMetadata(imagePath: string): CachedMetadata | undefined {
+		return this.metadataCache.get(imagePath);
+	}
+
+	// 画像のRating情報を取得
+	getImageRating(imagePath: string): number | undefined {
+		const metadata = this.metadataCache.get(imagePath);
+		return metadata?.rating;
+	}
+
 	// Blob URLをクリーンアップ
 	cleanupThumbnails(thumbnails: Map<string, string>): void {
 		for (const url of thumbnails.values()) {
 			URL.revokeObjectURL(url);
 		}
+		// メタデータキャッシュもクリア
+		this.metadataCache.clear();
 	}
 }

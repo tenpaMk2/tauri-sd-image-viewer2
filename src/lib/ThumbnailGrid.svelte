@@ -177,13 +177,15 @@
 	{:else}
 		<div class="h-full overflow-auto">
 			<div
-				class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6"
+				class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7"
 			>
 				{#each imageFiles as imagePath (imagePath)}
 					{@const isSelected = selectedImages.has(imagePath)}
+					{@const rating = thumbnailService.getImageRating(imagePath)}
 					<ImageThumbnail
 						{imagePath}
 						thumbnailUrl={thumbnails.get(imagePath)}
+						{rating}
 						{isSelected}
 						{isSelectionMode}
 						isLoading={!thumbnails.has(imagePath)}

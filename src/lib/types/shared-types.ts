@@ -92,6 +92,43 @@ export type ImageMetadataInfo = {
 };
 
 // ==========================================
+// サムネイル関連
+// 対応ファイル: src-tauri/src/thumbnail.rs
+// ==========================================
+
+/**
+ * キャッシュされたメタデータ情報
+ * 対応: `struct CachedMetadata`
+ */
+export type CachedMetadata = {
+	rating?: number; // Rust: Option<u8>
+	exif_info?: ExifInfo; // Rust: Option<ExifInfo>
+	cached_at: number; // Rust: u64 (UNIXタイムスタンプ)
+};
+
+/**
+ * バッチサムネイル結果
+ * 対応: `struct BatchThumbnailResult`
+ */
+export type BatchThumbnailResult = {
+	path: string; // Rust: String
+	thumbnail?: ThumbnailInfo; // Rust: Option<ThumbnailInfo>
+	cached_metadata?: CachedMetadata; // Rust: Option<CachedMetadata>
+	error?: string; // Rust: Option<String>
+};
+
+/**
+ * サムネイル情報
+ * 対応: `struct ThumbnailInfo`
+ */
+export type ThumbnailInfo = {
+	data: number[]; // Rust: Vec<u8>
+	width: number; // Rust: u32
+	height: number; // Rust: u32
+	mime_type: string; // Rust: String
+};
+
+// ==========================================
 // Rust型とTypeScript型の対応表（参考）
 // ==========================================
 // Rust型          | TypeScript型    | 注意点

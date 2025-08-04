@@ -6,6 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 SPAの画像ビュワーアプリ。
 Tauriを使ったデスクトップアプリで、MacとWindowsに対応。
+Stable Diffusionの生成メタデータを表示可能。
 
 ## 全体ルール
 

@@ -30,7 +30,7 @@ pub fn run() {
             thumbnail::clear_thumbnail_cache,
             png_handler::read_png_image_info,
             png_handler::read_png_sd_parameters,
-            image_info::read_comprehensive_image_info,
+            image_info::read_image_metadata_info,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -1,5 +1,5 @@
 import { stat } from '@tauri-apps/plugin-fs';
-import { loadComprehensiveImageInfo } from './image-loader';
+import { loadImageWithMetadata } from './image-loader';
 import type { ImageMetadata } from './types';
 
 /**
@@ -17,8 +17,8 @@ export const createImageMetadata = async (imagePath: string): Promise<ImageMetad
 			: '不明';
 		const modified = fileStats.mtime ? new Date(fileStats.mtime).toLocaleString('ja-JP') : '不明';
 
-		// 画像の包括的情報を1回のIO操作で取得
-		const { imageInfo } = await loadComprehensiveImageInfo(imagePath);
+		// ハイブリッドアプローチで画像とメタデータを効率取得
+		const { imageInfo } = await loadImageWithMetadata(imagePath);
 		
 		const sizeFormatted = formatFileSize(imageInfo.file_size);
 		const dimensions = imageInfo.width > 0 && imageInfo.height > 0 

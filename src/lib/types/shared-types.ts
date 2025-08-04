@@ -56,21 +56,22 @@ export type PngImageInfo = {
 };
 
 // ==========================================
-// 統合画像情報（1回のIO操作で取得）
+// 画像メタデータ情報（軽量版）
 // 対応ファイル: src-tauri/src/image_info.rs
 // ==========================================
 
 /**
- * 1回のIO操作で取得する包括的な画像情報
- * 対応: `struct ComprehensiveImageInfo`
+ * 画像のメタデータのみを効率的に取得
+ * 対応: `struct ImageMetadataInfo`
+ * 注意: 画像データは含まず、メタデータのみで軽量
  */
-export type ComprehensiveImageInfo = {
+export type ImageMetadataInfo = {
 	width: number;                  // Rust: u32
 	height: number;                 // Rust: u32
 	file_size: number;              // Rust: u64
 	mime_type: string;              // Rust: String
 	sd_parameters?: SdParameters;   // Rust: Option<SdParameters>
-	image_data: number[];           // Rust: Vec<u8>
+	// image_data は除外（パフォーマンス最適化のため）
 };
 
 // ==========================================

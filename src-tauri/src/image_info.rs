@@ -4,18 +4,18 @@ use std::io::Cursor;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ComprehensiveImageInfo {
+pub struct ImageMetadataInfo {
     pub width: u32,
     pub height: u32,
     pub file_size: u64,
     pub mime_type: String,
     pub sd_parameters: Option<SdParameters>,
-    pub image_data: Vec<u8>, // Rust側で読み込んだ画像データを含める
+    // 画像データは除外してメタデータのみ
 }
 
-/// 画像ファイルから包括的な情報を1回のIO操作で取得
+/// 画像ファイルからメタデータのみを効率的に取得
 #[tauri::command]
-pub fn read_comprehensive_image_info(path: String) -> Result<ComprehensiveImageInfo, String> {
+pub fn read_image_metadata_info(path: String) -> Result<ImageMetadataInfo, String> {
     let data = std::fs::read(&path).map_err(|e| format!("ファイル読み込みエラー: {}", e))?;
     let file_size = data.len() as u64;
     
@@ -39,13 +39,13 @@ pub fn read_comprehensive_image_info(path: String) -> Result<ComprehensiveImageI
         }
     };
     
-    Ok(ComprehensiveImageInfo {
+    Ok(ImageMetadataInfo {
         width,
         height,
         file_size,
         mime_type,
         sd_parameters,
-        image_data: data, // 読み込んだ画像データを含める
+        // 画像データは返さない（メタデータのみ）
     })
 }
 

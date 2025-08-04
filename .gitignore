@@ -43,3 +43,6 @@ Thumbs.db
 src-tauri/target/
 src-tauri/Cargo.lock
 src-tauri/gen/
+
+# Claude Code local settings
+.claude/settings.local.json

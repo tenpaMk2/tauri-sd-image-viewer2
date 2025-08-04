@@ -26,11 +26,15 @@
 	let containerRef: HTMLDivElement;
 	let imageRef: HTMLImageElement;
 	let viewState = $state<ImageViewState>(createImageViewState());
+	let isImageChanging = $state(false);
+	let previousImageUrl = '';
 
 	// 画像URLが変更されたときにズームとパンをリセット
 	$effect(() => {
-		if (imageUrl) {
+		if (imageUrl && imageUrl !== previousImageUrl) {
+			isImageChanging = true;
 			resetImageViewState(viewState);
+			previousImageUrl = imageUrl;
 		}
 	});
 
@@ -61,6 +65,10 @@
 
 	const onImageLoad = () => {
 		viewState.fitScale = calculateFitScale(imageRef, containerRef);
+		// 次フレームでトランジション再有効化
+		requestAnimationFrame(() => {
+			isImageChanging = false;
+		});
 	};
 </script>
 
@@ -90,7 +98,7 @@
 			bind:this={imageRef}
 			src={imageUrl} 
 			alt={metadata.filename} 
-			class="{viewState.isDragging ? '' : 'transition-transform duration-200'}"
+			class="{viewState.isDragging || isImageChanging ? '' : 'transition-transform duration-200'}"
 			style="transform: translate({viewState.panX}px, {viewState.panY}px) scale({viewState.fitScale * viewState.zoomLevel}); transform-origin: center center; cursor: grab; max-width: none; max-height: none;"
 			onload={onImageLoad}
 		/>

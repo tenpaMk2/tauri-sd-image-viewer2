@@ -25,6 +25,7 @@ export const resetImageViewState = (state: ImageViewState): void => {
 	state.panX = 0;
 	state.panY = 0;
 	state.isDragging = false;
+	// fitScaleは保持してトランジション問題を回避
 };
 
 // 画像のウィンドウフィット用スケールを計算

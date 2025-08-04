@@ -12,8 +12,8 @@
 </script>
 
 {#if metadata.sdParameters}
-	<div class="rounded-lg bg-base-300 p-4">
-		<h3 class="mb-3 flex items-center gap-2 text-base font-semibold">
+	<div class="rounded-lg bg-base-300 p-3">
+		<h3 class="mb-2 flex items-center gap-2 text-sm font-semibold">
 			Stable Diffusion
 			<button
 				class="badge badge-outline text-xs hover:badge-primary"
@@ -24,7 +24,7 @@
 				コピー
 			</button>
 		</h3>
-		<div class="space-y-3 text-sm">
+		<div class="space-y-2 text-xs">
 			<!-- プロンプト -->
 			{#if metadata.sdParameters.positive_sd_tags.length > 0}
 				<div class="space-y-1">
@@ -39,7 +39,7 @@
 							<Icon icon="lucide:copy" class="h-3 w-3" />
 						</button>
 					</div>
-					<div class="rounded bg-base-100 p-2 font-mono text-xs leading-relaxed">
+					<div class="rounded bg-base-100 p-2 font-mono text-xs leading-tight">
 						{formatSdTags(metadata.sdParameters.positive_sd_tags)}
 					</div>
 				</div>
@@ -59,14 +59,14 @@
 							<Icon icon="lucide:copy" class="h-3 w-3" />
 						</button>
 					</div>
-					<div class="rounded bg-base-100 p-2 font-mono text-xs leading-relaxed">
+					<div class="rounded bg-base-100 p-2 font-mono text-xs leading-tight">
 						{formatSdTags(metadata.sdParameters.negative_sd_tags)}
 					</div>
 				</div>
 			{/if}
 
 			<!-- パラメータ一覧 -->
-			<div class="grid grid-cols-1 gap-2 text-xs">
+			<div class="grid grid-cols-1 gap-1 text-xs">
 				{#if metadata.sdParameters.steps}
 					<div class="flex justify-between">
 						<div class="text-base-content/70">Steps:</div>

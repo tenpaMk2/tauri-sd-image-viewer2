@@ -2,7 +2,6 @@
 	import type { ImageMetadata } from './image/types';
 	import { updateImageRating } from './utils/rating-utils';
 	import BasicInfoSection from './components/metadata/BasicInfoSection.svelte';
-	import DateTimeSection from './components/metadata/DateTimeSection.svelte';
 	import SdParamsSection from './components/metadata/SdParamsSection.svelte';
 	import ExifInfoSection from './components/metadata/ExifInfoSection.svelte';
 	import CameraInfoSection from './components/metadata/CameraInfoSection.svelte';
@@ -44,13 +43,11 @@
 	onfocus={onFocus}
 	onblur={onBlur}
 >
-	<div class="p-4">
-		<h2 class="mb-4 text-lg font-bold">画像情報</h2>
-		<div class="space-y-4">
+	<div class="p-3">
+		<div class="space-y-3">
 			<BasicInfoSection {metadata} />
-			<DateTimeSection {metadata} />
-			<SdParamsSection {metadata} />
 			<ExifInfoSection {metadata} />
+			<SdParamsSection {metadata} />
 			<CameraInfoSection {metadata} />
 		</div>
 	</div>

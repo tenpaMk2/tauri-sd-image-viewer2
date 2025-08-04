@@ -9,9 +9,9 @@
 </script>
 
 {#if metadata.camera || metadata.lens || metadata.settings}
-	<div class="rounded-lg bg-base-300 p-4">
-		<h3 class="mb-3 text-base font-semibold">撮影情報</h3>
-		<div class="space-y-2 text-sm">
+	<div class="rounded-lg bg-base-300 p-3">
+		<h3 class="mb-2 text-sm font-semibold">撮影情報</h3>
+		<div class="space-y-1.5 text-xs">
 			{#if metadata.camera}
 				<div class="flex justify-between">
 					<div class="text-base-content/70">カメラ:</div>

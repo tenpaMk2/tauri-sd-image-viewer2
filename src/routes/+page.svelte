@@ -29,7 +29,7 @@
 				filters: [
 					{
 						name: 'Image Files',
-						extensions: ['png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp', 'avif']
+						extensions: ['png', 'jpg', 'jpeg', 'webp']
 					}
 				]
 			});

@@ -90,7 +90,10 @@ Stable Diffusionの生成メタデータを表示可能。
 ### 画像ナビゲーション機能
 
 - 選択画像と同ディレクトリ内の画像ファイル自動検出
-- 対応形式: PNG, JPG, JPEG, GIF, BMP, WebP, AVIF
+- 対応形式: PNG, JPEG, WebP（機能サポートレベル別）
+  - **PNG**: フル機能（SD、EXIF、XMP Rating書き込み）
+  - **JPEG**: 限定機能（EXIF、XMP Rating書き込み、SD非対応）
+  - **WebP**: 基本機能（EXIF読み取りのみ）
 - キーボードナビゲーション（←→キー）
 - 隣接画像のプリロード機能とキャッシュ
 

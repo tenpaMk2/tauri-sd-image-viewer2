@@ -22,6 +22,11 @@ impl ExifInfo {
 }
 
 /// ファイル拡張子を判定
+/// 
+/// 対応形式:
+/// - PNG: フル機能（EXIF、XMP Rating書き込み、SD Parameters）
+/// - JPEG: 限定機能（EXIF、XMP Rating書き込み）
+/// - WebP: 基本機能（EXIF読み取りのみ）
 pub fn determine_file_extension_from_str(extension: &str) -> FileExtension {
     let ext = extension.to_lowercase();
     match ext.as_str() {
@@ -29,8 +34,9 @@ pub fn determine_file_extension_from_str(extension: &str) -> FileExtension {
         "png" => FileExtension::PNG {
             as_zTXt_chunk: false,
         },
-        "tiff" | "tif" => FileExtension::TIFF,
         "webp" => FileExtension::WEBP,
+        // 以下は後方互換性のために残すが、基本的に使用しない
+        "tiff" | "tif" => FileExtension::TIFF,
         "heif" | "heic" => FileExtension::HEIF,
         "jxl" => FileExtension::JXL,
         _ => FileExtension::JPEG, // デフォルト
@@ -357,6 +363,9 @@ fn update_rating_in_xmp(xmp_content: &str, rating: u32) -> String {
 }
 
 /// XMPメタデータにRatingを書き込み
+/// 
+/// 対応形式: PNG（フル機能）、JPEG（限定機能）
+/// WebPはXMP対応が困難なため除外
 fn write_xmp_rating_to_file(path: &Path, rating: u32) -> Result<(), String> {
     // ファイル拡張子を取得
     let extension = path.extension()
@@ -364,9 +373,9 @@ fn write_xmp_rating_to_file(path: &Path, rating: u32) -> Result<(), String> {
         .unwrap_or("")
         .to_lowercase();
 
-    // JPEGとPNGのみ対応
+    // PNGとJPEGのみXMP Rating書き込み対応
     if !matches!(extension.as_str(), "jpg" | "jpeg" | "png") {
-        return Ok(()); // サポートしていない形式の場合は無視
+        return Ok(()); // WebPなど非対応形式の場合は無視
     }
 
     // 既存ファイルを読み込み

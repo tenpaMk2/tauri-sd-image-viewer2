@@ -56,11 +56,7 @@ pub fn detect_mime_type_from_path(path: &str) -> String {
     match extension.as_str() {
         "png" => "image/png".to_string(),
         "jpg" | "jpeg" => "image/jpeg".to_string(),
-        "gif" => "image/gif".to_string(),
-        "bmp" => "image/bmp".to_string(),
         "webp" => "image/webp".to_string(),
-        "avif" => "image/avif".to_string(),
-        "tiff" | "tif" => "image/tiff".to_string(),
         _ => "application/octet-stream".to_string(),
     }
 }

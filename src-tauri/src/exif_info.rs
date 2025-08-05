@@ -35,11 +35,7 @@ pub fn determine_file_extension_from_str(extension: &str) -> FileExtension {
             as_zTXt_chunk: false,
         },
         "webp" => FileExtension::WEBP,
-        // 以下は後方互換性のために残すが、基本的に使用しない
-        "tiff" | "tif" => FileExtension::TIFF,
-        "heif" | "heic" => FileExtension::HEIF,
-        "jxl" => FileExtension::JXL,
-        _ => FileExtension::JPEG, // デフォルト
+        _ => FileExtension::JPEG, // デフォルト（未対応形式）
     }
 }
 

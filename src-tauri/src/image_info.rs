@@ -52,8 +52,8 @@ pub fn read_image_metadata_internal(path: &str) -> AppResult<ImageMetadataInfo> 
         }
     };
 
-    // Exif情報を抽出（JPEG、TIFF、PNG形式の場合）
-    let exif_info = if mime_type == "image/jpeg" || mime_type == "image/tiff" || mime_type == "image/png" {
+    // Exif情報を抽出（対応形式: PNG、JPEG、WebP）
+    let exif_info = if matches!(mime_type, "image/png" | "image/jpeg" | "image/webp") {
         let extension = path.split('.').last().unwrap_or("");
         ExifInfo::from_bytes(&data, extension)
     } else {

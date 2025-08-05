@@ -5,12 +5,16 @@
 		imageFiles,
 		currentIndex,
 		openFileDialog,
-		onSwitchToGrid
+		onSwitchToGrid,
+		onToggleInfoPanel,
+		isInfoPanelVisible
 	}: {
 		imageFiles: string[];
 		currentIndex: number;
 		openFileDialog: () => void;
 		onSwitchToGrid?: () => void;
+		onToggleInfoPanel?: () => void;
+		isInfoPanelVisible?: boolean;
 	} = $props();
 </script>
 
@@ -26,6 +30,15 @@
 		</div>
 
 		<div class="flex items-center gap-2">
+			{#if onToggleInfoPanel}
+				<button
+					class="btn text-white btn-ghost btn-sm"
+					onclick={onToggleInfoPanel}
+					title={isInfoPanelVisible ? '情報ペインを隠す' : '情報ペインを表示'}
+				>
+					<Icon icon={isInfoPanelVisible ? 'lucide:panel-right-close' : 'lucide:panel-right-open'} class="h-4 w-4" />
+				</button>
+			{/if}
 			{#if onSwitchToGrid}
 				<button
 					class="btn text-white btn-ghost btn-sm"

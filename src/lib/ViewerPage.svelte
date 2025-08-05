@@ -44,6 +44,9 @@
 	});
 
 	let isInfoPanelFocused = $state<boolean>(false);
+	let isInfoPanelVisible = $state<boolean>(true);
+	let infoPanelWidth = $state<number>(320); // デフォルト320px (w-80相当)
+	let isDragging = $state<boolean>(false);
 
 	// プリロード機能付きの画像読み込み
 	const preloadImageData = async (path: string): Promise<string> => {
@@ -151,6 +154,35 @@
 		}
 	};
 
+	// 情報ペインの表示/非表示切り替え
+	const toggleInfoPanel = (): void => {
+		isInfoPanelVisible = !isInfoPanelVisible;
+	};
+
+	// リサイザーのマウスイベント処理
+	const handleMouseDown = (e: MouseEvent): void => {
+		isDragging = true;
+		document.addEventListener('mousemove', handleMouseMove);
+		document.addEventListener('mouseup', handleMouseUp);
+		e.preventDefault();
+	};
+
+	const handleMouseMove = (e: MouseEvent): void => {
+		if (!isDragging) return;
+		
+		const newWidth = window.innerWidth - e.clientX;
+		// 最小幅200px、最大幅画面の60%に制限
+		const minWidth = 200;
+		const maxWidth = window.innerWidth * 0.6;
+		infoPanelWidth = Math.max(minWidth, Math.min(maxWidth, newWidth));
+	};
+
+	const handleMouseUp = (): void => {
+		isDragging = false;
+		document.removeEventListener('mousemove', handleMouseMove);
+		document.removeEventListener('mouseup', handleMouseUp);
+	};
+
 	// 初期化（初回のみ）
 	$effect(() => {
 		initializeImages(imagePath);
@@ -202,6 +234,8 @@
 			currentIndex={navigationState.currentIndex}
 			{openFileDialog}
 			{onSwitchToGrid}
+			onToggleInfoPanel={toggleInfoPanel}
+			{isInfoPanelVisible}
 		/>
 
 		<ImageCanvas
@@ -221,11 +255,31 @@
 		/>
 	</div>
 
-	<MetadataPanel
-		{metadata}
-		imagePath={navigationState.files[navigationState.currentIndex]}
-		onRatingUpdate={() => refreshCurrentImage()}
-		onFocus={handleInfoPanelFocus}
-		onBlur={handleInfoPanelBlur}
-	/>
+	<!-- リサイザー -->
+	{#if isInfoPanelVisible}
+		<div
+			class="w-1 bg-base-300 cursor-col-resize hover:bg-primary transition-colors z-20 flex-shrink-0"
+			onmousedown={handleMouseDown}
+			role="button"
+			tabindex="0"
+			aria-label="情報ペインの幅を調整"
+			title="ドラッグして幅を調整"
+		></div>
+	{/if}
+
+	<!-- 情報ペイン -->
+	{#if isInfoPanelVisible}
+		<div 
+			style="width: {infoPanelWidth}px"
+			class="flex-shrink-0"
+		>
+			<MetadataPanel
+				{metadata}
+				imagePath={navigationState.files[navigationState.currentIndex]}
+				onRatingUpdate={() => refreshCurrentImage()}
+				onFocus={handleInfoPanelFocus}
+				onBlur={handleInfoPanelBlur}
+			/>
+		</div>
+	{/if}
 </div>

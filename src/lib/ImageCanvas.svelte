@@ -146,17 +146,15 @@
 
 	<!-- ズームリセットボタン -->
 	{#if imageUrl && isZoomed}
-		<div class="absolute bottom-4 right-4">
-			<button
-				class="btn btn-sm btn-ghost bg-black/60 text-white hover:bg-black/80 backdrop-blur-sm"
-				onclick={resetZoom}
-				title="ズームをリセット (1:1)"
-				aria-label="ズームをリセット"
-			>
-				<Icon icon="lucide:zoom-out" class="h-4 w-4" />
-				リセット
-			</button>
-		</div>
+		<button
+			class="btn btn-sm btn-ghost bg-black/60 text-white hover:bg-black/80 backdrop-blur-sm absolute bottom-4 right-4"
+			onclick={resetZoom}
+			title="ズームをリセット (1:1)"
+			aria-label="ズームをリセット"
+		>
+			<Icon icon="lucide:zoom-out" class="h-4 w-4" />
+			リセット
+		</button>
 	{/if}
 
 	<!-- Rating オーバーレイバー（ズーム時は非表示） -->

@@ -39,8 +39,12 @@
 							<Icon icon="lucide:copy" class="h-3 w-3" />
 						</button>
 					</div>
-					<div class="rounded bg-base-100 p-2 font-mono text-xs leading-tight">
-						{formatSdTags(metadata.sdParameters.positive_sd_tags)}
+					<div class="flex flex-wrap gap-1 p-1">
+						{#each metadata.sdParameters.positive_sd_tags as tag}
+							<span class="badge badge-soft badge-sm">
+								{tag.name}{tag.weight ? `:${tag.weight}` : ''}
+							</span>
+						{/each}
 					</div>
 				</div>
 			{/if}
@@ -59,8 +63,12 @@
 							<Icon icon="lucide:copy" class="h-3 w-3" />
 						</button>
 					</div>
-					<div class="rounded bg-base-100 p-2 font-mono text-xs leading-tight">
-						{formatSdTags(metadata.sdParameters.negative_sd_tags)}
+					<div class="flex flex-wrap gap-1 p-1">
+						{#each metadata.sdParameters.negative_sd_tags as tag}
+							<span class="badge badge-soft badge-sm">
+								{tag.name}{tag.weight ? `:${tag.weight}` : ''}
+							</span>
+						{/each}
 					</div>
 				</div>
 			{/if}

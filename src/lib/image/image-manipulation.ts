@@ -50,19 +50,21 @@ export const calculateFitScale = (
 	return Math.min(scaleX, scaleY);
 };
 
-// ズーム操作の処理
+// ズーム操作の処理（ウィンドウフィットサイズ以下には縮小しない）
 export const handleZoom = (
 	state: ImageViewState,
 	deltaY: number,
 	zoomFactor: number = 0.1,
-	minZoom: number = 0.1,
+	minZoom: number = 1,
 	maxZoom: number = 3
 ): void => {
 	if (deltaY < 0) {
+		// 拡大
 		state.zoomLevel = Math.min(state.zoomLevel + zoomFactor, maxZoom);
 	} else {
+		// 縮小（ウィンドウフィットサイズ以下にはしない）
 		state.zoomLevel = Math.max(state.zoomLevel - zoomFactor, minZoom);
-		// ズームアウト時にパン位置をリセット
+		// ズームレベルが1以下になった時はパン位置をリセット
 		if (state.zoomLevel <= 1) {
 			state.panX = 0;
 			state.panY = 0;

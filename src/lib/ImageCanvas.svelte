@@ -159,8 +159,8 @@
 		</div>
 	{/if}
 
-	<!-- Rating オーバーレイバー -->
-	{#if imageUrl && metadata.exifInfo?.rating !== undefined}
+	<!-- Rating オーバーレイバー（ズーム時は非表示） -->
+	{#if imageUrl && metadata.exifInfo?.rating !== undefined && viewState.zoomLevel === 1}
 		<div
 			class="absolute bottom-4 left-1/2 -translate-x-1/2 transform rounded-lg bg-black/60 px-3 py-1.5 backdrop-blur-sm"
 		>

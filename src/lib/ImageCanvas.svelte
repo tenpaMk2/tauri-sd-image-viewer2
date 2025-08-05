@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Icon from '@iconify/svelte';
 	import type { ImageMetadata } from './image/types';
 	import {
 		createImageViewState,
@@ -90,6 +91,14 @@
 			// エラーハンドリングは共通関数内で処理済み
 		}
 	};
+
+	// ズームリセット機能
+	const resetZoom = () => {
+		resetImageViewState(viewState);
+	};
+
+	// ズームされているかどうかをチェック
+	const isZoomed = $derived(viewState.zoomLevel !== 1 || viewState.panX !== 0 || viewState.panY !== 0);
 </script>
 
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
@@ -132,6 +141,21 @@
 		<div class="flex flex-col items-center gap-2 text-white">
 			<span class="loading loading-lg loading-spinner"></span>
 			<span class="opacity-80">画像を読み込み中...</span>
+		</div>
+	{/if}
+
+	<!-- ズームリセットボタン -->
+	{#if imageUrl && isZoomed}
+		<div class="absolute bottom-4 right-4">
+			<button
+				class="btn btn-sm btn-ghost bg-black/60 text-white hover:bg-black/80 backdrop-blur-sm"
+				onclick={resetZoom}
+				title="ズームをリセット (1:1)"
+				aria-label="ズームをリセット"
+			>
+				<Icon icon="lucide:zoom-out" class="h-4 w-4" />
+				リセット
+			</button>
 		</div>
 	{/if}
 

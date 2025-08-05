@@ -148,9 +148,11 @@
 
 	// 現在の画像情報を再読み込み
 	const refreshCurrentImage = async (): Promise<void> => {
-		if (navigationState.files[navigationState.currentIndex]) {
+		const currentPath = navigationState.files[navigationState.currentIndex];
+		if (currentPath) {
+			console.log('Rating更新後のメタデータ再読み込み:', currentPath);
 			// 親コンポーネントに画像変更を通知（メタデータも再取得される）
-			await onImageChange(navigationState.files[navigationState.currentIndex]);
+			await onImageChange(currentPath);
 		}
 	};
 

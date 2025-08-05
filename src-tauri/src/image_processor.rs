@@ -44,6 +44,9 @@ impl PngProcessor {
         let reader = decoder.read_info()?;
         let info = reader.info();
 
+        println!("DEBUG: PNG情報読み込み完了 - width: {}, height: {}", info.width, info.height);
+        println!("DEBUG: tEXtチャンク数: {}", info.uncompressed_latin1_text.len());
+
         let png_info = PngInfo {
             width: info.width,
             height: info.height,
@@ -53,16 +56,28 @@ impl PngProcessor {
 
         // SD Parameters を検索・解析
         let mut sd_parameters = None;
-        for entry in &info.uncompressed_latin1_text {
+        for (i, entry) in info.uncompressed_latin1_text.iter().enumerate() {
+            println!("DEBUG: tEXtチャンク[{}] - keyword: '{}', text_length: {}", 
+                i, entry.keyword, entry.text.len());
             if entry.keyword == "parameters" {
+                println!("DEBUG: parametersチャンク発見! 内容の一部: {}...", 
+                    &entry.text.chars().take(100).collect::<String>());
                 match SdParameters::parse(&entry.text) {
                     Ok(params) => {
+                        println!("DEBUG: SDパラメータ解析成功!");
                         sd_parameters = Some(params);
                         break;
                     }
-                    Err(_) => continue, // 解析失敗は無視
+                    Err(e) => {
+                        println!("DEBUG: SDパラメータ解析失敗: {}", e);
+                        continue; // 解析失敗は無視
+                    }
                 }
             }
+        }
+
+        if sd_parameters.is_none() {
+            println!("DEBUG: SDパラメータが見つかりませんでした");
         }
 
         Ok((png_info, sd_parameters))

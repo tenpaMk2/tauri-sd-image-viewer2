@@ -288,6 +288,9 @@ impl ThumbnailHandler {
     fn load_or_generate_metadata(&self, image_path: &str, cache_key: &str) -> Option<CachedMetadata> {
         // キャッシュから読み込み試行
         if let Some(cached) = self.load_cached_metadata(cache_key) {
+            println!("📋 メタデータキャッシュヒット: {} - rating: {:?}", 
+                std::path::Path::new(image_path).file_name().unwrap_or_default().to_string_lossy(),
+                cached.rating);
             return Some(cached);
         }
 
@@ -296,9 +299,15 @@ impl ThumbnailHandler {
             Ok(metadata) => {
                 // キャッシュに保存
                 let _ = self.save_metadata_cache(cache_key, &metadata);
+                println!("🏷️ メタデータ生成完了: {} - rating: {:?}", 
+                    std::path::Path::new(image_path).file_name().unwrap_or_default().to_string_lossy(),
+                    metadata.rating);
                 Some(metadata)
             }
-            Err(_) => None,
+            Err(e) => {
+                println!("⚠️ メタデータ生成エラー: {} - {}", image_path, e);
+                None
+            },
         }
     }
 

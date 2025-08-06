@@ -142,6 +142,10 @@
 					}
 					
 					thumbnails = newThumbnails;
+					
+					// リアルタイム更新時にもRating表示を更新
+					ratingUpdateTrigger = Date.now();
+					console.log('🔄 リアルタイム更新、Rating表示更新トリガー:', ratingUpdateTrigger);
 					console.log('thumbnails更新 (リアルタイム):', thumbnails.size, '個のサムネイル');
 				}
 			);
@@ -152,6 +156,11 @@
 			console.log('resultThumbnails の内容:', Array.from(resultThumbnails.entries()).slice(0, 3));
 			
 			thumbnails = resultThumbnails;
+			
+			// サムネイル処理完了後にRating表示を更新
+			ratingUpdateTrigger = Date.now();
+			console.log('🔄 サムネイル処理完了、Rating表示更新トリガー:', ratingUpdateTrigger);
+			
 			console.log('thumbnails 状態更新後:', thumbnails.size, '個のサムネイル');
 			console.log('thumbnails の内容:', Array.from(thumbnails.entries()).slice(0, 3));
 			console.log('従来方式チャンク処理完了');

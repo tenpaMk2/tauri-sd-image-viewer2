@@ -200,6 +200,7 @@ export class ThumbnailService {
 						// メタデータをキャッシュに保存
 						if (result.cached_metadata) {
 							this.metadataCache.set(result.path, result.cached_metadata);
+							console.log('💾 メタデータキャッシュ保存:', result.path.split('/').pop(), '- rating:', result.cached_metadata.rating);
 						}
 
 						loadedCount++;
@@ -280,6 +281,7 @@ export class ThumbnailService {
 						// メタデータをキャッシュに保存
 						if (result.cached_metadata) {
 							this.metadataCache.set(result.path, result.cached_metadata);
+							console.log('💾 メタデータキャッシュ保存:', result.path.split('/').pop(), '- rating:', result.cached_metadata.rating);
 						}
 
 						loadedCount++;
@@ -326,7 +328,9 @@ export class ThumbnailService {
 	// 画像のRating情報を取得
 	getImageRating(imagePath: string): number | undefined {
 		const metadata = this.metadataCache.get(imagePath);
-		return metadata?.rating;
+		const rating = metadata?.rating;
+		console.log('🔍 Rating取得:', imagePath.split('/').pop(), '- rating:', rating, '- metadata:', metadata ? '有り' : '無し');
+		return rating;
 	}
 
 	// 画像のRating情報を更新

@@ -9,6 +9,9 @@ pub enum AppError {
     ExifError(String),
     ParseError(String),
     InvalidInput(String),
+    CacheError(String),
+    ThumbnailGenerationError(String),
+    MetadataError(String),
 }
 
 impl fmt::Display for AppError {
@@ -20,6 +23,9 @@ impl fmt::Display for AppError {
             AppError::ExifError(e) => write!(f, "Exif処理エラー: {}", e),
             AppError::ParseError(e) => write!(f, "解析エラー: {}", e),
             AppError::InvalidInput(e) => write!(f, "入力エラー: {}", e),
+            AppError::CacheError(e) => write!(f, "キャッシュエラー: {}", e),
+            AppError::ThumbnailGenerationError(e) => write!(f, "サムネイル生成エラー: {}", e),
+            AppError::MetadataError(e) => write!(f, "メタデータエラー: {}", e),
         }
     }
 }

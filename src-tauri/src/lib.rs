@@ -1,14 +1,13 @@
 mod common;
 mod types;
-mod image_processor;
+mod image_handlers;
 mod thumbnail;
 mod sd_parameters;
-mod png_handler;
 mod image_info;
 mod exif_info;
 
 use tauri::Manager;
-use thumbnail::{ThumbnailState, ThumbnailConfig};
+use thumbnail::ThumbnailState;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -17,7 +16,7 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .setup(|app| {
             // サムネイル状態を初期化
-            let thumbnail_config = ThumbnailConfig::default();
+            let thumbnail_config = thumbnail::ThumbnailConfig::default();
             let thumbnail_state =
                 match ThumbnailState::new(thumbnail_config, app.handle()) {
                     Ok(state) => state,
@@ -33,8 +32,8 @@ pub fn run() {
             thumbnail::load_thumbnails_batch,
             thumbnail::load_thumbnails_batch_path_only,
             thumbnail::clear_thumbnail_cache,
-            png_handler::read_png_image_info,
-            png_handler::read_png_sd_parameters,
+            image_handlers::png_processor::read_png_image_info,
+            image_handlers::png_processor::read_png_sd_parameters,
             image_info::read_image_metadata_info,
             exif_info::write_exif_image_rating,
         ])

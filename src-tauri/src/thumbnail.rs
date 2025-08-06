@@ -1,10 +1,13 @@
 use crate::types::{ThumbnailInfo, BatchThumbnailResult, CachedMetadata};
 use crate::image_info::read_image_metadata_internal;
-use image::GenericImageView;
+use image::{GenericImageView, ImageFormat};
+use image::imageops::FilterType;
+use memmap2::MmapOptions;
 use rayon::prelude::*;
 use sha2::{Digest, Sha256};
-use std::fs;
+use std::fs::{self, File};
 use std::path::PathBuf;
+use std::time::Instant;
 use tauri::{AppHandle, Manager, Runtime};
 use webp::Encoder;
 
@@ -18,7 +21,7 @@ pub struct ThumbnailConfig {
 impl Default for ThumbnailConfig {
     fn default() -> Self {
         Self {
-            size: 300,
+            size: 128,  // 300px → 128px に縮小（約4倍高速化）
             quality: 80,
         }
     }
@@ -197,12 +200,24 @@ impl ThumbnailHandler {
 
     /// サムネイルを読み込みまたは生成（キャッシュ優先）
     fn load_or_generate_thumbnail(&self, image_path: &str) -> Result<ThumbnailInfo, String> {
+        let start_time = Instant::now();
+        
+        let cache_key_start = Instant::now();
         let cache_key = self.generate_cache_key(image_path);
+        let cache_key_duration = cache_key_start.elapsed();
+        
         let cache_path = self.cache_dir.join(format!("{}.webp", cache_key));
 
         // キャッシュが有効かチェック
+        let cache_check_start = Instant::now();
         if self.is_cache_valid(&cache_path, image_path) {
+            let cache_read_start = Instant::now();
             if let Ok(data) = fs::read(&cache_path) {
+                let cache_read_duration = cache_read_start.elapsed();
+                let total_duration = start_time.elapsed();
+                println!("📋 キャッシュヒット: {} (キーの生成: {:?}, キャッシュ読み込み: {:?}, 合計: {:?})", 
+                    std::path::Path::new(image_path).file_name().unwrap_or_default().to_string_lossy(),
+                    cache_key_duration, cache_read_duration, total_duration);
                 return Ok(ThumbnailInfo {
                     data,
                     width: self.config.size,
@@ -212,15 +227,25 @@ impl ThumbnailHandler {
                 });
             }
         }
+        let cache_check_duration = cache_check_start.elapsed();
 
         // 新しいサムネイルを生成
+        let generation_start = Instant::now();
         let mut thumbnail_info = self.generate_thumbnail(image_path)?;
+        let generation_duration = generation_start.elapsed();
 
         // キャッシュに保存
+        let cache_save_start = Instant::now();
         if let Ok(_) = fs::write(&cache_path, &thumbnail_info.data) {
             // キャッシュ保存成功時はパスを設定
             thumbnail_info.cache_path = Some(cache_path.to_string_lossy().to_string());
         }
+        let cache_save_duration = cache_save_start.elapsed();
+        
+        let total_duration = start_time.elapsed();
+        println!("🔄 新規生成: {} (キー生成: {:?}, キャッシュ確認: {:?}, サムネイル生成: {:?}, キャッシュ保存: {:?}, 合計: {:?})", 
+            std::path::Path::new(image_path).file_name().unwrap_or_default().to_string_lossy(),
+            cache_key_duration, cache_check_duration, generation_duration, cache_save_duration, total_duration);
 
         Ok(thumbnail_info)
     }
@@ -296,24 +321,38 @@ impl ThumbnailHandler {
         }
     }
 
-    /// サムネイルを生成
+    /// サムネイルを生成（最適化版）
     fn generate_thumbnail(&self, image_path: &str) -> Result<ThumbnailInfo, String> {
-        // 画像ファイルを読み込み
-        let img = image::open(image_path)
-            .map_err(|e| format!("画像の読み込みに失敗: {} - {}", image_path, e))?;
+        let start_time = Instant::now();
+        
+        // 画像ファイルを最適化された方法で読み込み
+        let load_start = Instant::now();
+        let img = self.load_image_optimized(image_path)?;
+        let load_duration = load_start.elapsed();
 
-        // サムネイル生成（アスペクト比を維持）
-        let thumbnail = img.thumbnail(self.config.size, self.config.size);
+        // 段階的リサイズでサムネイル生成（メモリ効率向上）
+        let resize_start = Instant::now();
+        let thumbnail = self.resize_image_optimized(img, self.config.size);
         let (width, height) = thumbnail.dimensions();
+        let resize_duration = resize_start.elapsed();
 
         // RGBAバイト配列に変換
+        let rgba_start = Instant::now();
         let rgba_image = thumbnail.to_rgba8();
         let rgba_data = rgba_image.as_raw();
+        let rgba_duration = rgba_start.elapsed();
 
         // WebPに変換
+        let webp_start = Instant::now();
         let encoder = Encoder::from_rgba(rgba_data, width, height);
         let webp_memory = encoder.encode(self.config.quality as f32);
         let webp_data = webp_memory.to_vec();
+        let webp_duration = webp_start.elapsed();
+        
+        let total_duration = start_time.elapsed();
+        println!("  ⚙️  生成詳細 - {}: 画像読み込み: {:?}, リサイズ: {:?}, RGBA変換: {:?}, WebP変換: {:?}, 合計: {:?}", 
+            std::path::Path::new(image_path).file_name().unwrap_or_default().to_string_lossy(),
+            load_duration, resize_duration, rgba_duration, webp_duration, total_duration);
 
         Ok(ThumbnailInfo {
             data: webp_data,
@@ -322,6 +361,45 @@ impl ThumbnailHandler {
             mime_type: "image/webp".to_string(),
             cache_path: None, // 生成時点ではキャッシュパスは未設定
         })
+    }
+
+    /// 最適化された画像読み込み（PNG専用最適化）
+    fn load_image_optimized(&self, image_path: &str) -> Result<image::DynamicImage, String> {
+        let path_lower = image_path.to_lowercase();
+        
+        if path_lower.ends_with(".png") {
+            // PNG画像：メモリマップド読み込みを使用
+            let file = File::open(image_path)
+                .map_err(|e| format!("ファイルオープンに失敗: {} - {}", image_path, e))?;
+            
+            let mmap = unsafe { 
+                MmapOptions::new().map(&file)
+                    .map_err(|e| format!("メモリマップに失敗: {} - {}", image_path, e))?
+            };
+            
+            image::load_from_memory_with_format(&mmap, ImageFormat::Png)
+                .map_err(|e| format!("PNG画像の読み込みに失敗: {} - {}", image_path, e))
+        } else {
+            // その他の形式：従来の方法（フォールバック）
+            image::open(image_path)
+                .map_err(|e| format!("画像の読み込みに失敗: {} - {}", image_path, e))
+        }
+    }
+
+    /// 最適化された段階的リサイズ
+    fn resize_image_optimized(&self, img: image::DynamicImage, target_size: u32) -> image::DynamicImage {
+        let (width, height) = img.dimensions();
+        let max_dimension = width.max(height);
+        
+        if max_dimension > 512 {
+            // 大きな画像：段階的リサイズ（メモリ効率向上）
+            let intermediate_size = (target_size * 4).min(512); // 中間サイズを適切に設定
+            let intermediate = img.resize(intermediate_size, intermediate_size, FilterType::Triangle);
+            intermediate.thumbnail(target_size, target_size)
+        } else {
+            // 小さな画像：直接リサイズ
+            img.thumbnail(target_size, target_size)
+        }
     }
 
     /// キャッシュをクリア
@@ -376,13 +454,17 @@ pub async fn load_thumbnails_batch<R: Runtime>(
     app: AppHandle<R>,
     state: tauri::State<'_, ThumbnailState>,
 ) -> Result<Vec<BatchThumbnailResult>, String> {
-    println!("チャンク処理: {}個のファイル", image_paths.len());
+    let batch_start = Instant::now();
+    println!("\n📦 バッチ処理開始: {}個のファイル", image_paths.len());
     
     let results = state.handler.process_thumbnails_batch(&image_paths, &app);
     
     let success_count = results.iter().filter(|r| r.thumbnail.is_some()).count();
     let error_count = results.iter().filter(|r| r.error.is_some()).count();
-    println!("チャンク完了: 成功={}, エラー={}", success_count, error_count);
+    let batch_duration = batch_start.elapsed();
+    println!("✅ バッチ完了: 成功={}, エラー={}, 処理時間={:?} (平均 {:.2}ms/ファイル)\n", 
+        success_count, error_count, batch_duration, 
+        batch_duration.as_millis() as f64 / image_paths.len() as f64);
     
     Ok(results)
 }

@@ -107,11 +107,11 @@
 		aria-label={isSelectionMode ? '画像を選択' : '画像を開く'}
 	>
 		{#if thumbnailUrl}
-			<div class="relative flex h-full w-full items-center justify-center p-2">
+			<div class="relative flex h-full w-full items-center justify-center p-1">
 				<img
 					src={thumbnailUrl}
 					alt="thumbnail"
-					class="max-h-full max-w-full rounded object-contain"
+					class="h-full w-full rounded object-contain"
 					loading="lazy"
 					onload={() => {
 						const fileName = imagePath.split('/').pop();

@@ -31,6 +31,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             thumbnail::load_thumbnails_batch,
+            thumbnail::load_thumbnails_batch_path_only,
             thumbnail::clear_thumbnail_cache,
             png_handler::read_png_image_info,
             png_handler::read_png_sd_parameters,

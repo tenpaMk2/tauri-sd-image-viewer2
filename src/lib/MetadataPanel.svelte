@@ -36,7 +36,7 @@
 
 <!-- 右側: 情報ペイン (可変幅) -->
 <div
-	class="w-full h-full overflow-y-auto bg-base-200 shadow-2xl"
+	class="h-full w-full overflow-y-auto bg-base-200 shadow-2xl"
 	tabindex="0"
 	role="tabpanel"
 	aria-label="画像情報パネル"

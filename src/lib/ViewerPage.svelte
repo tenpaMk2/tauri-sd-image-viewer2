@@ -171,7 +171,7 @@
 
 	const handleMouseMove = (e: MouseEvent): void => {
 		if (!isDragging) return;
-		
+
 		const newWidth = window.innerWidth - e.clientX;
 		// 最小幅200px、最大幅画面の60%に制限
 		const minWidth = 200;
@@ -260,7 +260,7 @@
 	<!-- リサイザー -->
 	{#if isInfoPanelVisible}
 		<div
-			class="w-1 bg-base-300 cursor-col-resize hover:bg-primary transition-colors z-20 flex-shrink-0"
+			class="z-20 w-1 flex-shrink-0 cursor-col-resize bg-base-300 transition-colors hover:bg-primary"
 			onmousedown={handleMouseDown}
 			role="button"
 			tabindex="0"
@@ -271,10 +271,7 @@
 
 	<!-- 情報ペイン -->
 	{#if isInfoPanelVisible}
-		<div 
-			style="width: {infoPanelWidth}px"
-			class="flex-shrink-0"
-		>
+		<div style="width: {infoPanelWidth}px" class="flex-shrink-0">
 			<MetadataPanel
 				{metadata}
 				imagePath={navigationState.files[navigationState.currentIndex]}

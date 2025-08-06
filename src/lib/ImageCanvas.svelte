@@ -98,7 +98,9 @@
 	};
 
 	// ズームされているかどうかをチェック
-	const isZoomed = $derived(viewState.zoomLevel !== 1 || viewState.panX !== 0 || viewState.panY !== 0);
+	const isZoomed = $derived(
+		viewState.zoomLevel !== 1 || viewState.panX !== 0 || viewState.panY !== 0
+	);
 </script>
 
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
@@ -147,7 +149,7 @@
 	<!-- ズームリセットボタン -->
 	{#if imageUrl && isZoomed}
 		<button
-			class="btn btn-sm btn-ghost bg-black/60 text-white hover:bg-black/80 backdrop-blur-sm absolute bottom-4 right-4"
+			class="btn absolute right-4 bottom-4 bg-black/60 text-white btn-ghost backdrop-blur-sm btn-sm hover:bg-black/80"
 			onclick={resetZoom}
 			title="ズームをリセット (1:1)"
 			aria-label="ズームをリセット"

@@ -126,6 +126,7 @@ export type ThumbnailInfo = {
 	width: number; // Rust: u32
 	height: number; // Rust: u32
 	mime_type: string; // Rust: String
+	cache_path?: string; // Rust: Option<String> - キャッシュファイルのパス
 };
 
 // ==========================================

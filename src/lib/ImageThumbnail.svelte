@@ -24,6 +24,33 @@
 	let isRatingHovered = $state(false);
 	let hoveredRating = $state(0);
 
+	// デバッグログ
+	$effect(() => {
+		if (imagePath.includes('00047') || imagePath.includes('00048')) {
+			console.log('ImageThumbnail デバッグ:', {
+				imagePath: imagePath.split('/').pop(),
+				thumbnailUrl: thumbnailUrl?.substring(0, 50) + '...',
+				isLoading,
+				hasThumbnailUrl: !!thumbnailUrl,
+				componentState: thumbnailUrl ? 'サムネイル有り' : isLoading ? 'ローディング中' : 'No Image'
+			});
+		}
+	});
+
+	// サムネイル表示状態の詳細ログ
+	$effect(() => {
+		const fileName = imagePath.split('/').pop();
+		if (fileName && (fileName.includes('00047') || fileName.includes('00048'))) {
+			console.log('レンダリング状態:', {
+				fileName,
+				renderCondition: thumbnailUrl ? 'thumbnailUrl' : isLoading ? 'loading' : 'noImage',
+				willShowThumbnail: !!thumbnailUrl,
+				willShowLoading: isLoading,
+				willShowNoImage: !thumbnailUrl && !isLoading
+			});
+		}
+	});
+
 	const handleClick = (): void => {
 		if (isSelectionMode && onToggleSelection) {
 			onToggleSelection(imagePath);
@@ -71,7 +98,7 @@
 
 <div class="group relative cursor-pointer">
 	<button
-		class="aspect-square w-full cursor-pointer overflow-hidden rounded-lg border-0 bg-base-200 p-0 shadow-md transition-all duration-200 hover:scale-105 hover:shadow-lg hover:bg-primary/10"
+		class="aspect-square w-full cursor-pointer overflow-hidden rounded-lg border-0 bg-base-200 p-0 shadow-md transition-all duration-200 hover:scale-105 hover:bg-primary/10 hover:shadow-lg"
 		class:ring-4={isSelected}
 		class:ring-blue-500={isSelected}
 		class:opacity-80={isSelected}
@@ -86,22 +113,35 @@
 					alt="thumbnail"
 					class="max-h-full max-w-full rounded object-contain"
 					loading="lazy"
+					onload={() => {
+						const fileName = imagePath.split('/').pop();
+						if (fileName && (fileName.includes('00047') || fileName.includes('00048'))) {
+							console.log('画像読み込み完了:', fileName);
+						}
+					}}
+					onerror={(e) => {
+						const fileName = imagePath.split('/').pop();
+						if (fileName && (fileName.includes('00047') || fileName.includes('00048'))) {
+							console.log('画像読み込みエラー:', fileName, e);
+						}
+					}}
 				/>
-				
 			</div>
 		{:else if isLoading}
-			<div class="flex h-full items-center justify-center">
-				<div class="loading loading-sm loading-spinner"></div>
+			<div class="flex h-full flex-col items-center justify-center bg-base-300/30">
+				<div class="loading mb-2 loading-sm loading-spinner"></div>
+				<div class="text-xs text-base-content/50">読み込み中...</div>
 			</div>
 		{:else}
-			<div class="flex h-full items-center justify-center">
-				<div class="text-base-content/50">No Image</div>
+			<div class="flex h-full flex-col items-center justify-center bg-base-300/20">
+				<div class="mb-1 text-2xl opacity-30">📷</div>
+				<div class="text-xs text-base-content/50">No Image</div>
 			</div>
 		{/if}
 	</button>
 
 	<!-- Rating オーバーレイ表示 -->
-	<div 
+	<div
 		class="absolute bottom-1 left-1/2 -translate-x-1/2 rounded bg-black/30 px-1 py-0.5"
 		role="group"
 		aria-label="画像評価"
@@ -110,7 +150,9 @@
 		<div class="flex gap-0.5" title={`Rating: ${rating || 0}/5 (クリックで変更)`}>
 			{#each Array(5) as _, i}
 				<button
-					class="text-sm transition-colors duration-100 hover:scale-110 {i < displayRating ? 'text-white' : 'text-white/30'}"
+					class="text-sm transition-colors duration-100 hover:scale-110 {i < displayRating
+						? 'text-white'
+						: 'text-white/30'}"
 					onmouseenter={() => handleRatingMouseEnter(i + 1)}
 					onclick={(e) => handleRatingClick(e, i + 1)}
 					style="text-shadow: 0 1px 2px rgba(0,0,0,0.8);"

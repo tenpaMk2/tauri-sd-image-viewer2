@@ -20,7 +20,9 @@
 {#if 2 <= imageFiles.length}
 	<!-- 前の画像ボタン -->
 	{#if 0 < currentIndex}
-		<div class="absolute top-1/2 left-6 -translate-y-1/2 w-16 h-16 flex items-center justify-center">
+		<div
+			class="absolute top-1/2 left-6 flex h-16 w-16 -translate-y-1/2 items-center justify-center"
+		>
 			<button
 				class="btn btn-circle btn-ghost btn-lg"
 				class:btn-disabled={isNavigating}
@@ -38,7 +40,9 @@
 
 	<!-- 次の画像ボタン -->
 	{#if currentIndex < imageFiles.length - 1}
-		<div class="absolute top-1/2 right-6 -translate-y-1/2 w-16 h-16 flex items-center justify-center">
+		<div
+			class="absolute top-1/2 right-6 flex h-16 w-16 -translate-y-1/2 items-center justify-center"
+		>
 			<button
 				class="btn btn-circle btn-ghost btn-lg"
 				class:btn-disabled={isNavigating}

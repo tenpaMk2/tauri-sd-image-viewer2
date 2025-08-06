@@ -160,6 +160,41 @@ impl ThumbnailHandler {
             .collect()
     }
 
+    /// バッチでサムネイルを処理（キャッシュパスのみ返却）
+    pub fn process_thumbnails_batch_path_only<R: Runtime>(
+        &self,
+        image_paths: &[String],
+        _app: &AppHandle<R>,
+    ) -> Vec<BatchThumbnailResult> {
+        // 並列処理でサムネイル生成・キャッシュパスのみ返却
+        image_paths
+            .par_iter()
+            .map(|path| {
+                let cache_key = self.generate_cache_key(path);
+                
+                match self.load_or_generate_thumbnail_path_only(path) {
+                    Ok(thumbnail) => {
+                        // メタデータもロードまたは生成
+                        let cached_metadata = self.load_or_generate_metadata(path, &cache_key);
+                        
+                        BatchThumbnailResult {
+                            path: path.clone(),
+                            thumbnail: Some(thumbnail),
+                            cached_metadata,
+                            error: None,
+                        }
+                    },
+                    Err(e) => BatchThumbnailResult {
+                        path: path.clone(),
+                        thumbnail: None,
+                        cached_metadata: None,
+                        error: Some(e),
+                    },
+                }
+            })
+            .collect()
+    }
+
     /// サムネイルを読み込みまたは生成（キャッシュ優先）
     fn load_or_generate_thumbnail(&self, image_path: &str) -> Result<ThumbnailInfo, String> {
         let cache_key = self.generate_cache_key(image_path);
@@ -173,18 +208,54 @@ impl ThumbnailHandler {
                     width: self.config.size,
                     height: self.config.size,
                     mime_type: "image/webp".to_string(),
+                    cache_path: Some(cache_path.to_string_lossy().to_string()),
                 });
             }
+        }
+
+        // 新しいサムネイルを生成
+        let mut thumbnail_info = self.generate_thumbnail(image_path)?;
+
+        // キャッシュに保存
+        if let Ok(_) = fs::write(&cache_path, &thumbnail_info.data) {
+            // キャッシュ保存成功時はパスを設定
+            thumbnail_info.cache_path = Some(cache_path.to_string_lossy().to_string());
+        }
+
+        Ok(thumbnail_info)
+    }
+
+    /// サムネイルを読み込みまたは生成（キャッシュパスのみ返却）
+    fn load_or_generate_thumbnail_path_only(&self, image_path: &str) -> Result<ThumbnailInfo, String> {
+        let cache_key = self.generate_cache_key(image_path);
+        let cache_path = self.cache_dir.join(format!("{}.webp", cache_key));
+
+        // キャッシュが有効かチェック
+        if self.is_cache_valid(&cache_path, image_path) {
+            return Ok(ThumbnailInfo {
+                data: Vec::new(), // 空のデータ
+                width: self.config.size,
+                height: self.config.size,
+                mime_type: "image/webp".to_string(),
+                cache_path: Some(cache_path.to_string_lossy().to_string()),
+            });
         }
 
         // 新しいサムネイルを生成
         let thumbnail_info = self.generate_thumbnail(image_path)?;
 
         // キャッシュに保存
-        if let Err(_e) = fs::write(&cache_path, &thumbnail_info.data) {
-            // キャッシュ保存に失敗してもサムネイルは返す
+        if let Ok(_) = fs::write(&cache_path, &thumbnail_info.data) {
+            return Ok(ThumbnailInfo {
+                data: Vec::new(), // パスのみ返却のため空データ
+                width: thumbnail_info.width,
+                height: thumbnail_info.height,
+                mime_type: thumbnail_info.mime_type,
+                cache_path: Some(cache_path.to_string_lossy().to_string()),
+            });
         }
 
+        // キャッシュ保存に失敗した場合はデータを返却
         Ok(thumbnail_info)
     }
 
@@ -249,6 +320,7 @@ impl ThumbnailHandler {
             width,
             height,
             mime_type: "image/webp".to_string(),
+            cache_path: None, // 生成時点ではキャッシュパスは未設定
         })
     }
 
@@ -311,6 +383,24 @@ pub async fn load_thumbnails_batch<R: Runtime>(
     let success_count = results.iter().filter(|r| r.thumbnail.is_some()).count();
     let error_count = results.iter().filter(|r| r.error.is_some()).count();
     println!("チャンク完了: 成功={}, エラー={}", success_count, error_count);
+    
+    Ok(results)
+}
+
+/// バッチでサムネイルを生成または取得するTauriコマンド（キャッシュパスのみ返却）
+#[tauri::command]
+pub async fn load_thumbnails_batch_path_only<R: Runtime>(
+    image_paths: Vec<String>,
+    app: AppHandle<R>,
+    state: tauri::State<'_, ThumbnailState>,
+) -> Result<Vec<BatchThumbnailResult>, String> {
+    println!("チャンク処理（パスのみ）: {}個のファイル", image_paths.len());
+    
+    let results = state.handler.process_thumbnails_batch_path_only(&image_paths, &app);
+    
+    let success_count = results.iter().filter(|r| r.thumbnail.is_some()).count();
+    let error_count = results.iter().filter(|r| r.error.is_some()).count();
+    println!("チャンク完了（パスのみ）: 成功={}, エラー={}", success_count, error_count);
     
     Ok(results)
 }

@@ -66,7 +66,10 @@
 		console.log('メタデータ更新開始:', imagePath);
 		appState.selectedImagePath = imagePath;
 		const newMetadata = await createImageMetadata(imagePath);
-		console.log('メタデータ更新完了:', { sdParameters: newMetadata.sdParameters, exifRating: newMetadata.exifInfo?.rating });
+		console.log('メタデータ更新完了:', {
+			sdParameters: newMetadata.sdParameters,
+			exifRating: newMetadata.exifInfo?.rating
+		});
 		appState.imageMetadata = newMetadata;
 	};
 

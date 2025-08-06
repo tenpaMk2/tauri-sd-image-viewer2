@@ -36,7 +36,10 @@
 					onclick={onToggleInfoPanel}
 					title={isInfoPanelVisible ? '情報ペインを隠す' : '情報ペインを表示'}
 				>
-					<Icon icon={isInfoPanelVisible ? 'lucide:panel-right-close' : 'lucide:panel-right-open'} class="h-4 w-4" />
+					<Icon
+						icon={isInfoPanelVisible ? 'lucide:panel-right-close' : 'lucide:panel-right-open'}
+						class="h-4 w-4"
+					/>
 				</button>
 			{/if}
 			{#if onSwitchToGrid}

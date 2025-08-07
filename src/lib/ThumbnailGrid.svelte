@@ -360,7 +360,7 @@
 			<!-- グリッド表示 -->
 			<div class="flex-1 overflow-auto">
 				<div
-					class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7"
+					class="grid grid-cols-2 gap-3 p-1 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7"
 				>
 					{#each imageFiles as imagePath (imagePath)}
 						{@const isSelected = selectedImages.has(imagePath)}

@@ -98,7 +98,7 @@
 
 <div class="group relative cursor-pointer">
 	<button
-		class="aspect-square w-full cursor-pointer overflow-hidden rounded-lg border-0 bg-base-200 p-0 shadow-md transition-all duration-200 hover:scale-105 hover:bg-primary/10 hover:shadow-lg"
+		class="aspect-square w-full cursor-pointer overflow-hidden rounded-lg border-0 bg-base-200 p-0 shadow-md transition-all duration-200 hover:bg-primary/10 hover:shadow-lg"
 		class:ring-4={isSelected}
 		class:ring-blue-500={isSelected}
 		class:opacity-80={isSelected}

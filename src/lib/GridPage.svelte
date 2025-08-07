@@ -1,6 +1,8 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte';
+	import { invoke } from '@tauri-apps/api/core';
 	import { basename } from '@tauri-apps/api/path';
+	import { platform } from '@tauri-apps/plugin-os';
 	import ThumbnailGrid from './ThumbnailGrid.svelte';
 	import { deleteSelectedImages as performDelete } from './utils/delete-images';
 
@@ -20,6 +22,7 @@
 	let selectedImages = $state<Set<string>>(new Set());
 	let refreshTrigger = $state<number>(0);
 	let imageFiles = $state<string[]>([]);
+	let isMacOS = $state<boolean>(false);
 
 	// ThumbnailGridから画像ファイル一覧を受け取る
 	const handleImageFilesLoaded = (files: string[]) => {
@@ -64,6 +67,34 @@
 			// エラーはperformDelete内で処理済み
 		}
 	};
+
+	// クリップボード機能
+	const copySelectedToClipboard = async (): Promise<void> => {
+		if (selectedImages.size === 0) return;
+
+		const paths = Array.from(selectedImages);
+		try {
+			await invoke('set_clipboard_files', { paths });
+			console.log(`${selectedImages.size}個の画像をクリップボードにコピーしました`);
+		} catch (error) {
+			console.error('クリップボードへのコピーに失敗:', error);
+		}
+	};
+
+	// プラットフォーム判定の初期化
+	$effect(() => {
+		const checkPlatform = async () => {
+			try {
+				const currentPlatform = await platform();
+				isMacOS = currentPlatform === 'macos';
+			} catch (error) {
+				console.error('プラットフォーム判定に失敗:', error);
+				isMacOS = false;
+			}
+		};
+
+		checkPlatform();
+	});
 </script>
 
 <div class="flex h-full flex-col">
@@ -146,6 +177,12 @@
 				{selectedImages.size}個の画像を選択中
 			</div>
 			<div class="flex items-center gap-4">
+				{#if isMacOS}
+					<button class="btn btn-sm btn-neutral" onclick={copySelectedToClipboard}>
+						<Icon icon="lucide:copy" class="h-4 w-4" />
+						クリップボードにコピー
+					</button>
+				{/if}
 				<button class="btn btn-sm btn-error" onclick={deleteSelectedImages}>
 					<Icon icon="lucide:trash-2" class="h-4 w-4" />
 					削除

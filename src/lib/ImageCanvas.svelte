@@ -162,7 +162,7 @@
 	<!-- Rating オーバーレイバー（ズーム時は非表示） -->
 	{#if imageUrl && metadata.exifInfo?.rating !== undefined && viewState.zoomLevel === 1}
 		<div
-			class="absolute bottom-4 left-1/2 -translate-x-1/2 transform rounded-lg bg-black/60 px-3 py-1.5 backdrop-blur-sm"
+			class="absolute bottom-4 left-1/2 -translate-x-1/2 transform rounded-lg bg-black/60 px-3 pt-1 pb-2 opacity-70 backdrop-blur-sm"
 		>
 			<div class="rating-sm rating gap-0.5">
 				{#each Array(5) as _, i}

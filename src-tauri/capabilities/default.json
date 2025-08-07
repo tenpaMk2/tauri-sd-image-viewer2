@@ -6,6 +6,7 @@
 	"permissions": [
 		"core:default",
 		"dialog:default",
+		"log:default",
 		{
 			"identifier": "fs:read-all",
 			"allow": ["/**"]

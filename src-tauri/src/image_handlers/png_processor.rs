@@ -1,7 +1,6 @@
 use crate::common::{read_file_safe, AppResult};
-use crate::exif_info::ExifInfo;
 use crate::sd_parameters::SdParameters;
-use crate::types::{ImageMetadataInfo, PngImageInfo};
+use crate::types::PngImageInfo;
 use png::Decoder;
 use std::io::Cursor;
 

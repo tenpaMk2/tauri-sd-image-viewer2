@@ -19,7 +19,8 @@
 		error,
 		metadata,
 		imagePath,
-		onRatingUpdate
+		onRatingUpdate,
+		isUIVisible = true
 	}: {
 		imageUrl: string;
 		isLoading: boolean;
@@ -27,6 +28,7 @@
 		metadata: ImageMetadata;
 		imagePath?: string;
 		onRatingUpdate?: () => void;
+		isUIVisible?: boolean;
 	} = $props();
 
 	let containerRef: HTMLDivElement;
@@ -159,8 +161,8 @@
 		</button>
 	{/if}
 
-	<!-- Rating オーバーレイバー（ズーム時は非表示） -->
-	{#if imageUrl && metadata.exifInfo?.rating !== undefined && viewState.zoomLevel === 1}
+	<!-- Rating オーバーレイバー（ズーム時・UI非表示時は非表示） -->
+	{#if imageUrl && metadata.exifInfo?.rating !== undefined && viewState.zoomLevel === 1 && isUIVisible}
 		<div
 			class="absolute bottom-4 left-1/2 -translate-x-1/2 transform rounded-lg bg-black/60 px-3 pt-1 pb-2 opacity-70 backdrop-blur-sm"
 		>

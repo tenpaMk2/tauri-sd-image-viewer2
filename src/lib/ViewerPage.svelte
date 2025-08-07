@@ -326,6 +326,7 @@
 			{metadata}
 			imagePath={navigationState.files[navigationState.currentIndex]}
 			onRatingUpdate={() => refreshCurrentImage()}
+			{isUIVisible}
 		/>
 		<NavigationButtons
 			imageFiles={navigationState.files}

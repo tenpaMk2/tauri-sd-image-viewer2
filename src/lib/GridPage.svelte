@@ -23,6 +23,7 @@
 	let refreshTrigger = $state<number>(0);
 	let imageFiles = $state<string[]>([]);
 	let isMacOS = $state<boolean>(false);
+	let lastSelectedIndex = $state<number>(-1); // Shift+Click用の基点インデックス
 
 	// ThumbnailGridから画像ファイル一覧を受け取る
 	const handleImageFilesLoaded = (files: string[]) => {
@@ -37,15 +38,32 @@
 		}
 	};
 
-	// 画像選択/選択解除
-	const toggleImageSelection = (imagePath: string) => {
-		const newSelection = new Set(selectedImages);
-		if (newSelection.has(imagePath)) {
-			newSelection.delete(imagePath);
+	// 画像選択/選択解除（OSファイル選択エミュレート）
+	const toggleImageSelection = (imagePath: string, shiftKey: boolean = false) => {
+		const currentIndex = imageFiles.indexOf(imagePath);
+		
+		if (shiftKey && lastSelectedIndex !== -1) {
+			// Shift+Click: 範囲選択
+			const startIndex = Math.min(lastSelectedIndex, currentIndex);
+			const endIndex = Math.max(lastSelectedIndex, currentIndex);
+			
+			const newSelection = new Set(selectedImages);
+			for (let i = startIndex; i <= endIndex; i++) {
+				newSelection.add(imageFiles[i]);
+			}
+			selectedImages = newSelection;
 		} else {
-			newSelection.add(imagePath);
+			// 通常クリック: 単独選択（既存選択をクリア）
+			if (selectedImages.has(imagePath)) {
+				// 既に選択されている場合は選択解除
+				selectedImages = new Set();
+				lastSelectedIndex = -1;
+			} else {
+				// 新しく選択（他の選択はクリア）
+				selectedImages = new Set([imagePath]);
+				lastSelectedIndex = currentIndex;
+			}
 		}
-		selectedImages = newSelection;
 	};
 
 	// 全選択/全選択解除
@@ -160,7 +178,6 @@
 		<ThumbnailGrid
 			directoryPath={selectedDirectory}
 			onImageSelect={handleImageSelect}
-			{isSelectionMode}
 			{selectedImages}
 			onToggleSelection={toggleImageSelection}
 			{refreshTrigger}

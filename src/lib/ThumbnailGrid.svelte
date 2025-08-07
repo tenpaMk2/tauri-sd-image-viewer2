@@ -5,7 +5,6 @@
 	const {
 		directoryPath,
 		onImageSelect,
-		isSelectionMode = false,
 		selectedImages = new Set(),
 		onToggleSelection,
 		refreshTrigger = 0,
@@ -13,9 +12,8 @@
 	}: {
 		directoryPath: string;
 		onImageSelect: (imagePath: string) => void;
-		isSelectionMode?: boolean;
 		selectedImages?: Set<string>;
-		onToggleSelection?: (imagePath: string) => void;
+		onToggleSelection?: (imagePath: string, shiftKey?: boolean) => void;
 		refreshTrigger?: number;
 		onImageFilesLoaded?: (files: string[]) => void;
 	} = $props();
@@ -306,9 +304,9 @@
 		onImageSelect(imagePath);
 	};
 
-	const handleToggleSelection = (imagePath: string): void => {
+	const handleToggleSelection = (imagePath: string, shiftKey: boolean = false): void => {
 		if (onToggleSelection) {
-			onToggleSelection(imagePath);
+			onToggleSelection(imagePath, shiftKey);
 		}
 	};
 
@@ -376,7 +374,6 @@
 							{thumbnailUrl}
 							{rating}
 							{isSelected}
-							{isSelectionMode}
 							{isLoading}
 							onImageClick={handleImageClick}
 							onToggleSelection={handleToggleSelection}

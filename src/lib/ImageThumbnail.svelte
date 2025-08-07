@@ -4,7 +4,6 @@
 		thumbnailUrl,
 		rating,
 		isSelected = false,
-		isSelectionMode = false,
 		isLoading = false,
 		onImageClick,
 		onToggleSelection,
@@ -14,7 +13,6 @@
 		thumbnailUrl?: string;
 		rating?: number;
 		isSelected?: boolean;
-		isSelectionMode?: boolean;
 		isLoading?: boolean;
 		onImageClick: (imagePath: string) => void;
 		onToggleSelection?: (imagePath: string) => void;
@@ -51,12 +49,14 @@
 		}
 	});
 
-	const handleClick = (): void => {
-		if (isSelectionMode && onToggleSelection) {
-			onToggleSelection(imagePath);
-		} else {
-			onImageClick(imagePath);
+	const handleClick = (event: MouseEvent): void => {
+		if (onToggleSelection) {
+			onToggleSelection(imagePath, event.shiftKey);
 		}
+	};
+
+	const handleDoubleClick = (): void => {
+		onImageClick(imagePath);
 	};
 
 	const handleCheckboxChange = (e: Event): void => {
@@ -103,8 +103,9 @@
 		class:ring-blue-500={isSelected}
 		class:opacity-80={isSelected}
 		onclick={handleClick}
+		ondblclick={handleDoubleClick}
 		onkeydown={(e) => e.key === 'Enter' && handleClick()}
-		aria-label={isSelectionMode ? '画像を選択' : '画像を開く'}
+		aria-label="画像を選択（ダブルクリックで開く）"
 	>
 		{#if thumbnailUrl}
 			<div class="relative flex h-full w-full items-center justify-center p-1">
@@ -164,16 +165,4 @@
 		</div>
 	</div>
 
-	<!-- 選択機能 -->
-	{#if isSelectionMode}
-		<div class="absolute top-2 right-2 z-10">
-			<input
-				type="checkbox"
-				class="checkbox border-2 border-white bg-black/50 checkbox-sm checkbox-primary"
-				checked={isSelected}
-				onchange={handleCheckboxChange}
-				title={isSelected ? '選択解除' : '選択'}
-			/>
-		</div>
-	{/if}
 </div>

@@ -68,6 +68,54 @@ Stable Diffusionの生成メタデータを表示可能。
 2. 変更後は `bun run check` で型チェック実行
 3. コミット前に `bun run format` で整形
 
+## ディレクトリ構造
+
+```
+src/
+├── lib/
+│   ├── hooks/              # カスタムフック
+│   │   ├── use-resizer.ts
+│   │   ├── use-cleanup.ts
+│   │   └── use-keyboard-navigation.ts
+│   ├── image/              # 画像処理関連
+│   │   ├── image-loader.ts
+│   │   ├── image-manipulation.ts
+│   │   ├── mime-type.ts
+│   │   ├── types.ts
+│   │   └── utils.ts
+│   ├── services/           # ビジネスロジック
+│   │   ├── image-metadata-service.ts
+│   │   ├── logger.ts
+│   │   ├── navigation-service.ts
+│   │   └── thumbnail-service.ts
+│   ├── stores/             # グローバル状態管理
+│   │   └── app-store.ts
+│   ├── types/              # 型定義
+│   │   ├── shared-types.ts # Rust-TypeScript共通型
+│   │   └── result.ts
+│   ├── ui/                 # UI関連
+│   │   └── types.ts
+│   └── utils/              # ユーティリティ関数
+├── routes/                 # SvelteKitルーティング
+└── app.css                # グローバルスタイル
+
+src-tauri/src/
+├── image_handlers/         # 画像形式別処理
+│   ├── mod.rs
+│   ├── generic_processor.rs
+│   └── png_processor.rs
+├── thumbnail/              # サムネイル生成
+│   ├── mod.rs
+│   ├── cache.rs
+│   ├── generator.rs
+│   └── metadata_handler.rs
+├── types/                  # Rust型定義
+│   ├── mod.rs
+│   ├── image_types.rs
+│   └── thumbnail_types.rs
+└── [各種機能モジュール]
+```
+
 ## アーキテクチャ
 
 ### SPAアーキテクチャ
@@ -123,3 +171,46 @@ Stable Diffusionの生成メタデータを表示可能。
 - Rust-TypeScript間の型同期は`src/lib/types/shared-types.ts`で管理
 - フロントエンド専用型は`src/lib/image/types.ts`で分離管理
 - 型変更時は必ずRust側と同時更新すること（詳細はTYPE_SYNC_GUIDE.md参照）
+
+## 設定ファイル
+
+### フロントエンド設定
+- `vite.config.ts` - Viteビルド設定とTailwind CSS統合
+- `svelte.config.js` - SvelteKit設定（SPA構成）
+- `tsconfig.json` - TypeScript設定
+- `src/app.css` - Tailwind CSS v4とDaisyUI設定
+
+### Tauri設定
+- `src-tauri/Cargo.toml` - Rust依存関係管理
+- `src-tauri/tauri.conf.json` - Tauriアプリ設定
+- `src-tauri/capabilities/default.json` - セキュリティ権限設定
+
+## 主要依存関係
+
+### フロントエンド
+- `@sveltejs/kit` - フレームワーク
+- `@tailwindcss/vite` - CSS フレームワーク（v4）
+- `daisyui` - UIコンポーネント
+- `@iconify/svelte` - アイコン
+- `@tauri-apps/plugin-*` - Tauri統合プラグイン
+
+### Rust（バックエンド）
+- `image`, `png`, `webp` - 画像処理
+- `little_exif` - EXIF メタデータ処理
+- `serde`, `serde_json` - シリアライゼーション
+- `memmap2` - メモリマップファイルアクセス
+- `rayon` - 並列処理
+- `objc2-*` - macOS ネイティブ機能統合
+
+## デバッグ・トラブルシューティング
+
+### 開発時のトラブル対応
+1. 型エラー → `bun run check` で確認
+2. UI表示問題 → ブラウザ開発者ツールで確認
+3. Rust側エラー → `cargo check` および Tauriログで確認
+4. ビルドエラー → `bun run build` および `bun run tauri:build` で確認
+
+### よくある問題
+- Rust-TypeScript型不整合 → TYPE_SYNC_GUIDE.md参照
+- パフォーマンス問題 → PERFORMANCE_OPTIMIZATION.md参照
+- 権限エラー → `src-tauri/capabilities/default.json`確認

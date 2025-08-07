@@ -14,7 +14,7 @@
 		directoryPath: string;
 		onImageSelect: (imagePath: string) => void;
 		selectedImages?: Set<string>;
-		onToggleSelection?: (imagePath: string, shiftKey?: boolean) => void;
+		onToggleSelection?: (imagePath: string, shiftKey?: boolean, metaKey?: boolean) => void;
 		refreshTrigger?: number;
 		onImageFilesLoaded?: (files: string[]) => void;
 	} = $props();
@@ -418,9 +418,9 @@
 		onImageSelect(imagePath);
 	};
 
-	const handleToggleSelection = (imagePath: string, shiftKey: boolean = false): void => {
+	const handleToggleSelection = (imagePath: string, shiftKey: boolean = false, metaKey: boolean = false): void => {
 		if (onToggleSelection) {
-			onToggleSelection(imagePath, shiftKey);
+			onToggleSelection(imagePath, shiftKey, metaKey);
 		}
 	};
 

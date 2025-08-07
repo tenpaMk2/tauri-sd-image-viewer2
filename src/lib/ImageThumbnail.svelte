@@ -15,7 +15,7 @@
 		isSelected?: boolean;
 		isLoading?: boolean;
 		onImageClick: (imagePath: string) => void;
-		onToggleSelection?: (imagePath: string, shiftKey?: boolean) => void;
+		onToggleSelection?: (imagePath: string, shiftKey?: boolean, metaKey?: boolean) => void;
 		onRatingChange?: (imagePath: string, newRating: number) => void;
 	} = $props();
 
@@ -51,7 +51,7 @@
 
 	const handleClick = (event?: MouseEvent): void => {
 		if (onToggleSelection) {
-			onToggleSelection(imagePath, event?.shiftKey);
+			onToggleSelection(imagePath, event?.shiftKey, event?.metaKey);
 		}
 	};
 

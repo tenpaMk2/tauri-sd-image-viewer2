@@ -31,7 +31,7 @@
 	};
 
 	// 画像選択/選択解除（OSファイル選択エミュレート）
-	const toggleImageSelection = (imagePath: string, shiftKey: boolean = false) => {
+	const toggleImageSelection = (imagePath: string, shiftKey: boolean = false, metaKey: boolean = false) => {
 		const currentIndex = imageFiles.indexOf(imagePath);
 
 		if (shiftKey && lastSelectedIndex !== -1) {
@@ -42,6 +42,18 @@
 			const newSelection = new Set(selectedImages);
 			for (let i = startIndex; i <= endIndex; i++) {
 				newSelection.add(imageFiles[i]);
+			}
+			selectedImages = newSelection;
+		} else if (metaKey) {
+			// Cmd+Click (macOS) または Ctrl+Click (Windows/Linux): 複数選択
+			const newSelection = new Set(selectedImages);
+			if (selectedImages.has(imagePath)) {
+				// 既に選択されている場合は選択解除
+				newSelection.delete(imagePath);
+			} else {
+				// 新しく選択に追加
+				newSelection.add(imagePath);
+				lastSelectedIndex = currentIndex;
 			}
 			selectedImages = newSelection;
 		} else {

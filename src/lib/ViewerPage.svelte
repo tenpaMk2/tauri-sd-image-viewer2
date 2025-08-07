@@ -7,6 +7,7 @@
 	import MetadataPanel from './MetadataPanel.svelte';
 	import NavigationButtons from './NavigationButtons.svelte';
 	import { NavigationService, type NavigationState } from './services/navigation-service';
+	import { showInfoToast, showSuccessToast } from './stores/toast.svelte';
 	import ToolbarOverlay from './ToolbarOverlay.svelte';
 
 	const {
@@ -229,6 +230,7 @@
 
 			// 自動ナビゲーションを開始
 			isAutoNavActive = true;
+			showInfoToast('自動最新画像切り替えが有効になりました');
 			autoNavTimer = setInterval(async () => {
 				const latestIndex = navigationState.files.length - 1;
 				if (latestIndex !== navigationState.currentIndex) {
@@ -245,7 +247,7 @@
 
 		try {
 			await invoke('set_clipboard_files', { paths: [currentPath] });
-			console.log('画像をクリップボードにコピーしました');
+			showSuccessToast('画像をクリップボードにコピーしました');
 		} catch (error) {
 			console.error('クリップボードへのコピーに失敗:', error);
 		}

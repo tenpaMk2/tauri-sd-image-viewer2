@@ -3,6 +3,7 @@
 	import { invoke } from '@tauri-apps/api/core';
 	import { basename } from '@tauri-apps/api/path';
 	import { platform } from '@tauri-apps/plugin-os';
+	import { showSuccessToast } from './stores/toast.svelte';
 	import ThumbnailGrid from './ThumbnailGrid.svelte';
 	import { deleteSelectedImages as performDelete } from './utils/delete-images';
 
@@ -85,7 +86,7 @@
 		const paths = Array.from(selectedImages);
 		try {
 			await invoke('set_clipboard_files', { paths });
-			console.log(`${selectedImages.size}個の画像をクリップボードにコピーしました`);
+			showSuccessToast(`${selectedImages.size}個の画像をクリップボードにコピーしました`);
 		} catch (error) {
 			console.error('クリップボードへのコピーに失敗:', error);
 		}

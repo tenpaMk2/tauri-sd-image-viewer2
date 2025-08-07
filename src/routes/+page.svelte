@@ -1,5 +1,6 @@
 <script lang="ts">
 	import GridPage from '$lib/GridPage.svelte';
+	import Toast from '$lib/Toast.svelte';
 	import ViewerPage from '$lib/ViewerPage.svelte';
 	import WelcomeScreen from '$lib/WelcomeScreen.svelte';
 	import { appStore } from '$lib/stores/app-store';
@@ -36,4 +37,7 @@
 			/>
 		{/if}
 	</main>
+	
+	<!-- Toast表示 -->
+	<Toast />
 </div>

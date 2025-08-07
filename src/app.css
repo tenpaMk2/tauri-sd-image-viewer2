@@ -1,3 +1,19 @@
 @import 'tailwindcss';
 
 @plugin 'daisyui';
+
+/* 全体的にテキスト選択を無効化 */
+* {
+	user-select: none;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+}
+
+/* 情報ペインの内容部分でのみテキスト選択を有効化 */
+.metadata-content * {
+	user-select: text;
+	-webkit-user-select: text;
+	-moz-user-select: text;
+	-ms-user-select: text;
+}

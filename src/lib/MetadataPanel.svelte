@@ -44,7 +44,7 @@
 	onblur={onBlur}
 >
 	<div class="p-3">
-		<div class="space-y-3">
+		<div class="space-y-3 metadata-content">
 			<BasicInfoSection {metadata} />
 			<ExifInfoSection {metadata} />
 			<SdParamsSection {metadata} />

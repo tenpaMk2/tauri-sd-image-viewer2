@@ -12,8 +12,4 @@ impl GenericImageProcessor {
         }
     }
 
-    /// MIME型から対応する画像形式を判定
-    pub fn is_supported_format(mime_type: &str) -> bool {
-        matches!(mime_type, "image/png" | "image/jpeg" | "image/webp")
-    }
 }

@@ -61,25 +61,6 @@ impl PngProcessor {
         Ok((png_info, sd_parameters))
     }
 
-    /// 包括的なメタデータ情報を取得
-    pub fn extract_metadata_info(path: &str) -> AppResult<ImageMetadataInfo> {
-        let data = read_file_safe(path)?;
-        let file_size = data.len() as u64;
-
-        let (png_info, sd_parameters) = Self::extract_comprehensive_info(&data)?;
-
-        // Exif情報を抽出
-        let exif_info = ExifInfo::from_bytes(&data, "png");
-
-        Ok(ImageMetadataInfo {
-            width: png_info.width,
-            height: png_info.height,
-            file_size,
-            mime_type: "image/png".to_string(),
-            sd_parameters,
-            exif_info,
-        })
-    }
 }
 
 /// PNG画像情報を読み込み（Tauri API）

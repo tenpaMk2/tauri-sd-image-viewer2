@@ -1,11 +1,14 @@
 import { convertFileSrc, invoke } from '@tauri-apps/api/core';
 import { getImageFiles } from '../image/image-loader';
 import type { BatchThumbnailResult, CachedMetadata } from '../types/shared-types';
+import { ThumbnailQueueManager, type ThumbnailQueueCallbacks } from './thumbnail-queue-manager';
 
 // サムネイル処理のサービス
 export class ThumbnailService {
 	// メタデータキャッシュ
 	private metadataCache = new Map<string, CachedMetadata>();
+	// キューマネージャ
+	private queueManager: ThumbnailQueueManager | null = null;
 
 	async loadSingleThumbnail(imagePath: string): Promise<string | null> {
 		try {
@@ -242,5 +245,129 @@ export class ThumbnailService {
 
 	getCacheSize(): number {
 		return this.metadataCache.size;
+	}
+
+	// キューベースの新しいサムネイル生成メソッド
+	async loadThumbnailsWithQueue(
+		allImageFiles: string[],
+		callbacks: ThumbnailQueueCallbacks & {
+			onChunkComplete: (chunkResults: Map<string, string>) => void;
+		}
+	): Promise<void> {
+		// 既存のキューがあれば停止
+		this.stopCurrentQueue();
+
+		// 新しいキューマネージャを作成
+		this.queueManager = new ThumbnailQueueManager(
+			{ chunkSize: 16, delayBetweenChunks: 10 },
+			{
+				...callbacks,
+				onChunkComplete: (chunkResults, chunkMetadata) => {
+					// メタデータキャッシュを更新
+					if (chunkMetadata) {
+						for (const [imagePath, metadata] of chunkMetadata) {
+							this.metadataCache.set(imagePath, metadata);
+						}
+					}
+					callbacks.onChunkComplete(chunkResults);
+				}
+			}
+		);
+
+		await this.queueManager.startProcessing(allImageFiles);
+	}
+
+	// 現在のキューを停止
+	stopCurrentQueue(): void {
+		// 複雑なキューマネージャを停止
+		if (this.queueManager) {
+			this.queueManager.stop();
+			this.queueManager = null;
+		}
+		// シンプルキューも停止
+		this.stopSimpleQueue();
+	}
+
+	// シンプルなキューベースサムネイル生成（キュー停止機能付き）
+	private stopQueue = false;
+
+	async loadThumbnailsWithSimpleQueue(
+		allImageFiles: string[],
+		onChunkComplete: (chunkResults: Map<string, string>) => void,
+		onProgress?: (loadedCount: number, totalCount: number) => void
+	): Promise<Map<string, string>> {
+		const newThumbnails = new Map<string, string>();
+		const chunks: string[][] = [];
+
+		for (let i = 0; i < allImageFiles.length; i += 16) {
+			chunks.push(allImageFiles.slice(i, i + 16));
+		}
+
+		let loadedCount = 0;
+		this.stopQueue = false; // 停止フラグをリセット
+
+		for (const [chunkIndex, chunk] of chunks.entries()) {
+			if (this.stopQueue) {
+				console.log('Queue stopped by request');
+				break;
+			}
+
+			try {
+				const results: BatchThumbnailResult[] = await invoke('load_thumbnails_batch', {
+					imagePaths: chunk
+				});
+
+				const chunkThumbnails = new Map<string, string>();
+
+				for (const result of results) {
+					if (this.stopQueue) break;
+
+					if (result.thumbnail && result.thumbnail.data) {
+						const uint8Array = new Uint8Array(result.thumbnail.data);
+						const blob = new Blob([uint8Array], { type: result.thumbnail.mime_type });
+						const url = URL.createObjectURL(blob);
+						newThumbnails.set(result.path, url);
+						chunkThumbnails.set(result.path, url);
+
+						if (result.cached_metadata) {
+							this.metadataCache.set(result.path, result.cached_metadata);
+						}
+
+						loadedCount++;
+					} else if (result.error) {
+						console.warn(`Thumbnail generation failed: ${result.path} - ${result.error}`);
+					}
+				}
+
+				if (chunkThumbnails.size > 0) {
+					onChunkComplete(chunkThumbnails);
+				}
+
+				if (onProgress) {
+					onProgress(loadedCount, allImageFiles.length);
+				}
+
+				await new Promise(resolve => setTimeout(resolve, 10));
+			} catch (chunkError) {
+				console.error(`Chunk ${chunkIndex + 1} processing error:`, chunkError);
+			}
+		}
+
+		return newThumbnails;
+	}
+
+	// キューを停止する新しいメソッド
+	stopSimpleQueue(): void {
+		this.stopQueue = true;
+	}
+
+	// キューの状態を取得
+	getQueueStatus(): string {
+		return this.queueManager?.getStatus() || 'idle';
+	}
+
+	// キューのプログレス情報を取得
+	getQueueProgress(): { loadedCount: number; totalCount: number; percentage: number } {
+		return this.queueManager?.getProgress() || { loadedCount: 0, totalCount: 0, percentage: 0 };
 	}
 }

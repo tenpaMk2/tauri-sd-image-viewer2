@@ -3,6 +3,7 @@ import { writable } from 'svelte/store';
 import type { ImageMetadata } from '../image/types';
 import { getDirectoryFromPath } from '../image/utils';
 import { imageMetadataService } from '../services/image-metadata-service';
+import { globalThumbnailService } from '../services/global-thumbnail-service';
 import type { ViewMode } from '../ui/types';
 
 export type AppState = {
@@ -47,6 +48,9 @@ const openFileDialog = async (): Promise<void> => {
 		});
 
 		if (selected && typeof selected === 'string') {
+			// ファイル選択でビューアーモードに移行する時は、サムネイル生成キューを停止
+			globalThumbnailService.stopActiveQueue();
+			
 			const imageMetadata = await imageMetadataService.getImageMetadataUnsafe(selected);
 			const selectedDirectory = await getDirectoryFromPath(selected);
 
@@ -97,6 +101,7 @@ const handleImageChange = async (newPath: string): Promise<void> => {
 };
 
 const handleSwitchToGrid = (): void => {
+	// グリッドモードに戻る時は、前のキューが動いていても継続させる
 	appState.update((state) => ({
 		...state,
 		viewMode: 'grid'
@@ -104,6 +109,9 @@ const handleSwitchToGrid = (): void => {
 };
 
 const handleImageSelect = async (imagePath: string): Promise<void> => {
+	// ビューアーモードに切り替える時は、サムネイル生成キューを停止
+	globalThumbnailService.stopActiveQueue();
+	
 	await updateSelectedImage(imagePath);
 	appState.update((state) => ({
 		...state,
@@ -119,6 +127,8 @@ const handleBackToGrid = (): void => {
 };
 
 const handleBackToWelcome = (): void => {
+	// ウェルカム画面に戻る時は、サムネイル生成キューを停止してクリア
+	globalThumbnailService.clearActiveService();
 	appState.set(initialState);
 };
 

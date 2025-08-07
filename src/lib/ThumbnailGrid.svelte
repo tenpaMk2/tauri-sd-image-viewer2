@@ -1,6 +1,7 @@
 <script lang="ts">
 	import ImageThumbnail from './ImageThumbnail.svelte';
 	import { ThumbnailService } from './services/thumbnail-service';
+	import { globalThumbnailService } from './services/global-thumbnail-service';
 
 	const {
 		directoryPath,
@@ -87,8 +88,8 @@
 
 			console.log('画像ファイル一覧取得完了:', imageFiles.length, '個のファイル');
 
-			// 第2段階：デバッグのため従来方式を使用
-			loadThumbnailsWithTraditionalMethod();
+			// 第2段階：シンプルキューをテスト
+			loadThumbnailsWithSimpleQueue();
 		} catch (err) {
 			loadingState.error =
 				err instanceof Error ? err.message : '画像ファイルの読み込みに失敗しました';
@@ -258,8 +259,119 @@
 		}
 	};
 
+	// シンプルなキューベースのサムネイル生成（キュー停止機能付き）
+	const loadThumbnailsWithSimpleQueue = async () => {
+		console.log('=== loadThumbnailsWithSimpleQueue 開始 ===');
+		console.log('imageFiles:', imageFiles.length, '個のファイル');
+
+		try {
+			console.log('シンプルキューベースのサムネイル生成開始:', imageFiles.length, '個のファイル');
+
+			const resultThumbnails = await thumbnailService.loadThumbnailsWithSimpleQueue(
+				imageFiles,
+				(chunkResults) => {
+					console.log('=== シンプルチャンク完了 ===');
+					console.log('チャンク結果受信:', chunkResults.size, '個のサムネイル');
+
+					// 既存のthumbnailsに新しいチャンク結果をマージ
+					const newThumbnails = new Map(thumbnails);
+					for (const [imagePath, thumbnailUrl] of chunkResults) {
+						console.log(
+							'サムネイル追加:',
+							imagePath.split('/').pop(),
+							thumbnailUrl.substring(0, 50) + '...'
+						);
+						newThumbnails.set(imagePath, thumbnailUrl);
+					}
+
+					thumbnails = newThumbnails;
+
+					// リアルタイム更新時にもRating表示を更新
+					ratingUpdateTrigger = Date.now();
+					console.log('🔄 リアルタイム更新、Rating表示更新トリガー:', ratingUpdateTrigger);
+					console.log('thumbnails更新 (リアルタイム):', thumbnails.size, '個のサムネイル');
+				},
+				(loadedCount, totalCount) => {
+					console.log('プロセス通知:', loadedCount, '/', totalCount);
+					loadingState.loadedCount = loadedCount;
+					loadingState.totalCount = totalCount;
+				}
+			);
+
+			// 最終結果をセット
+			thumbnails = resultThumbnails;
+			ratingUpdateTrigger = Date.now();
+
+			console.log('シンプルキューベースのサムネイル生成完了');
+			loadingState.isProcessing = false;
+
+		} catch (err) {
+			console.error('シンプルキューベース処理エラー:', err);
+			loadingState.isProcessing = false;
+		}
+	};
+
+	// 新しいキューベースのサムネイル生成
+	const loadThumbnailsWithQueue = async () => {
+		console.log('=== loadThumbnailsWithQueue 開始 ===');
+		console.log('imageFiles:', imageFiles.length, '個のファイル');
+
+		try {
+			console.log('キューベースのサムネイル生成開始:', imageFiles.length, '個のファイル');
+
+			await thumbnailService.loadThumbnailsWithQueue(imageFiles, {
+				onChunkComplete: (chunkResults) => {
+					console.log('=== チャンク完了 ===');
+					console.log('チャンク結果受信:', chunkResults.size, '個のサムネイル');
+
+					// 既存のthumbnailsに新しいチャンク結果をマージ
+					const newThumbnails = new Map(thumbnails);
+					for (const [imagePath, thumbnailUrl] of chunkResults) {
+						console.log(
+							'サムネイル追加:',
+							imagePath.split('/').pop(),
+							thumbnailUrl.substring(0, 50) + '...'
+						);
+						newThumbnails.set(imagePath, thumbnailUrl);
+					}
+
+					thumbnails = newThumbnails;
+
+					// リアルタイム更新時にもRating表示を更新
+					ratingUpdateTrigger = Date.now();
+					console.log('🔄 リアルタイム更新、Rating表示更新トリガー:', ratingUpdateTrigger);
+					console.log('thumbnails更新 (リアルタイム):', thumbnails.size, '個のサムネイル');
+				},
+				onProgress: (loadedCount, totalCount) => {
+					console.log('プロセス通知:', loadedCount, '/', totalCount);
+					loadingState.loadedCount = loadedCount;
+					loadingState.totalCount = totalCount;
+				},
+				onError: (error, failedPaths) => {
+					console.error('キュー処理エラー:', error, failedPaths);
+				},
+				onComplete: () => {
+					console.log('キューベースのサムネイル生成完了');
+					loadingState.isProcessing = false;
+					ratingUpdateTrigger = Date.now();
+					console.log('🔄 全処理完了、Rating表示更新トリガー:', ratingUpdateTrigger);
+				},
+				onCancelled: () => {
+					console.log('キューベースのサムネイル生成がキャンセルされました');
+					loadingState.isProcessing = false;
+				}
+			});
+
+		} catch (err) {
+			console.error('キューベース処理エラー:', err);
+			loadingState.isProcessing = false;
+		}
+	};
+
 	// クリーンアップ関数
 	const cleanup = () => {
+		// キューを停止してからクリーンアップ
+		thumbnailService.stopCurrentQueue();
 		thumbnailService.cleanupThumbnails(thumbnails);
 		thumbnails.clear();
 	};
@@ -271,6 +383,8 @@
 	$effect(() => {
 		if (directoryPath && !currentDirectory) {
 			currentDirectory = directoryPath;
+			// このサービスをアクティブなサービスとして登録
+			globalThumbnailService.setActiveService(thumbnailService);
 			loadImageFileList();
 		}
 

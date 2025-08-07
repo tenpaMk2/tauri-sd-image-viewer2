@@ -49,8 +49,8 @@ const openFileDialog = async (): Promise<void> => {
 		if (selected && typeof selected === 'string') {
 			const imageMetadata = await imageMetadataService.getImageMetadataUnsafe(selected);
 			const selectedDirectory = await getDirectoryFromPath(selected);
-			
-			appState.update(state => ({
+
+			appState.update((state) => ({
 				...state,
 				selectedImagePath: selected,
 				imageMetadata,
@@ -71,7 +71,7 @@ const openDirectoryDialog = async (): Promise<void> => {
 		});
 
 		if (selected && typeof selected === 'string') {
-			appState.update(state => ({
+			appState.update((state) => ({
 				...state,
 				selectedDirectory: selected,
 				viewMode: 'grid'
@@ -83,14 +83,9 @@ const openDirectoryDialog = async (): Promise<void> => {
 };
 
 const updateSelectedImage = async (imagePath: string): Promise<void> => {
-	console.log('メタデータ更新開始:', imagePath);
 	const newMetadata = await imageMetadataService.getImageMetadataUnsafe(imagePath);
-	console.log('メタデータ更新完了:', {
-		sdParameters: newMetadata.sdParameters,
-		exifRating: newMetadata.exifInfo?.rating
-	});
-	
-	appState.update(state => ({
+
+	appState.update((state) => ({
 		...state,
 		selectedImagePath: imagePath,
 		imageMetadata: newMetadata
@@ -102,7 +97,7 @@ const handleImageChange = async (newPath: string): Promise<void> => {
 };
 
 const handleSwitchToGrid = (): void => {
-	appState.update(state => ({
+	appState.update((state) => ({
 		...state,
 		viewMode: 'grid'
 	}));
@@ -110,14 +105,14 @@ const handleSwitchToGrid = (): void => {
 
 const handleImageSelect = async (imagePath: string): Promise<void> => {
 	await updateSelectedImage(imagePath);
-	appState.update(state => ({
+	appState.update((state) => ({
 		...state,
 		viewMode: 'viewer'
 	}));
 };
 
 const handleBackToGrid = (): void => {
-	appState.update(state => ({
+	appState.update((state) => ({
 		...state,
 		viewMode: 'grid'
 	}));
@@ -129,14 +124,14 @@ const handleBackToWelcome = (): void => {
 
 const refreshCurrentImageMetadata = async (): Promise<void> => {
 	let currentImagePath: string | null = null;
-	
-	appState.subscribe(state => {
+
+	appState.subscribe((state) => {
 		currentImagePath = state.selectedImagePath;
 	})();
-	
+
 	if (currentImagePath) {
 		const refreshedMetadata = await imageMetadataService.refreshMetadataUnsafe(currentImagePath);
-		appState.update(state => ({
+		appState.update((state) => ({
 			...state,
 			imageMetadata: refreshedMetadata
 		}));

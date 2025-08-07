@@ -4,9 +4,8 @@
 	import MetadataPanel from './MetadataPanel.svelte';
 	import NavigationButtons from './NavigationButtons.svelte';
 	import ToolbarOverlay from './ToolbarOverlay.svelte';
-	import { createImageViewerHook } from './hooks/use-image-viewer';
+	import { NavigationService, type NavigationState } from './services/navigation-service';
 	import { createKeyboardNavigationHandler } from './hooks/use-keyboard-navigation';
-	import { createResizerHook } from './hooks/use-resizer';
 
 	const {
 		metadata,
@@ -22,20 +21,94 @@
 		onSwitchToGrid?: () => void;
 	} = $props();
 
-	let isInfoPanelFocused = $state<boolean>(false);
+	// 画像表示関連の状態
+	type ImageState = {
+		url: string;
+		isLoading: boolean;
+		error: string;
+	};
 
-	// カスタムフックの使用
-	const imageViewer = createImageViewerHook(metadata, imagePath, onImageChange);
-	const resizer = createResizerHook(imageViewer.actions.setInfoPanelWidth);
+	const navigationService = new NavigationService();
+
+	let imageState = $state<ImageState>({
+		url: '',
+		isLoading: true,
+		error: ''
+	});
+
+	let navigationState = $state<NavigationState>({
+		files: [],
+		currentIndex: 0,
+		isNavigating: false
+	});
+
+	let isInfoPanelFocused = $state<boolean>(false);
+	let isInfoPanelVisible = $state<boolean>(true);
+	let infoPanelWidth = $state<number>(320);
+
+	// 基本的な画像読み込み機能
+	const loadCurrentImage = async (path: string) => {
+		try {
+			imageState.isLoading = true;
+			imageState.error = '';
+			const url = await navigationService.loadImage(path);
+			imageState.url = url;
+		} catch (err) {
+			imageState.error = err instanceof Error ? err.message : '画像の読み込みに失敗しました';
+		} finally {
+			imageState.isLoading = false;
+		}
+	};
+
+	// 初期化処理を簡略化
+	const initializeImages = async (path: string): Promise<void> => {
+		try {
+			navigationState = await navigationService.initializeNavigation(path);
+			await loadCurrentImage(path);
+		} catch (error) {
+			imageState.error =
+				error instanceof Error ? error.message : 'ディレクトリの読み込みに失敗しました';
+		}
+	};
+
+	// ナビゲーション関数
+	const goToPrevious = async (): Promise<void> => {
+		if (0 < navigationState.currentIndex && !navigationState.isNavigating) {
+			navigationState.isNavigating = true;
+			navigationState.currentIndex = navigationState.currentIndex - 1;
+			const newPath = navigationState.files[navigationState.currentIndex];
+			await loadCurrentImage(newPath);
+			await onImageChange(newPath);
+			navigationState.isNavigating = false;
+		}
+	};
+
+	const goToNext = async (): Promise<void> => {
+		if (
+			navigationState.currentIndex < navigationState.files.length - 1 &&
+			!navigationState.isNavigating
+		) {
+			navigationState.isNavigating = true;
+			navigationState.currentIndex = navigationState.currentIndex + 1;
+			const newPath = navigationState.files[navigationState.currentIndex];
+			await loadCurrentImage(newPath);
+			await onImageChange(newPath);
+			navigationState.isNavigating = false;
+		}
+	};
 
 	// キーボードナビゲーション
 	const handleKeydown = createKeyboardNavigationHandler(
-		imageViewer.actions.goToPrevious,
-		imageViewer.actions.goToNext,
+		goToPrevious,
+		goToNext,
 		() => isInfoPanelFocused
 	);
 
-	// 情報ペインのフォーカス状態を管理
+	// 情報ペインの制御
+	const toggleInfoPanel = (): void => {
+		isInfoPanelVisible = !isInfoPanelVisible;
+	};
+
 	const handleInfoPanelFocus = (): void => {
 		isInfoPanelFocused = true;
 	};
@@ -43,6 +116,18 @@
 	const handleInfoPanelBlur = (): void => {
 		isInfoPanelFocused = false;
 	};
+
+	const refreshCurrentImage = async (): Promise<void> => {
+		const currentPath = navigationState.files[navigationState.currentIndex];
+		if (currentPath) {
+			await onImageChange(currentPath);
+		}
+	};
+
+	// 初期化
+	$effect(() => {
+		initializeImages(imagePath);
+	});
 
 	// キーボードイベントリスナーの設定
 	$effect(() => {
@@ -57,36 +142,35 @@
 	<!-- 画像表示エリア (全面) -->
 	<div class="relative flex-1 bg-black">
 		<ToolbarOverlay
-			imageFiles={imageViewer.navigationState.files}
-			currentIndex={imageViewer.navigationState.currentIndex}
+			imageFiles={navigationState.files}
+			currentIndex={navigationState.currentIndex}
 			{openFileDialog}
 			{onSwitchToGrid}
-			onToggleInfoPanel={imageViewer.actions.toggleInfoPanel}
-			isInfoPanelVisible={imageViewer.isInfoPanelVisible}
+			onToggleInfoPanel={toggleInfoPanel}
+			{isInfoPanelVisible}
 		/>
 
 		<ImageCanvas
-			imageUrl={imageViewer.imageState.url}
-			isLoading={imageViewer.imageState.isLoading}
-			error={imageViewer.imageState.error}
+			imageUrl={imageState.url}
+			isLoading={imageState.isLoading}
+			error={imageState.error}
 			{metadata}
-			imagePath={imageViewer.navigationState.files[imageViewer.navigationState.currentIndex]}
-			onRatingUpdate={imageViewer.actions.refreshCurrentImage}
+			imagePath={navigationState.files[navigationState.currentIndex]}
+			onRatingUpdate={() => refreshCurrentImage()}
 		/>
 		<NavigationButtons
-			imageFiles={imageViewer.navigationState.files}
-			currentIndex={imageViewer.navigationState.currentIndex}
-			isNavigating={imageViewer.navigationState.isNavigating}
-			goToPrevious={imageViewer.actions.goToPrevious}
-			goToNext={imageViewer.actions.goToNext}
+			imageFiles={navigationState.files}
+			currentIndex={navigationState.currentIndex}
+			isNavigating={navigationState.isNavigating}
+			{goToPrevious}
+			{goToNext}
 		/>
 	</div>
 
 	<!-- リサイザー -->
-	{#if imageViewer.isInfoPanelVisible}
+	{#if isInfoPanelVisible}
 		<div
 			class="z-20 w-1 flex-shrink-0 cursor-col-resize bg-base-300 transition-colors hover:bg-primary"
-			onmousedown={resizer.handleMouseDown}
 			role="button"
 			tabindex="0"
 			aria-label="情報ペインの幅を調整"
@@ -95,12 +179,12 @@
 	{/if}
 
 	<!-- 情報ペイン -->
-	{#if imageViewer.isInfoPanelVisible}
-		<div style="width: {imageViewer.infoPanelWidth}px" class="flex-shrink-0">
+	{#if isInfoPanelVisible}
+		<div style="width: {infoPanelWidth}px" class="flex-shrink-0">
 			<MetadataPanel
 				{metadata}
-				imagePath={imageViewer.navigationState.files[imageViewer.navigationState.currentIndex]}
-				onRatingUpdate={imageViewer.actions.refreshCurrentImage}
+				imagePath={navigationState.files[navigationState.currentIndex]}
+				onRatingUpdate={() => refreshCurrentImage()}
 				onFocus={handleInfoPanelFocus}
 				onBlur={handleInfoPanelBlur}
 			/>

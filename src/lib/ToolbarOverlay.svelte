@@ -7,7 +7,9 @@
 		openFileDialog,
 		onSwitchToGrid,
 		onToggleInfoPanel,
-		isInfoPanelVisible
+		isInfoPanelVisible,
+		onToggleAutoNavigation,
+		isAutoNavActive
 	}: {
 		imageFiles: string[];
 		currentIndex: number;
@@ -15,6 +17,8 @@
 		onSwitchToGrid?: () => void;
 		onToggleInfoPanel?: () => void;
 		isInfoPanelVisible?: boolean;
+		onToggleAutoNavigation?: () => void;
+		isAutoNavActive?: boolean;
 	} = $props();
 </script>
 
@@ -39,6 +43,17 @@
 			>
 				<Icon icon="lucide:image-plus" class="h-4 w-4" />
 			</button>
+			{#if onToggleAutoNavigation}
+				<button
+					class="btn text-white btn-sm"
+					class:btn-ghost={!isAutoNavActive}
+					class:btn-active={isAutoNavActive}
+					onclick={onToggleAutoNavigation}
+					title={isAutoNavActive ? '自動ナビゲーションを停止' : '最新画像への自動ナビゲーションを開始'}
+				>
+					<Icon icon="lucide:skip-forward" class="h-4 w-4" />
+				</button>
+			{/if}
 			{#if onSwitchToGrid}
 				<button
 					class="btn text-white btn-ghost btn-sm"

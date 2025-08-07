@@ -18,7 +18,6 @@
 		handleImageSelect: (imagePath: string) => void;
 	} = $props();
 
-	let isSelectionMode = $state<boolean>(false);
 	let selectedImages = $state<Set<string>>(new Set());
 	let refreshTrigger = $state<number>(0);
 	let imageFiles = $state<string[]>([]);
@@ -30,13 +29,6 @@
 		imageFiles = files;
 	};
 
-	// 選択モード切り替え
-	const toggleSelectionMode = () => {
-		isSelectionMode = !isSelectionMode;
-		if (!isSelectionMode) {
-			selectedImages = new Set();
-		}
-	};
 
 	// 画像選択/選択解除（OSファイル選択エミュレート）
 	const toggleImageSelection = (imagePath: string, shiftKey: boolean = false) => {
@@ -135,20 +127,8 @@
 		</div>
 
 		<div class="flex items-center gap-2">
-			<!-- 選択モード切り替えボタン -->
-			<button
-				class="btn btn-ghost btn-sm"
-				onclick={toggleSelectionMode}
-				title={isSelectionMode ? '選択モードを終了' : '選択モードに切り替え'}
-			>
-				<Icon
-					icon={isSelectionMode ? 'lucide:check-square' : 'lucide:square'}
-					class="h-4 w-4"
-				/>
-			</button>
-
 			<!-- 全選択ボタン -->
-			{#if isSelectionMode}
+			{#if 0 < imageFiles.length}
 				<button
 					class="btn btn-ghost btn-sm"
 					onclick={toggleSelectAll}
@@ -156,8 +136,8 @@
 				>
 					<Icon
 						icon={selectedImages.size === imageFiles.length
-							? 'lucide:check-square-2'
-							: 'lucide:square'}
+							? 'lucide:square-dashed'
+							: 'lucide:square-check-big'}
 						class="h-4 w-4"
 					/>
 				</button>

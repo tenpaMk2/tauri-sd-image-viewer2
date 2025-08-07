@@ -2,26 +2,66 @@ import { dirname } from '@tauri-apps/api/path';
 import { getImageFiles, loadImage } from '../image/image-loader';
 import type { ImageData } from '../image/types';
 
-// ナビゲーション状態の型定義
 export type NavigationState = {
 	files: string[];
 	currentIndex: number;
 	isNavigating: boolean;
 };
 
-// 画像キャッシュ管理
 export class ImageCacheManager {
 	private cache = new Map<string, string>();
+	private preloadingPromises = new Map<string, Promise<string>>();
+	private maxCacheSize = 50;
 
 	async preloadImage(path: string): Promise<string> {
-		// キャッシュに存在する場合はそれを返す
 		if (this.cache.has(path)) {
 			return this.cache.get(path)!;
 		}
 
+		if (this.preloadingPromises.has(path)) {
+			return await this.preloadingPromises.get(path)!;
+		}
+
+		const preloadPromise = this.loadAndCache(path);
+		this.preloadingPromises.set(path, preloadPromise);
+
+		try {
+			const url = await preloadPromise;
+			return url;
+		} finally {
+			this.preloadingPromises.delete(path);
+		}
+	}
+
+	private async loadAndCache(path: string): Promise<string> {
 		const imageData: ImageData = await loadImage(path);
+
+		if (this.cache.size >= this.maxCacheSize) {
+			this.evictOldestEntries(10);
+		}
+
 		this.cache.set(path, imageData.url);
 		return imageData.url;
+	}
+
+	private evictOldestEntries(count: number): void {
+		const entries = Array.from(this.cache.entries());
+		const toEvict = entries.slice(0, count);
+
+		toEvict.forEach(([path, url]) => {
+			this.safeRevokeUrl(url);
+			this.cache.delete(path);
+		});
+	}
+
+	private safeRevokeUrl(url: string): void {
+		try {
+			if (url.startsWith('blob:')) {
+				URL.revokeObjectURL(url);
+			}
+		} catch (error) {
+			console.warn('Failed to revoke URL:', url, error);
+		}
 	}
 
 	get(path: string): string | undefined {
@@ -33,46 +73,50 @@ export class ImageCacheManager {
 	}
 
 	clear(): void {
+		this.cache.forEach((url) => this.safeRevokeUrl(url));
 		this.cache.clear();
+		this.preloadingPromises.clear();
+	}
+
+	revokeUrl(path: string): void {
+		const url = this.cache.get(path);
+		if (url) {
+			this.safeRevokeUrl(url);
+			this.cache.delete(path);
+		}
 	}
 }
 
-// ナビゲーションサービス
 export class NavigationService {
 	private cacheManager = new ImageCacheManager();
 
-	// 隣接する画像をプリロード
-	async preloadAdjacentImages(files: string[], index: number): Promise<void> {
+	async preloadAdjacentImages(
+		files: string[],
+		index: number,
+		preloadCount: number = 2
+	): Promise<void> {
 		const promises: Promise<void>[] = [];
+		const startIndex = Math.max(0, index - preloadCount);
+		const endIndex = Math.min(files.length - 1, index + preloadCount);
 
-		// 前の画像をプリロード
-		if (0 < index) {
-			promises.push(
-				this.cacheManager
-					.preloadImage(files[index - 1])
-					.then(() => {})
-					.catch((error) => {
-						console.warn(`前の画像のプリロードに失敗: ${files[index - 1]}`, error);
-					})
-			);
+		for (let i = startIndex; i <= endIndex; i++) {
+			if (i !== index && !this.cacheManager.has(files[i])) {
+				promises.push(
+					this.cacheManager
+						.preloadImage(files[i])
+						.then(() => {})
+						.catch((error) => {
+							console.warn(`画像のプリロードに失敗: ${files[i]}`, error);
+						})
+				);
+			}
 		}
 
-		// 次の画像をプリロード
-		if (index < files.length - 1) {
-			promises.push(
-				this.cacheManager
-					.preloadImage(files[index + 1])
-					.then(() => {})
-					.catch((error) => {
-						console.warn(`次の画像のプリロードに失敗: ${files[index + 1]}`, error);
-					})
-			);
+		if (promises.length > 0) {
+			await Promise.allSettled(promises);
 		}
-
-		await Promise.all(promises);
 	}
 
-	// 同一ディレクトリの画像ファイル一覧を取得して初期化
 	async initializeNavigation(imagePath: string): Promise<NavigationState> {
 		const dirPath = await dirname(imagePath);
 		const files = await getImageFiles(dirPath);
@@ -80,33 +124,36 @@ export class NavigationService {
 
 		return {
 			files,
-			currentIndex,
+			currentIndex: currentIndex === -1 ? 0 : currentIndex,
 			isNavigating: false
 		};
 	}
 
-	// 画像を読み込み（キャッシュ対応）
 	async loadImage(path: string): Promise<string> {
 		return await this.cacheManager.preloadImage(path);
 	}
 
-	// キャッシュされた画像URLを取得
 	getCachedImageUrl(path: string): string | undefined {
 		return this.cacheManager.get(path);
 	}
 
-	// キャッシュに画像が存在するかチェック
 	isCached(path: string): boolean {
 		return this.cacheManager.has(path);
 	}
 
-	// キャッシュをクリア
 	clearCache(): void {
 		this.cacheManager.clear();
 	}
 
-	// ディレクトリ名を取得
+	revokeImageUrl(path: string): void {
+		this.cacheManager.revokeUrl(path);
+	}
+
 	async getDirname(path: string): Promise<string> {
 		return await dirname(path);
+	}
+
+	getCacheSize(): number {
+		return this.cacheManager['cache'].size;
 	}
 }

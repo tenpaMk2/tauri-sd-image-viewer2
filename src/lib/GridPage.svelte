@@ -1,9 +1,8 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte';
 	import { basename } from '@tauri-apps/api/path';
-	import { getImageFiles } from './image/image-loader';
 	import ThumbnailGrid from './ThumbnailGrid.svelte';
-	import { deleteSelectedImages as performDelete } from './utils/delete-images';
+	import { createGridViewHook } from './hooks/use-grid-view';
 
 	const {
 		selectedDirectory,
@@ -17,55 +16,7 @@
 		handleImageSelect: (imagePath: string) => void;
 	} = $props();
 
-	let isSelectionMode = $state<boolean>(false);
-	let selectedImages = $state<Set<string>>(new Set());
-	let refreshTrigger = $state<number>(0);
-	let imageFiles = $state<string[]>([]);
-
-	// ThumbnailGridから画像ファイル一覧を受け取る
-	const handleImageFilesLoaded = (files: string[]) => {
-		imageFiles = files;
-	};
-
-	// 選択モード切り替え
-	const toggleSelectionMode = () => {
-		isSelectionMode = !isSelectionMode;
-		if (!isSelectionMode) {
-			selectedImages = new Set();
-		}
-	};
-
-	// 画像選択/選択解除
-	const toggleImageSelection = (imagePath: string) => {
-		const newSelection = new Set(selectedImages);
-		if (newSelection.has(imagePath)) {
-			newSelection.delete(imagePath);
-		} else {
-			newSelection.add(imagePath);
-		}
-		selectedImages = newSelection;
-	};
-
-	// 全選択/全選択解除
-	const toggleSelectAll = () => {
-		if (selectedImages.size === imageFiles.length) {
-			selectedImages = new Set();
-		} else {
-			selectedImages = new Set(imageFiles);
-		}
-	};
-
-	// 選択画像削除
-	const deleteSelectedImages = async () => {
-		try {
-			await performDelete(selectedImages);
-			selectedImages = new Set();
-			// ThumbnailGridのリフレッシュをトリガー
-			refreshTrigger = Date.now();
-		} catch (err) {
-			// エラーはperformDelete内で処理済み
-		}
-	};
+	const gridView = createGridViewHook();
 </script>
 
 <div class="flex h-full flex-col">
@@ -80,9 +31,9 @@
 					{folderName || 'フォルダ'}
 				</h1>
 			{/await}
-			{#if 0 < imageFiles.length}
+			{#if 0 < gridView.state.imageFiles.length}
 				<div class="text-sm opacity-80">
-					{imageFiles.length}個の画像
+					{gridView.state.imageFiles.length}個の画像
 				</div>
 			{/if}
 		</div>
@@ -91,30 +42,34 @@
 			<!-- 選択モード切り替えボタン -->
 			<button
 				class="btn btn-ghost btn-sm"
-				onclick={toggleSelectionMode}
-				title={isSelectionMode ? '選択モードを終了' : '選択モードに切り替え'}
+				onclick={gridView.actions.toggleSelectionMode}
+				title={gridView.state.isSelectionMode ? '選択モードを終了' : '選択モードに切り替え'}
 			>
 				<Icon
-					icon={isSelectionMode ? 'lucide:check-square' : 'lucide:square'}
+					icon={gridView.state.isSelectionMode ? 'lucide:check-square' : 'lucide:square'}
 					class="mr-1 h-4 w-4"
 				/>
 				選択
 			</button>
 
 			<!-- 全選択ボタン -->
-			{#if isSelectionMode}
+			{#if gridView.state.isSelectionMode}
 				<button
 					class="btn btn-ghost btn-sm"
-					onclick={toggleSelectAll}
-					title={selectedImages.size === imageFiles.length ? '全選択解除' : '全選択'}
+					onclick={gridView.actions.toggleSelectAll}
+					title={gridView.state.selectedImages.size === gridView.state.imageFiles.length
+						? '全選択解除'
+						: '全選択'}
 				>
 					<Icon
-						icon={selectedImages.size === imageFiles.length
+						icon={gridView.state.selectedImages.size === gridView.state.imageFiles.length
 							? 'lucide:check-square-2'
 							: 'lucide:square'}
 						class="mr-1 h-4 w-4"
 					/>
-					{selectedImages.size === imageFiles.length ? '全選択解除' : '全選択'}
+					{gridView.state.selectedImages.size === gridView.state.imageFiles.length
+						? '全選択解除'
+						: '全選択'}
 				</button>
 			{/if}
 
@@ -129,26 +84,26 @@
 		<ThumbnailGrid
 			directoryPath={selectedDirectory}
 			onImageSelect={handleImageSelect}
-			{isSelectionMode}
-			{selectedImages}
-			onToggleSelection={toggleImageSelection}
-			{refreshTrigger}
-			onImageFilesLoaded={handleImageFilesLoaded}
+			isSelectionMode={gridView.state.isSelectionMode}
+			selectedImages={gridView.state.selectedImages}
+			onToggleSelection={gridView.actions.toggleImageSelection}
+			refreshTrigger={gridView.state.refreshTrigger}
+			onImageFilesLoaded={gridView.actions.handleImageFilesLoaded}
 		/>
 	</div>
 </div>
 
 <!-- 選択時の下部ツールバー -->
-{#if 0 < selectedImages.size}
+{#if 0 < gridView.state.selectedImages.size}
 	<div
 		class="fixed right-0 bottom-0 left-0 z-20 border-t border-gray-700 bg-gray-900/95 p-4 backdrop-blur-sm"
 	>
 		<div class="mx-auto flex max-w-4xl items-center justify-between">
 			<div class="text-white">
-				{selectedImages.size}個の画像を選択中
+				{gridView.state.selectedImages.size}個の画像を選択中
 			</div>
 			<div class="flex items-center gap-4">
-				<button class="btn btn-sm btn-error" onclick={deleteSelectedImages}>
+				<button class="btn btn-sm btn-error" onclick={gridView.actions.deleteSelectedImages}>
 					<Icon icon="lucide:trash-2" class="h-4 w-4" />
 					削除
 				</button>

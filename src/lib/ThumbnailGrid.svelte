@@ -48,7 +48,12 @@
 	// サムネイル数の変化をリアルタイム監視
 	$effect(() => {
 		console.log('=== サムネイル総数変化 ===', thumbnails.size, '/', imageFiles.length);
-		console.log('表示可能なサムネイル:', Array.from(thumbnails.keys()).slice(0, 5).map(path => path.split('/').pop()));
+		console.log(
+			'表示可能なサムネイル:',
+			Array.from(thumbnails.keys())
+				.slice(0, 5)
+				.map((path) => path.split('/').pop())
+		);
 	});
 
 	// 第1段階：画像ファイル一覧の取得とグリッド表示
@@ -101,7 +106,7 @@
 		console.log('=== loadThumbnailsWithTraditionalMethod 開始 ===');
 		console.log('imageFiles:', imageFiles.length, '個のファイル');
 		console.log('thumbnailService:', thumbnailService);
-		
+
 		try {
 			console.log('従来方式チャンク処理開始:', imageFiles.length, '個のファイル');
 
@@ -110,7 +115,7 @@
 			const { invoke } = await import('@tauri-apps/api/core');
 			const testChunk = imageFiles.slice(0, 3); // 最初の3つのファイルでテスト
 			console.log('テストチャンク:', testChunk);
-			
+
 			try {
 				const testResults = await invoke('load_thumbnails_batch', {
 					imagePaths: testChunk
@@ -133,16 +138,20 @@
 				(chunkResults) => {
 					console.log('=== チャンク完了コールバック ===');
 					console.log('チャンク結果受信:', chunkResults.size, '個のサムネイル');
-					
+
 					// 既存のthumbnailsに新しいチャンク結果をマージ
 					const newThumbnails = new Map(thumbnails);
 					for (const [imagePath, thumbnailUrl] of chunkResults) {
-						console.log('サムネイル追加 (リアルタイム):', imagePath.split('/').pop(), thumbnailUrl.substring(0, 50) + '...');
+						console.log(
+							'サムネイル追加 (リアルタイム):',
+							imagePath.split('/').pop(),
+							thumbnailUrl.substring(0, 50) + '...'
+						);
 						newThumbnails.set(imagePath, thumbnailUrl);
 					}
-					
+
 					thumbnails = newThumbnails;
-					
+
 					// リアルタイム更新時にもRating表示を更新
 					ratingUpdateTrigger = Date.now();
 					console.log('🔄 リアルタイム更新、Rating表示更新トリガー:', ratingUpdateTrigger);
@@ -154,13 +163,13 @@
 			// 結果をセット
 			console.log('結果セット:', resultThumbnails.size, '個のサムネイル');
 			console.log('resultThumbnails の内容:', Array.from(resultThumbnails.entries()).slice(0, 3));
-			
+
 			thumbnails = resultThumbnails;
-			
+
 			// サムネイル処理完了後にRating表示を更新
 			ratingUpdateTrigger = Date.now();
 			console.log('🔄 サムネイル処理完了、Rating表示更新トリガー:', ratingUpdateTrigger);
-			
+
 			console.log('thumbnails 状態更新後:', thumbnails.size, '個のサムネイル');
 			console.log('thumbnails の内容:', Array.from(thumbnails.entries()).slice(0, 3));
 			console.log('従来方式チャンク処理完了');
@@ -176,7 +185,7 @@
 		console.log('=== loadThumbnailsOptimized 開始 ===');
 		console.log('imageFiles:', imageFiles.length, '個のファイル');
 		console.log('thumbnailService:', thumbnailService);
-		
+
 		try {
 			console.log('最適化チャンク処理開始:', imageFiles.length, '個のファイル');
 
@@ -204,7 +213,7 @@
 		} catch (err) {
 			console.error('最適化チャンク処理エラー:', err);
 			console.log('従来方式にフォールバック');
-			
+
 			// フォールバック: 従来方式を実行
 			try {
 				const resultThumbnails = await thumbnailService.loadThumbnailsInChunks(
@@ -344,8 +353,7 @@
 						<span class="text-sm">サムネイル生成中...</span>
 					</div>
 					<div class="text-sm text-base-content/70">
-						{loadingState.loadedCount} / {loadingState.totalCount} 完了
-						({thumbnails.size} 表示中)
+						{loadingState.loadedCount} / {loadingState.totalCount} 完了 ({thumbnails.size} 表示中)
 					</div>
 				</div>
 			{/if}

@@ -1,3 +1,11 @@
+import type {
+	SdParameters,
+	ExifInfo,
+	BatchThumbnailResult,
+	ThumbnailInfo,
+	CachedMetadata
+} from '../types/shared-types';
+
 export type MimeType =
 	| 'image/jpeg'
 	| 'image/png'
@@ -12,21 +20,6 @@ export type ImageData = {
 	filePath: string;
 };
 
-// ==========================================
-// フロントエンド専用の型定義
-// Rust同期が必要な型は ../types/shared-types.ts を使用
-// ==========================================
-
-import type {
-	SdParameters,
-	ExifInfo,
-	BatchThumbnailResult,
-	ThumbnailInfo
-} from '../types/shared-types';
-
-// 共有型をre-export（後方互換性のため）
-export type { BatchThumbnailResult, ThumbnailInfo };
-
 export type ImageMetadata = {
 	filename: string;
 	size: string;
@@ -40,3 +33,6 @@ export type ImageMetadata = {
 	sdParameters?: SdParameters;
 	exifInfo?: ExifInfo;
 };
+
+// Re-export shared types for backwards compatibility
+export type { SdParameters, ExifInfo, BatchThumbnailResult, ThumbnailInfo, CachedMetadata };

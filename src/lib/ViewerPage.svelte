@@ -45,6 +45,7 @@
 	let isInfoPanelFocused = $state<boolean>(false);
 	let isInfoPanelVisible = $state<boolean>(true);
 	let infoPanelWidth = $state<number>(320);
+	let isResizing = $state<boolean>(false);
 
 	// 基本的な画像読み込み機能
 	const loadCurrentImage = async (path: string) => {
@@ -124,6 +125,35 @@
 		}
 	};
 
+	// リサイザーの制御
+	const MIN_PANEL_WIDTH = 250;
+	const MAX_PANEL_WIDTH = 600;
+
+	const startResize = (event: MouseEvent): void => {
+		isResizing = true;
+		event.preventDefault();
+		
+		const handleMouseMove = (e: MouseEvent): void => {
+			if (!isResizing) return;
+			
+			const containerWidth = window.innerWidth;
+			const newWidth = containerWidth - e.clientX;
+			
+			if (MIN_PANEL_WIDTH <= newWidth && newWidth <= MAX_PANEL_WIDTH) {
+				infoPanelWidth = newWidth;
+			}
+		};
+		
+		const handleMouseUp = (): void => {
+			isResizing = false;
+			document.removeEventListener('mousemove', handleMouseMove);
+			document.removeEventListener('mouseup', handleMouseUp);
+		};
+		
+		document.addEventListener('mousemove', handleMouseMove);
+		document.addEventListener('mouseup', handleMouseUp);
+	};
+
 	// 初期化
 	$effect(() => {
 		initializeImages(imagePath);
@@ -170,11 +200,13 @@
 	<!-- リサイザー -->
 	{#if isInfoPanelVisible}
 		<div
-			class="z-20 w-1 flex-shrink-0 cursor-col-resize bg-base-300 transition-colors hover:bg-primary"
+			class="z-20 w-1 flex-shrink-0 cursor-col-resize bg-base-300 transition-colors hover:bg-primary select-none"
+			class:bg-primary={isResizing}
 			role="button"
 			tabindex="0"
 			aria-label="情報ペインの幅を調整"
 			title="ドラッグして幅を調整"
+			onmousedown={startResize}
 		></div>
 	{/if}
 

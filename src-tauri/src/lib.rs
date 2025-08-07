@@ -1,10 +1,11 @@
+mod clipboard;
 mod common;
-mod types;
-mod image_handlers;
-mod thumbnail;
-mod sd_parameters;
-mod image_info;
 mod exif_info;
+mod image_handlers;
+mod image_info;
+mod sd_parameters;
+mod thumbnail;
+mod types;
 
 use tauri::Manager;
 use thumbnail::ThumbnailState;
@@ -12,24 +13,25 @@ use thumbnail::ThumbnailState;
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_log::Builder::new().build())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .setup(|app| {
             // サムネイル状態を初期化
             let thumbnail_config = thumbnail::ThumbnailConfig::default();
-            let thumbnail_state =
-                match ThumbnailState::new(thumbnail_config, app.handle()) {
-                    Ok(state) => state,
-                    Err(e) => {
-                        eprintln!("ThumbnailStateの初期化に失敗: {}", e);
-                        return Err(e.into());
-                    }
-                };
+            let thumbnail_state = match ThumbnailState::new(thumbnail_config, app.handle()) {
+                Ok(state) => state,
+                Err(e) => {
+                    eprintln!("ThumbnailStateの初期化に失敗: {}", e);
+                    return Err(e.into());
+                }
+            };
             app.manage(thumbnail_state);
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            clipboard::set_clipboard_files,
             thumbnail::load_thumbnails_batch,
             thumbnail::load_thumbnails_batch_path_only,
             thumbnail::clear_thumbnail_cache,

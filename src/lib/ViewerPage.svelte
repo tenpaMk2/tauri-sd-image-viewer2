@@ -6,6 +6,8 @@
 	import ToolbarOverlay from './ToolbarOverlay.svelte';
 	import { NavigationService, type NavigationState } from './services/navigation-service';
 	import { createKeyboardNavigationHandler } from './hooks/use-keyboard-navigation';
+	import { platform } from '@tauri-apps/plugin-os';
+	import { invoke } from '@tauri-apps/api/core';
 
 	const {
 		metadata,
@@ -52,6 +54,9 @@
 	// UI自動隠し機能
 	let isUIVisible = $state<boolean>(true);
 	let uiTimer: number | null = null;
+
+	// プラットフォーム判定
+	let isMacOS = $state<boolean>(false);
 
 	// 基本的な画像読み込み機能
 	const loadCurrentImage = async (path: string) => {
@@ -233,9 +238,36 @@
 		}
 	};
 
+	// クリップボード機能
+	const copyToClipboard = async (): Promise<void> => {
+		const currentPath = navigationState.files[navigationState.currentIndex];
+		if (!currentPath) return;
+
+		try {
+			await invoke('set_clipboard_files', { paths: [currentPath] });
+			console.log('画像をクリップボードにコピーしました');
+		} catch (error) {
+			console.error('クリップボードへのコピーに失敗:', error);
+		}
+	};
+
 	// 初期化
 	$effect(() => {
 		initializeImages(imagePath);
+	});
+
+	// プラットフォーム判定の初期化
+	$effect(() => {
+		const checkPlatform = async () => {
+			try {
+				const currentPlatform = await platform();
+				isMacOS = currentPlatform === 'macos';
+			} catch (error) {
+				console.error('プラットフォーム判定に失敗:', error);
+				isMacOS = false;
+			}
+		};
+		checkPlatform();
 	});
 
 	// キーボードイベントリスナーの設定
@@ -283,6 +315,8 @@
 			onToggleAutoNavigation={toggleAutoNavigation}
 			{isAutoNavActive}
 			{isUIVisible}
+			onCopyToClipboard={copyToClipboard}
+			{isMacOS}
 		/>
 
 		<ImageCanvas

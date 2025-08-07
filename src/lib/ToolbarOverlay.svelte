@@ -10,7 +10,9 @@
 		isInfoPanelVisible,
 		onToggleAutoNavigation,
 		isAutoNavActive,
-		isUIVisible
+		isUIVisible,
+		onCopyToClipboard,
+		isMacOS
 	}: {
 		imageFiles: string[];
 		currentIndex: number;
@@ -21,6 +23,8 @@
 		onToggleAutoNavigation?: () => void;
 		isAutoNavActive?: boolean;
 		isUIVisible?: boolean;
+		onCopyToClipboard?: () => void;
+		isMacOS?: boolean;
 	} = $props();
 </script>
 
@@ -49,6 +53,15 @@
 			>
 				<Icon icon="lucide:image-plus" class="h-4 w-4" />
 			</button>
+			{#if isMacOS && onCopyToClipboard}
+				<button
+					class="btn text-white btn-ghost btn-sm"
+					onclick={onCopyToClipboard}
+					title="クリップボードにコピー"
+				>
+					<Icon icon="lucide:clipboard-copy" class="h-4 w-4" />
+				</button>
+			{/if}
 			{#if onToggleAutoNavigation}
 				<button
 					class="btn text-white btn-sm"

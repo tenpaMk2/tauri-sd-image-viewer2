@@ -4,7 +4,8 @@
 	import WelcomeScreen from '$lib/WelcomeScreen.svelte';
 	import { appStore } from '$lib/stores/app-store';
 
-	const { state, actions } = appStore;
+	$: state = $appStore;
+	const { actions } = appStore;
 </script>
 
 <svelte:head>

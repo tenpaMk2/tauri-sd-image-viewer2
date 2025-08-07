@@ -67,7 +67,7 @@
 			const url = await navigationService.loadImage(path);
 			imageState.url = url;
 		} catch (err) {
-			imageState.error = err instanceof Error ? err.message : '画像の読み込みに失敗しました';
+			imageState.error = err instanceof Error ? err.message : 'Failed to load image';
 		} finally {
 			imageState.isLoading = false;
 		}
@@ -79,8 +79,7 @@
 			navigationState = await navigationService.initializeNavigation(path);
 			await loadCurrentImage(path);
 		} catch (error) {
-			imageState.error =
-				error instanceof Error ? error.message : 'ディレクトリの読み込みに失敗しました';
+			imageState.error = error instanceof Error ? error.message : 'Failed to load directory';
 		}
 	};
 
@@ -230,7 +229,7 @@
 
 			// 自動ナビゲーションを開始
 			isAutoNavActive = true;
-			showInfoToast('自動最新画像切り替えが有効になりました');
+			showInfoToast('Auto navigation to latest image enabled');
 			autoNavTimer = setInterval(async () => {
 				const latestIndex = navigationState.files.length - 1;
 				if (latestIndex !== navigationState.currentIndex) {
@@ -247,7 +246,7 @@
 
 		try {
 			await invoke('set_clipboard_files', { paths: [currentPath] });
-			showSuccessToast('画像をクリップボードにコピーしました');
+			showSuccessToast('Image copied to clipboard');
 		} catch (error) {
 			console.error('クリップボードへのコピーに失敗:', error);
 		}
@@ -305,7 +304,7 @@
 </script>
 
 <div class="relative flex h-screen">
-	<!-- 画像表示エリア (全面) -->
+	<!-- Image Display Area (Full) -->
 	<div class="relative flex-1 bg-black">
 		<ToolbarOverlay
 			imageFiles={navigationState.files}
@@ -340,20 +339,20 @@
 		/>
 	</div>
 
-	<!-- リサイザー -->
+	<!-- Resizer -->
 	{#if isInfoPanelVisible}
 		<div
 			class="z-20 w-1 flex-shrink-0 cursor-col-resize bg-base-300 transition-colors select-none hover:bg-primary"
 			class:bg-primary={isResizing}
 			role="button"
 			tabindex="0"
-			aria-label="情報ペインの幅を調整"
-			title="ドラッグして幅を調整"
+			aria-label="Adjust Info Panel Width"
+			title="Drag to adjust width"
 			onmousedown={startResize}
 		></div>
 	{/if}
 
-	<!-- 情報ペイン -->
+	<!-- Info Panel -->
 	{#if isInfoPanelVisible}
 		<div style="width: {infoPanelWidth}px" class="flex-shrink-0">
 			<MetadataPanel

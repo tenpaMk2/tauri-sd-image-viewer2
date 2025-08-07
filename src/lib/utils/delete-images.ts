@@ -14,7 +14,7 @@ export const deleteSelectedImages = async (
 	}
 
 	const confirmDelete = confirm(
-		`${selectedImages.size}個の画像を削除しますか？\n\n削除された画像は復元できません。`
+		`Delete ${selectedImages.size} images?\n\nDeleted images cannot be restored.`
 	);
 	if (!confirmDelete) {
 		return { successCount: 0, errorCount: 0, errors: [] };
@@ -45,7 +45,7 @@ export const deleteSelectedImages = async (
 		// エラーがある場合のみユーザーに通知
 		if (0 < errorCount) {
 			alert(
-				`削除完了: ${successCount}個成功, ${errorCount}個失敗\n\n失敗したファイル:\n${errors.slice(0, 5).join('\n')}${5 < errors.length ? '\n...' : ''}`
+				`Deletion completed: ${successCount} successful, ${errorCount} failed\n\nFailed files:\n${errors.slice(0, 5).join('\n')}${5 < errors.length ? '\n...' : ''}`
 			);
 		} else {
 			console.log(`${successCount}個の画像を削除しました。`);
@@ -54,7 +54,7 @@ export const deleteSelectedImages = async (
 		return { successCount, errorCount, errors };
 	} catch (err) {
 		console.error('削除処理エラー:', err);
-		alert(`削除処理に失敗しました: ${err}`);
+		alert(`Deletion process failed: ${err}`);
 		throw err;
 	}
 };

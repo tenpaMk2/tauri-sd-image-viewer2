@@ -28,14 +28,14 @@
 	} = $props();
 </script>
 
-<!-- オーバーレイツールバー -->
+<!-- Overlay Toolbar -->
 <div
 	class="absolute top-0 right-0 left-0 z-10 bg-gradient-to-b from-black/70 to-transparent p-4 transition-opacity duration-300"
 	class:opacity-0={!isUIVisible}
 	class:pointer-events-none={!isUIVisible}
 >
 	<div class="flex items-center text-white">
-		<!-- 左側: ページ情報 -->
+		<!-- Left: Page Info -->
 		<div class="flex items-center gap-4">
 			{#if 1 < imageFiles.length}
 				<div class="text-sm opacity-80">
@@ -44,20 +44,16 @@
 			{/if}
 		</div>
 
-		<!-- 中央: メインボタン群 -->
+		<!-- Center: Main Buttons -->
 		<div class="flex flex-1 items-center justify-center gap-2">
-			<button
-				class="btn text-white btn-ghost btn-sm"
-				onclick={openFileDialog}
-				title="ファイルを開く"
-			>
+			<button class="btn text-white btn-ghost btn-sm" onclick={openFileDialog} title="Open File">
 				<Icon icon="lucide:image-plus" class="h-4 w-4" />
 			</button>
 			{#if isMacOS && onCopyToClipboard}
 				<button
 					class="btn text-white btn-ghost btn-sm"
 					onclick={onCopyToClipboard}
-					title="クリップボードにコピー"
+					title="Copy to Clipboard"
 				>
 					<Icon icon="lucide:clipboard-copy" class="h-4 w-4" />
 				</button>
@@ -68,31 +64,25 @@
 					class:btn-ghost={!isAutoNavActive}
 					class:btn-active={isAutoNavActive}
 					onclick={onToggleAutoNavigation}
-					title={isAutoNavActive
-						? '自動ナビゲーションを停止'
-						: '最新画像への自動ナビゲーションを開始'}
+					title={isAutoNavActive ? 'Stop Auto Navigation' : 'Start Auto Navigation to Latest Image'}
 				>
 					<Icon icon="lucide:skip-forward" class="h-4 w-4" />
 				</button>
 			{/if}
 			{#if onSwitchToGrid}
-				<button
-					class="btn text-white btn-ghost btn-sm"
-					onclick={onSwitchToGrid}
-					title="グリッド表示"
-				>
+				<button class="btn text-white btn-ghost btn-sm" onclick={onSwitchToGrid} title="Grid View">
 					<Icon icon="lucide:layout-grid" class="h-4 w-4" />
 				</button>
 			{/if}
 		</div>
 
-		<!-- 右側: 情報ペインボタン -->
+		<!-- Right: Info Panel Button -->
 		<div class="flex items-center gap-2">
 			{#if onToggleInfoPanel}
 				<button
 					class="btn text-white btn-ghost btn-sm"
 					onclick={onToggleInfoPanel}
-					title={isInfoPanelVisible ? '情報ペインを隠す' : '情報ペインを表示'}
+					title={isInfoPanelVisible ? 'Hide Info Panel' : 'Show Info Panel'}
 				>
 					<Icon
 						icon={isInfoPanelVisible ? 'lucide:panel-right-close' : 'lucide:panel-right-open'}

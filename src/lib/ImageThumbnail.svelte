@@ -105,7 +105,7 @@
 		onclick={handleClick}
 		ondblclick={handleDoubleClick}
 		onkeydown={(e) => e.key === 'Enter' && handleClick()}
-		aria-label="画像を選択（ダブルクリックで開く）"
+		aria-label="Select image (double-click to open)"
 	>
 		{#if thumbnailUrl}
 			<div class="relative flex h-full w-full items-center justify-center p-1">
@@ -131,7 +131,7 @@
 		{:else if isLoading}
 			<div class="flex h-full flex-col items-center justify-center bg-base-300/30">
 				<div class="loading mb-2 loading-sm loading-spinner"></div>
-				<div class="text-xs text-base-content/50">読み込み中...</div>
+				<div class="text-xs text-base-content/50">Loading...</div>
 			</div>
 		{:else}
 			<div class="flex h-full flex-col items-center justify-center bg-base-300/20">
@@ -141,14 +141,14 @@
 		{/if}
 	</button>
 
-	<!-- Rating オーバーレイ表示 -->
+	<!-- Rating Overlay -->
 	<div
 		class="absolute bottom-1 left-1/2 -translate-x-1/2 rounded bg-black/30 px-1 py-0.5"
 		role="group"
-		aria-label="画像評価"
+		aria-label="Image Rating"
 		onmouseleave={handleRatingMouseLeave}
 	>
-		<div class="flex gap-0.5" title={`Rating: ${rating || 0}/5 (クリックで変更)`}>
+		<div class="flex gap-0.5" title={`Rating: ${rating || 0}/5 (click to change)`}>
 			{#each Array(5) as _, i}
 				<button
 					class="text-sm transition-colors duration-100 hover:scale-110 {i < displayRating
@@ -157,12 +157,11 @@
 					onmouseenter={() => handleRatingMouseEnter(i + 1)}
 					onclick={(e) => handleRatingClick(e, i + 1)}
 					style="text-shadow: 0 1px 2px rgba(0,0,0,0.8);"
-					aria-label={`${i + 1}星評価`}
+					aria-label={`${i + 1} star rating`}
 				>
 					★
 				</button>
 			{/each}
 		</div>
 	</div>
-
 </div>

@@ -15,8 +15,10 @@ export const createImageMetadata = async (imagePath: string): Promise<ImageMetad
 		const fileStats = await stat(imagePath);
 		const created = fileStats.birthtime
 			? new Date(fileStats.birthtime).toLocaleString('ja-JP')
-			: '不明';
-		const modified = fileStats.mtime ? new Date(fileStats.mtime).toLocaleString('ja-JP') : '不明';
+			: 'Unknown';
+		const modified = fileStats.mtime
+			? new Date(fileStats.mtime).toLocaleString('ja-JP')
+			: 'Unknown';
 
 		// ハイブリッドアプローチで画像とメタデータを効率取得
 		const { imageInfo } = await loadImageWithMetadata(imagePath);
@@ -25,7 +27,7 @@ export const createImageMetadata = async (imagePath: string): Promise<ImageMetad
 		const dimensions =
 			imageInfo.width > 0 && imageInfo.height > 0
 				? `${imageInfo.width} × ${imageInfo.height}`
-				: '不明';
+				: 'Unknown';
 
 		return {
 			filename,
@@ -41,11 +43,11 @@ export const createImageMetadata = async (imagePath: string): Promise<ImageMetad
 		console.warn('ファイル情報の取得に失敗:', error);
 		return {
 			filename,
-			size: '不明',
-			dimensions: '不明',
+			size: 'Unknown',
+			dimensions: 'Unknown',
 			format: extension,
-			created: '不明',
-			modified: '不明'
+			created: 'Unknown',
+			modified: 'Unknown'
 		};
 	}
 };

@@ -30,16 +30,15 @@
 		imageFiles = files;
 	};
 
-
 	// 画像選択/選択解除（OSファイル選択エミュレート）
 	const toggleImageSelection = (imagePath: string, shiftKey: boolean = false) => {
 		const currentIndex = imageFiles.indexOf(imagePath);
-		
+
 		if (shiftKey && lastSelectedIndex !== -1) {
 			// Shift+Click: 範囲選択
 			const startIndex = Math.min(lastSelectedIndex, currentIndex);
 			const endIndex = Math.max(lastSelectedIndex, currentIndex);
-			
+
 			const newSelection = new Set(selectedImages);
 			for (let i = startIndex; i <= endIndex; i++) {
 				newSelection.add(imageFiles[i]);
@@ -86,7 +85,7 @@
 		const paths = Array.from(selectedImages);
 		try {
 			await invoke('set_clipboard_files', { paths });
-			showSuccessToast(`${selectedImages.size}個の画像をクリップボードにコピーしました`);
+			showSuccessToast(`${selectedImages.size} images copied to clipboard`);
 		} catch (error) {
 			console.error('クリップボードへのコピーに失敗:', error);
 		}
@@ -109,31 +108,31 @@
 </script>
 
 <div class="flex h-full flex-col">
-	<!-- ヘッダー -->
+	<!-- Header -->
 	<div class="flex items-center justify-between bg-base-200 p-4">
 		<div class="flex items-center gap-4">
-			<button class="btn btn-ghost btn-sm" onclick={handleBackToWelcome} title="ホームに戻る">
+			<button class="btn btn-ghost btn-sm" onclick={handleBackToWelcome} title="Back to Home">
 				<Icon icon="lucide:home" class="h-4 w-4" />
 			</button>
 			{#await basename(selectedDirectory) then folderName}
 				<h1 class="truncate text-lg font-semibold">
-					{folderName || 'フォルダ'}
+					{folderName || 'Folder'}
 				</h1>
 			{/await}
 			{#if 0 < imageFiles.length}
 				<div class="text-sm opacity-80">
-					{imageFiles.length}個の画像
+					{imageFiles.length} images
 				</div>
 			{/if}
 		</div>
 
 		<div class="flex items-center gap-2">
-			<!-- 全選択ボタン -->
+			<!-- Select All Button -->
 			{#if 0 < imageFiles.length}
 				<button
 					class="btn btn-ghost btn-sm"
 					onclick={toggleSelectAll}
-					title={selectedImages.size === imageFiles.length ? '全選択解除' : '全選択'}
+					title={selectedImages.size === imageFiles.length ? 'Deselect All' : 'Select All'}
 				>
 					<Icon
 						icon={selectedImages.size === imageFiles.length
@@ -144,17 +143,17 @@
 				</button>
 			{/if}
 
-			<button 
-				class="btn btn-ghost btn-sm" 
+			<button
+				class="btn btn-ghost btn-sm"
 				onclick={openDirectoryDialog}
-				title="別のフォルダを開く"
+				title="Open Another Folder"
 			>
 				<Icon icon="lucide:folder-open" class="h-4 w-4" />
 			</button>
 		</div>
 	</div>
 
-	<!-- グリッド表示 -->
+	<!-- Grid View -->
 	<div class="flex-1">
 		<ThumbnailGrid
 			directoryPath={selectedDirectory}
@@ -167,29 +166,29 @@
 	</div>
 </div>
 
-<!-- 選択時の下部ツールバー -->
+<!-- Bottom Toolbar when Selected -->
 {#if 0 < selectedImages.size}
 	<div
 		class="fixed right-0 bottom-0 left-0 z-20 border-t border-gray-700 bg-gray-900/95 p-4 backdrop-blur-sm"
 	>
 		<div class="mx-auto flex max-w-4xl items-center justify-between">
 			<div class="text-white">
-				{selectedImages.size}個の画像を選択中
+				{selectedImages.size} images selected
 			</div>
 			<div class="flex items-center gap-4">
 				{#if isMacOS}
-					<button 
-						class="btn btn-ghost btn-sm text-white" 
+					<button
+						class="btn text-white btn-ghost btn-sm"
 						onclick={copySelectedToClipboard}
-						title="クリップボードにコピー"
+						title="Copy to Clipboard"
 					>
 						<Icon icon="lucide:copy" class="h-4 w-4" />
 					</button>
 				{/if}
-				<button 
-					class="btn btn-ghost btn-sm text-white" 
+				<button
+					class="btn text-white btn-ghost btn-sm"
 					onclick={deleteSelectedImages}
-					title="削除"
+					title="Delete"
 				>
 					<Icon icon="lucide:trash-2" class="h-4 w-4" />
 				</button>

@@ -15,12 +15,16 @@
 		return `toast-${++toastIdCounter}-${Date.now()}`;
 	};
 
-	export const showToast = (message: string, type: ToastType = 'info', duration: number = 3000): void => {
+	export const showToast = (
+		message: string,
+		type: ToastType = 'info',
+		duration: number = 3000
+	): void => {
 		const id = generateToastId();
 		const toast: Toast = { id, message, type, duration };
-		
+
 		toasts = [...toasts, toast];
-		
+
 		// 自動削除タイマー
 		if (0 < duration) {
 			setTimeout(() => {
@@ -30,7 +34,7 @@
 	};
 
 	export const removeToast = (id: string): void => {
-		toasts = toasts.filter(toast => toast.id !== id);
+		toasts = toasts.filter((toast) => toast.id !== id);
 	};
 
 	export const getToasts = () => toasts;

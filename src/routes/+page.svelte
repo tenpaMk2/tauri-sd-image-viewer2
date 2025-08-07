@@ -10,7 +10,7 @@
 </script>
 
 <svelte:head>
-	<title>画像ビュワー</title>
+	<title>Image Viewer</title>
 </svelte:head>
 
 <div class="min-h-screen bg-base-100">
@@ -37,7 +37,7 @@
 			/>
 		{/if}
 	</main>
-	
-	<!-- Toast表示 -->
+
+	<!-- Toast Display -->
 	<Toast />
 </div>

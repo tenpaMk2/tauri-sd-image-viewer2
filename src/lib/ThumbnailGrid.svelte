@@ -327,18 +327,18 @@
 	{#if loadingState.isLoading}
 		<div class="flex h-full flex-col items-center justify-center">
 			<div class="loading mb-4 loading-lg loading-spinner"></div>
-			<p class="text-lg">画像ファイル一覧を読み込み中...</p>
+			<p class="text-lg">Loading image file list...</p>
 		</div>
 	{:else if loadingState.error}
 		<div class="flex h-full flex-col items-center justify-center">
 			<div class="mb-4 text-6xl">⚠️</div>
-			<p class="mb-2 text-lg text-error">エラーが発生しました</p>
+			<p class="mb-2 text-lg text-error">An error occurred</p>
 			<p class="text-sm text-base-content/70">{loadingState.error}</p>
 		</div>
 	{:else if imageFiles.length === 0}
 		<div class="flex h-full flex-col items-center justify-center">
 			<div class="mb-4 text-6xl">📁</div>
-			<p class="text-lg">画像ファイルが見つかりません</p>
+			<p class="text-lg">No image files found</p>
 		</div>
 	{:else}
 		<div class="flex h-full flex-col">

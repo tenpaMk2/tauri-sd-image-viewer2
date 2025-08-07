@@ -34,17 +34,17 @@
 	};
 </script>
 
-<!-- 右側: 情報ペイン (可変幅) -->
+<!-- Right: Info Panel (Resizable) -->
 <div
 	class="h-full w-full overflow-y-auto bg-base-200 shadow-2xl"
 	tabindex="0"
 	role="tabpanel"
-	aria-label="画像情報パネル"
+	aria-label="Image Info Panel"
 	onfocus={onFocus}
 	onblur={onBlur}
 >
 	<div class="p-3">
-		<div class="space-y-3 metadata-content">
+		<div class="metadata-content space-y-3">
 			<BasicInfoSection {metadata} />
 			<ExifInfoSection {metadata} />
 			<SdParamsSection {metadata} />

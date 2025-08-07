@@ -33,16 +33,12 @@
 	};
 </script>
 
-<div class="toast toast-bottom toast-end z-50">
+<div class="toast-bottom toast-end toast z-50">
 	{#each toasts as toast (toast.id)}
-		<div class="alert {getToastClass(toast.type)} shadow-lg min-w-64">
+		<div class="alert {getToastClass(toast.type)} min-w-64 shadow-lg">
 			<Icon icon={getToastIcon(toast.type)} class="h-5 w-5" />
 			<span class="text-sm">{toast.message}</span>
-			<button
-				class="btn btn-ghost btn-xs"
-				onclick={() => removeToast(toast.id)}
-				title="閉じる"
-			>
+			<button class="btn btn-ghost btn-xs" onclick={() => removeToast(toast.id)} title="Close">
 				<Icon icon="lucide:x" class="h-3 w-3" />
 			</button>
 		</div>

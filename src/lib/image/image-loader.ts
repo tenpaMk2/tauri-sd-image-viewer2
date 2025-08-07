@@ -31,7 +31,7 @@ export const getImageFiles = async (directoryPath: string): Promise<string[]> =>
 		return imageFiles;
 	} catch (error) {
 		console.error('ディレクトリの読み込みに失敗しました:', directoryPath, error);
-		throw new Error(`ディレクトリの読み込みに失敗しました: ${directoryPath}`);
+		throw new Error(`Failed to load directory: ${directoryPath}`);
 	}
 };
 
@@ -43,7 +43,7 @@ export const loadImage = async (filePath: string): Promise<ImageData> => {
 		const imageData = await readFile(filePath);
 		const detectedMimeType = await detectImageMimeType(filePath);
 		if (!detectedMimeType) {
-			throw new Error(`サポートされていない画像形式: ${filePath}`);
+			throw new Error(`Unsupported image format: ${filePath}`);
 		}
 		const mimeType: MimeType = detectedMimeType;
 
@@ -57,7 +57,7 @@ export const loadImage = async (filePath: string): Promise<ImageData> => {
 		};
 	} catch (error) {
 		console.error('Failed to load image:', error);
-		throw new Error(`画像の読み込みに失敗しました: ${filePath}`);
+		throw new Error(`Failed to load image: ${filePath}`);
 	}
 };
 
@@ -105,7 +105,7 @@ export const loadImageWithMetadata = async (
 		return { imageData, imageInfo };
 	} catch (error) {
 		console.error('画像・メタデータの取得に失敗:', filePath, error);
-		throw new Error(`画像情報の取得に失敗しました: ${filePath}`);
+		throw new Error(`Failed to get image info: ${filePath}`);
 	}
 };
 

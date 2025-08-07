@@ -125,9 +125,8 @@
 			>
 				<Icon
 					icon={isSelectionMode ? 'lucide:check-square' : 'lucide:square'}
-					class="mr-1 h-4 w-4"
+					class="h-4 w-4"
 				/>
-				選択
 			</button>
 
 			<!-- 全選択ボタン -->
@@ -141,14 +140,17 @@
 						icon={selectedImages.size === imageFiles.length
 							? 'lucide:check-square-2'
 							: 'lucide:square'}
-						class="mr-1 h-4 w-4"
+						class="h-4 w-4"
 					/>
-					{selectedImages.size === imageFiles.length ? '全選択解除' : '全選択'}
 				</button>
 			{/if}
 
-			<button class="btn btn-sm btn-primary" onclick={openDirectoryDialog}>
-				別のフォルダを開く
+			<button 
+				class="btn btn-ghost btn-sm" 
+				onclick={openDirectoryDialog}
+				title="別のフォルダを開く"
+			>
+				<Icon icon="lucide:folder-open" class="h-4 w-4" />
 			</button>
 		</div>
 	</div>
@@ -178,14 +180,20 @@
 			</div>
 			<div class="flex items-center gap-4">
 				{#if isMacOS}
-					<button class="btn btn-sm btn-neutral" onclick={copySelectedToClipboard}>
+					<button 
+						class="btn btn-ghost btn-sm text-white" 
+						onclick={copySelectedToClipboard}
+						title="クリップボードにコピー"
+					>
 						<Icon icon="lucide:copy" class="h-4 w-4" />
-						クリップボードにコピー
 					</button>
 				{/if}
-				<button class="btn btn-sm btn-error" onclick={deleteSelectedImages}>
+				<button 
+					class="btn btn-ghost btn-sm text-white" 
+					onclick={deleteSelectedImages}
+					title="削除"
+				>
 					<Icon icon="lucide:trash-2" class="h-4 w-4" />
-					削除
 				</button>
 			</div>
 		</div>

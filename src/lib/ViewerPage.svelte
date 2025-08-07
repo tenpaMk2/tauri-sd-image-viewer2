@@ -48,6 +48,10 @@
 	let isResizing = $state<boolean>(false);
 	let isAutoNavActive = $state<boolean>(false);
 	let autoNavTimer: number | null = null;
+	
+	// UI自動隠し機能
+	let isUIVisible = $state<boolean>(true);
+	let uiTimer: number | null = null;
 
 	// 基本的な画像読み込み機能
 	const loadCurrentImage = async (path: string) => {
@@ -78,6 +82,7 @@
 	const goToPrevious = async (): Promise<void> => {
 		if (0 < navigationState.currentIndex && !navigationState.isNavigating) {
 			stopAutoNavigation(); // 手動ナビゲーション時は自動ナビゲーション停止
+			showUI(); // ナビゲーション時にUIを表示
 			navigationState.isNavigating = true;
 			navigationState.currentIndex = navigationState.currentIndex - 1;
 			const newPath = navigationState.files[navigationState.currentIndex];
@@ -93,6 +98,7 @@
 			!navigationState.isNavigating
 		) {
 			stopAutoNavigation(); // 手動ナビゲーション時は自動ナビゲーション停止
+			showUI(); // ナビゲーション時にUIを表示
 			navigationState.isNavigating = true;
 			navigationState.currentIndex = navigationState.currentIndex + 1;
 			const newPath = navigationState.files[navigationState.currentIndex];
@@ -103,11 +109,14 @@
 	};
 
 	// キーボードナビゲーション
-	const handleKeydown = createKeyboardNavigationHandler(
-		goToPrevious,
-		goToNext,
-		() => isInfoPanelFocused
-	);
+	const handleKeydown = (event: KeyboardEvent) => {
+		showUI(); // キーボード操作時にUIを表示
+		return createKeyboardNavigationHandler(
+			goToPrevious,
+			goToNext,
+			() => isInfoPanelFocused
+		)(event);
+	};
 
 	// 情報ペインの制御
 	const toggleInfoPanel = (): void => {
@@ -156,6 +165,33 @@
 		
 		document.addEventListener('mousemove', handleMouseMove);
 		document.addEventListener('mouseup', handleMouseUp);
+	};
+
+	// UI自動隠し機能
+	const showUI = (): void => {
+		isUIVisible = true;
+		resetUITimer();
+	};
+
+	const hideUI = (): void => {
+		isUIVisible = false;
+	};
+
+	const resetUITimer = (): void => {
+		if (uiTimer !== null) {
+			clearTimeout(uiTimer);
+		}
+		uiTimer = setTimeout(() => {
+			hideUI();
+		}, 1500);
+	};
+
+	const handleMouseMove = (): void => {
+		if (!isUIVisible) {
+			showUI();
+		} else {
+			resetUITimer();
+		}
 	};
 
 	// 自動ナビゲーション機能
@@ -210,10 +246,26 @@
 		};
 	});
 
+	// UI自動隠しタイマーの初期化
+	$effect(() => {
+		resetUITimer();
+	});
+
+	// マウスムーブイベントリスナーの設定
+	$effect(() => {
+		document.addEventListener('mousemove', handleMouseMove);
+		return () => {
+			document.removeEventListener('mousemove', handleMouseMove);
+		};
+	});
+
 	// コンポーネント破棄時のクリーンアップ
 	$effect(() => {
 		return () => {
 			stopAutoNavigation();
+			if (uiTimer !== null) {
+				clearTimeout(uiTimer);
+			}
 		};
 	});
 </script>
@@ -230,6 +282,7 @@
 			{isInfoPanelVisible}
 			onToggleAutoNavigation={toggleAutoNavigation}
 			{isAutoNavActive}
+			{isUIVisible}
 		/>
 
 		<ImageCanvas
@@ -246,6 +299,7 @@
 			isNavigating={navigationState.isNavigating}
 			{goToPrevious}
 			{goToNext}
+			{isUIVisible}
 		/>
 	</div>
 

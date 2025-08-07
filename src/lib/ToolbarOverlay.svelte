@@ -9,7 +9,8 @@
 		onToggleInfoPanel,
 		isInfoPanelVisible,
 		onToggleAutoNavigation,
-		isAutoNavActive
+		isAutoNavActive,
+		isUIVisible
 	}: {
 		imageFiles: string[];
 		currentIndex: number;
@@ -19,11 +20,16 @@
 		isInfoPanelVisible?: boolean;
 		onToggleAutoNavigation?: () => void;
 		isAutoNavActive?: boolean;
+		isUIVisible?: boolean;
 	} = $props();
 </script>
 
 <!-- オーバーレイツールバー -->
-<div class="absolute top-0 right-0 left-0 z-10 bg-gradient-to-b from-black/70 to-transparent p-4">
+<div 
+	class="absolute top-0 right-0 left-0 z-10 bg-gradient-to-b from-black/70 to-transparent p-4 transition-opacity duration-300"
+	class:opacity-0={!isUIVisible}
+	class:pointer-events-none={!isUIVisible}
+>
 	<div class="flex items-center text-white">
 		<!-- 左側: ページ情報 -->
 		<div class="flex items-center gap-4">

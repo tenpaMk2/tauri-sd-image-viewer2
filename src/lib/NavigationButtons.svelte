@@ -6,13 +6,15 @@
 		currentIndex,
 		isNavigating,
 		goToPrevious,
-		goToNext
+		goToNext,
+		isUIVisible
 	}: {
 		imageFiles: string[];
 		currentIndex: number;
 		isNavigating: boolean;
 		goToPrevious: () => void;
 		goToNext: () => void;
+		isUIVisible?: boolean;
 	} = $props();
 </script>
 
@@ -21,7 +23,9 @@
 	<!-- 前の画像ボタン -->
 	{#if 0 < currentIndex}
 		<div
-			class="absolute top-1/2 left-6 flex h-16 w-16 -translate-y-1/2 items-center justify-center"
+			class="absolute top-1/2 left-6 flex h-16 w-16 -translate-y-1/2 items-center justify-center transition-opacity duration-300"
+			class:opacity-0={!isUIVisible}
+			class:pointer-events-none={!isUIVisible}
 		>
 			<button
 				class="btn btn-circle btn-ghost btn-lg"
@@ -41,7 +45,9 @@
 	<!-- 次の画像ボタン -->
 	{#if currentIndex < imageFiles.length - 1}
 		<div
-			class="absolute top-1/2 right-6 flex h-16 w-16 -translate-y-1/2 items-center justify-center"
+			class="absolute top-1/2 right-6 flex h-16 w-16 -translate-y-1/2 items-center justify-center transition-opacity duration-300"
+			class:opacity-0={!isUIVisible}
+			class:pointer-events-none={!isUIVisible}
 		>
 			<button
 				class="btn btn-circle btn-ghost btn-lg"

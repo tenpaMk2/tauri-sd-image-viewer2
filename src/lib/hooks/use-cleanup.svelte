@@ -1,3 +1,4 @@
+<script lang="ts">
 export const createCleanupHook = (cleanupFunctions: (() => void)[]) => {
 	const cleanup = () => {
 		cleanupFunctions.forEach((fn) => {
@@ -27,3 +28,4 @@ export const createCleanupHook = (cleanupFunctions: (() => void)[]) => {
 		cleanup
 	};
 };
+</script>

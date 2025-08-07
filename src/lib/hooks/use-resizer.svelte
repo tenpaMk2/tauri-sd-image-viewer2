@@ -1,3 +1,4 @@
+<script lang="ts">
 type ResizerHook = {
 	isDragging: boolean;
 	handleMouseDown: (e: MouseEvent) => void;
@@ -36,3 +37,4 @@ export const createResizerHook = (onWidthChange: (width: number) => void): Resiz
 		handleMouseDown
 	};
 };
+</script>

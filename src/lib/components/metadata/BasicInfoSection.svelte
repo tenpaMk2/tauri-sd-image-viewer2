@@ -9,35 +9,35 @@
 </script>
 
 <div class="rounded-lg bg-base-300 p-3">
-	<h3 class="mb-2 text-sm font-semibold">基本情報</h3>
+	<h3 class="mb-2 text-sm font-semibold">Basic Info</h3>
 	<div class="space-y-1.5 text-xs">
 		<div class="flex justify-between">
-			<div class="text-base-content/70">ファイル名:</div>
+			<div class="text-base-content/70">Filename:</div>
 			<div class="text-right font-mono">{metadata.filename}</div>
 		</div>
 
 		<div class="flex justify-between">
-			<div class="text-base-content/70">サイズ:</div>
+			<div class="text-base-content/70">Size:</div>
 			<div>{metadata.size}</div>
 		</div>
 
 		<div class="flex justify-between">
-			<div class="text-base-content/70">解像度:</div>
+			<div class="text-base-content/70">Resolution:</div>
 			<div>{metadata.dimensions}</div>
 		</div>
 
 		<div class="flex justify-between">
-			<div class="text-base-content/70">形式:</div>
+			<div class="text-base-content/70">Format:</div>
 			<div>{metadata.format}</div>
 		</div>
 
 		<div class="flex justify-between">
-			<div class="text-base-content/70">作成日時:</div>
+			<div class="text-base-content/70">Created:</div>
 			<div class="text-right font-mono text-xs">{metadata.created}</div>
 		</div>
 
 		<div class="flex justify-between">
-			<div class="text-base-content/70">更新日時:</div>
+			<div class="text-base-content/70">Modified:</div>
 			<div class="text-right font-mono text-xs">{metadata.modified}</div>
 		</div>
 	</div>

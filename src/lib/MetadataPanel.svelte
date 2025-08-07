@@ -1,10 +1,10 @@
 <script lang="ts">
+	import BasicInfoSection from './components/metadata/BasicInfoSection.svelte';
+	import CameraInfoSection from './components/metadata/CameraInfoSection.svelte';
+	import ExifInfoSection from './components/metadata/ExifInfoSection.svelte';
+	import SdParamsSection from './components/metadata/SdParamsSection.svelte';
 	import type { ImageMetadata } from './image/types';
 	import { updateImageRating } from './utils/rating-utils';
-	import BasicInfoSection from './components/metadata/BasicInfoSection.svelte';
-	import SdParamsSection from './components/metadata/SdParamsSection.svelte';
-	import ExifInfoSection from './components/metadata/ExifInfoSection.svelte';
-	import CameraInfoSection from './components/metadata/CameraInfoSection.svelte';
 
 	const {
 		metadata,

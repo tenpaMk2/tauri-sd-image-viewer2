@@ -1,7 +1,7 @@
 import type { ImageMetadata } from '../image/types';
 import { createImageMetadata } from '../image/utils';
 import type { Result } from '../types/result';
-import { Ok, Err, asyncTry } from '../types/result';
+import { Err, Ok, asyncTry } from '../types/result';
 
 export class ImageMetadataService {
 	private metadataCache = new Map<string, ImageMetadata>();

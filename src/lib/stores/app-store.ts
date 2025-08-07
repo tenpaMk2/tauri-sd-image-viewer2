@@ -1,9 +1,9 @@
+import { open } from '@tauri-apps/plugin-dialog';
 import { writable } from 'svelte/store';
 import type { ImageMetadata } from '../image/types';
-import type { ViewMode } from '../ui/types';
 import { getDirectoryFromPath } from '../image/utils';
 import { imageMetadataService } from '../services/image-metadata-service';
-import { open } from '@tauri-apps/plugin-dialog';
+import type { ViewMode } from '../ui/types';
 
 export type AppState = {
 	viewMode: ViewMode;

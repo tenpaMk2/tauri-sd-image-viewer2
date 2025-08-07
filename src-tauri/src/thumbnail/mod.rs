@@ -6,12 +6,12 @@ use cache::CacheManager;
 use generator::ThumbnailGenerator;
 use metadata_handler::MetadataHandler;
 
-use crate::types::{ThumbnailInfo, BatchThumbnailResult, CachedMetadata};
+use crate::types::{BatchThumbnailResult, CachedMetadata, ThumbnailInfo};
 use rayon::prelude::*;
 use std::fs;
 use std::path::PathBuf;
 use std::time::Instant;
-use tauri::{AppHandle, Runtime, Manager};
+use tauri::{AppHandle, Manager, Runtime};
 
 pub use generator::ThumbnailConfig;
 
@@ -23,7 +23,10 @@ pub struct ThumbnailHandler {
 
 impl ThumbnailHandler {
     /// 新しいサムネイルハンドラーを作成
-    pub fn new<R: Runtime>(config: generator::ThumbnailConfig, app: &AppHandle<R>) -> Result<Self, String> {
+    pub fn new<R: Runtime>(
+        config: generator::ThumbnailConfig,
+        app: &AppHandle<R>,
+    ) -> Result<Self, String> {
         let cache_dir = Self::get_cache_directory(app)?;
         let metadata_cache_dir = cache_dir.join("metadata");
 
@@ -41,8 +44,8 @@ impl ThumbnailHandler {
         let generator = ThumbnailGenerator::new(config.clone());
         let cache_manager = CacheManager::new(cache_dir, metadata_cache_dir);
 
-        Ok(Self { 
-            generator, 
+        Ok(Self {
+            generator,
             cache_manager,
         })
     }
@@ -82,24 +85,24 @@ impl ThumbnailHandler {
     /// 単一のサムネイル処理
     fn process_single_thumbnail(&self, path: &str, path_only: bool) -> BatchThumbnailResult {
         let cache_key = self.cache_manager.generate_cache_key(path, 128, 80);
-        
+
         let thumbnail_result = if path_only {
             self.load_or_generate_thumbnail_path_only(path)
         } else {
             self.load_or_generate_thumbnail(path)
         };
-        
+
         match thumbnail_result {
             Ok(thumbnail) => {
                 let cached_metadata = self.load_or_generate_metadata(path, &cache_key);
-                
+
                 BatchThumbnailResult {
                     path: path.to_string(),
                     thumbnail: Some(thumbnail),
                     cached_metadata,
                     error: None,
                 }
-            },
+            }
             Err(e) => BatchThumbnailResult {
                 path: path.to_string(),
                 thumbnail: None,
@@ -139,7 +142,10 @@ impl ThumbnailHandler {
     }
 
     /// サムネイルを読み込みまたは生成（キャッシュパスのみ返却）
-    fn load_or_generate_thumbnail_path_only(&self, image_path: &str) -> Result<ThumbnailInfo, String> {
+    fn load_or_generate_thumbnail_path_only(
+        &self,
+        image_path: &str,
+    ) -> Result<ThumbnailInfo, String> {
         let cache_key = self.cache_manager.generate_cache_key(image_path, 128, 80);
         let cache_path = self.cache_manager.get_thumbnail_cache_path(&cache_key);
 
@@ -172,7 +178,11 @@ impl ThumbnailHandler {
     }
 
     /// メタデータをロードまたは生成（キャッシュ優先）
-    fn load_or_generate_metadata(&self, image_path: &str, cache_key: &str) -> Option<CachedMetadata> {
+    fn load_or_generate_metadata(
+        &self,
+        image_path: &str,
+        cache_key: &str,
+    ) -> Option<CachedMetadata> {
         // キャッシュから読み込み試行
         if let Some(cached) = self.cache_manager.load_cached_metadata(cache_key) {
             return Some(cached);
@@ -202,7 +212,10 @@ pub struct ThumbnailState {
 
 impl ThumbnailState {
     /// 新しいThumbnailStateを作成
-    pub fn new<R: Runtime>(config: generator::ThumbnailConfig, app: &AppHandle<R>) -> Result<Self, String> {
+    pub fn new<R: Runtime>(
+        config: generator::ThumbnailConfig,
+        app: &AppHandle<R>,
+    ) -> Result<Self, String> {
         let handler = ThumbnailHandler::new(config, app)?;
         Ok(Self { handler })
     }
@@ -217,16 +230,20 @@ pub async fn load_thumbnails_batch<R: Runtime>(
 ) -> Result<Vec<BatchThumbnailResult>, String> {
     let batch_start = Instant::now();
     println!("\n📦 バッチ処理開始: {}個のファイル", image_paths.len());
-    
+
     let results = state.handler.process_thumbnails_batch(&image_paths, &app);
-    
+
     let success_count = results.iter().filter(|r| r.thumbnail.is_some()).count();
     let error_count = results.iter().filter(|r| r.error.is_some()).count();
     let batch_duration = batch_start.elapsed();
-    println!("✅ バッチ完了: 成功={}, エラー={}, 処理時間={:?} (平均 {:.2}ms/ファイル)\n", 
-        success_count, error_count, batch_duration, 
-        batch_duration.as_millis() as f64 / image_paths.len() as f64);
-    
+    println!(
+        "✅ バッチ完了: 成功={}, エラー={}, 処理時間={:?} (平均 {:.2}ms/ファイル)\n",
+        success_count,
+        error_count,
+        batch_duration,
+        batch_duration.as_millis() as f64 / image_paths.len() as f64
+    );
+
     Ok(results)
 }
 
@@ -237,14 +254,22 @@ pub async fn load_thumbnails_batch_path_only<R: Runtime>(
     app: AppHandle<R>,
     state: tauri::State<'_, ThumbnailState>,
 ) -> Result<Vec<BatchThumbnailResult>, String> {
-    println!("チャンク処理（パスのみ）: {}個のファイル", image_paths.len());
-    
-    let results = state.handler.process_thumbnails_batch_path_only(&image_paths, &app);
-    
+    println!(
+        "チャンク処理（パスのみ）: {}個のファイル",
+        image_paths.len()
+    );
+
+    let results = state
+        .handler
+        .process_thumbnails_batch_path_only(&image_paths, &app);
+
     let success_count = results.iter().filter(|r| r.thumbnail.is_some()).count();
     let error_count = results.iter().filter(|r| r.error.is_some()).count();
-    println!("チャンク完了（パスのみ）: 成功={}, エラー={}", success_count, error_count);
-    
+    println!(
+        "チャンク完了（パスのみ）: 成功={}, エラー={}",
+        success_count, error_count
+    );
+
     Ok(results)
 }
 

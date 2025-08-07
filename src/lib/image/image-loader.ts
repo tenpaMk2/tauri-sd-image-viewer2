@@ -1,8 +1,8 @@
-import { readDir, readFile } from '@tauri-apps/plugin-fs';
-import { join } from '@tauri-apps/api/path';
 import { invoke } from '@tauri-apps/api/core';
-import { detectImageMimeType, SUPPORTED_IMAGE_EXTS } from './mime-type';
+import { join } from '@tauri-apps/api/path';
+import { readDir, readFile } from '@tauri-apps/plugin-fs';
 import type { ImageMetadataInfo, SdParameters } from '../types/shared-types';
+import { detectImageMimeType, SUPPORTED_IMAGE_EXTS } from './mime-type';
 import type { ImageData, MimeType } from './types';
 
 /**

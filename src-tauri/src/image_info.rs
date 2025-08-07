@@ -1,7 +1,7 @@
 use crate::common::{detect_mime_type_from_path, read_file_safe, AppResult};
-use crate::image_handlers::{PngProcessor, GenericImageProcessor};
-use crate::types::ImageMetadataInfo;
 use crate::exif_info::ExifInfo;
+use crate::image_handlers::{GenericImageProcessor, PngProcessor};
+use crate::types::ImageMetadataInfo;
 
 /// 画像ファイルからメタデータのみを効率的に取得
 #[tauri::command]
@@ -12,10 +12,10 @@ pub fn read_image_metadata_info(path: String) -> Result<ImageMetadataInfo, Strin
 pub fn read_image_metadata_internal(path: &str) -> AppResult<ImageMetadataInfo> {
     let data = read_file_safe(path)?;
     let file_size = data.len() as u64;
-    
+
     // MIME型を拡張子から推定
     let mime_type = detect_mime_type_from_path(path);
-    
+
     // 画像の基本情報とメタデータを解析
     let (width, height, sd_parameters) = if mime_type == "image/png" {
         match PngProcessor::extract_comprehensive_info(&data) {
@@ -24,7 +24,7 @@ pub fn read_image_metadata_internal(path: &str) -> AppResult<ImageMetadataInfo> 
                 // PNG解析に失敗した場合は基本情報のみ
                 match GenericImageProcessor::extract_basic_image_info(&data) {
                     Ok((w, h)) => (w, h, None),
-                    Err(_) => (0, 0, None)
+                    Err(_) => (0, 0, None),
                 }
             }
         }
@@ -32,18 +32,21 @@ pub fn read_image_metadata_internal(path: &str) -> AppResult<ImageMetadataInfo> 
         // PNG以外の場合は基本情報のみ
         match GenericImageProcessor::extract_basic_image_info(&data) {
             Ok((w, h)) => (w, h, None),
-            Err(_) => (0, 0, None)
+            Err(_) => (0, 0, None),
         }
     };
 
     // Exif情報を抽出（対応形式: PNG、JPEG、WebP）
-    let exif_info = if matches!(mime_type.as_str(), "image/png" | "image/jpeg" | "image/webp") {
+    let exif_info = if matches!(
+        mime_type.as_str(),
+        "image/png" | "image/jpeg" | "image/webp"
+    ) {
         let extension = path.split('.').last().unwrap_or("");
         ExifInfo::from_bytes(&data, extension)
     } else {
         None
     };
-    
+
     Ok(ImageMetadataInfo {
         width,
         height,
@@ -53,4 +56,3 @@ pub fn read_image_metadata_internal(path: &str) -> AppResult<ImageMetadataInfo> 
         exif_info,
     })
 }
-

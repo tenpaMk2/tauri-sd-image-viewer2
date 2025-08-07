@@ -1,9 +1,9 @@
 import type {
-	SdParameters,
-	ExifInfo,
 	BatchThumbnailResult,
-	ThumbnailInfo,
-	CachedMetadata
+	CachedMetadata,
+	ExifInfo,
+	SdParameters,
+	ThumbnailInfo
 } from '../types/shared-types';
 
 export type MimeType =
@@ -35,4 +35,4 @@ export type ImageMetadata = {
 };
 
 // Re-export shared types for backwards compatibility
-export type { SdParameters, ExifInfo, BatchThumbnailResult, ThumbnailInfo, CachedMetadata };
+export type { BatchThumbnailResult, CachedMetadata, ExifInfo, SdParameters, ThumbnailInfo };

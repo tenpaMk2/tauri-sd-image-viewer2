@@ -1,13 +1,13 @@
 <script lang="ts">
+	import { invoke } from '@tauri-apps/api/core';
+	import { platform } from '@tauri-apps/plugin-os';
+	import { createKeyboardNavigationHandler } from './hooks/use-keyboard-navigation';
 	import type { ImageMetadata } from './image/types';
 	import ImageCanvas from './ImageCanvas.svelte';
 	import MetadataPanel from './MetadataPanel.svelte';
 	import NavigationButtons from './NavigationButtons.svelte';
-	import ToolbarOverlay from './ToolbarOverlay.svelte';
 	import { NavigationService, type NavigationState } from './services/navigation-service';
-	import { createKeyboardNavigationHandler } from './hooks/use-keyboard-navigation';
-	import { platform } from '@tauri-apps/plugin-os';
-	import { invoke } from '@tauri-apps/api/core';
+	import ToolbarOverlay from './ToolbarOverlay.svelte';
 
 	const {
 		metadata,
@@ -50,7 +50,7 @@
 	let isResizing = $state<boolean>(false);
 	let isAutoNavActive = $state<boolean>(false);
 	let autoNavTimer: number | null = null;
-	
+
 	// UI自動隠し機能
 	let isUIVisible = $state<boolean>(true);
 	let uiTimer: number | null = null;
@@ -116,11 +116,7 @@
 	// キーボードナビゲーション
 	const handleKeydown = (event: KeyboardEvent) => {
 		showUI(); // キーボード操作時にUIを表示
-		return createKeyboardNavigationHandler(
-			goToPrevious,
-			goToNext,
-			() => isInfoPanelFocused
-		)(event);
+		return createKeyboardNavigationHandler(goToPrevious, goToNext, () => isInfoPanelFocused)(event);
 	};
 
 	// 情報ペインの制御
@@ -150,24 +146,24 @@
 	const startResize = (event: MouseEvent): void => {
 		isResizing = true;
 		event.preventDefault();
-		
+
 		const handleMouseMove = (e: MouseEvent): void => {
 			if (!isResizing) return;
-			
+
 			const containerWidth = window.innerWidth;
 			const newWidth = containerWidth - e.clientX;
-			
+
 			if (MIN_PANEL_WIDTH <= newWidth && newWidth <= MAX_PANEL_WIDTH) {
 				infoPanelWidth = newWidth;
 			}
 		};
-		
+
 		const handleMouseUp = (): void => {
 			isResizing = false;
 			document.removeEventListener('mousemove', handleMouseMove);
 			document.removeEventListener('mouseup', handleMouseUp);
 		};
-		
+
 		document.addEventListener('mousemove', handleMouseMove);
 		document.addEventListener('mouseup', handleMouseUp);
 	};
@@ -210,7 +206,11 @@
 
 	const goToLatest = async (): Promise<void> => {
 		const latestIndex = navigationState.files.length - 1;
-		if (0 <= latestIndex && latestIndex !== navigationState.currentIndex && !navigationState.isNavigating) {
+		if (
+			0 <= latestIndex &&
+			latestIndex !== navigationState.currentIndex &&
+			!navigationState.isNavigating
+		) {
 			navigationState.isNavigating = true;
 			navigationState.currentIndex = latestIndex;
 			const newPath = navigationState.files[latestIndex];
@@ -226,7 +226,7 @@
 		} else {
 			// 最初に最新画像に移動
 			await goToLatest();
-			
+
 			// 自動ナビゲーションを開始
 			isAutoNavActive = true;
 			autoNavTimer = setInterval(async () => {
@@ -340,7 +340,7 @@
 	<!-- リサイザー -->
 	{#if isInfoPanelVisible}
 		<div
-			class="z-20 w-1 flex-shrink-0 cursor-col-resize bg-base-300 transition-colors hover:bg-primary select-none"
+			class="z-20 w-1 flex-shrink-0 cursor-col-resize bg-base-300 transition-colors select-none hover:bg-primary"
 			class:bg-primary={isResizing}
 			role="button"
 			tabindex="0"

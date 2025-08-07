@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { ImageMetadata } from '../../image/types';
+	import type { ImageMetadata, BatchThumbnailResult } from '../../image/types';
 
 	const {
 		metadata

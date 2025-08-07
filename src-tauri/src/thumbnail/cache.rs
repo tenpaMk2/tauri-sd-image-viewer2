@@ -24,7 +24,7 @@ impl CacheManager {
         hasher.update(image_path.as_bytes());
         hasher.update(size.to_le_bytes());
         hasher.update(quality.to_le_bytes());
-        
+
         // ファイルサイズと更新日時も含める
         if let Ok(metadata) = fs::metadata(image_path) {
             hasher.update(metadata.len().to_le_bytes());
@@ -34,7 +34,7 @@ impl CacheManager {
                 }
             }
         }
-        
+
         hex::encode(hasher.finalize())
     }
 
@@ -67,14 +67,18 @@ impl CacheManager {
     }
 
     /// メタデータをキャッシュに保存
-    pub fn save_metadata_cache(&self, cache_key: &str, metadata: &CachedMetadata) -> Result<(), String> {
+    pub fn save_metadata_cache(
+        &self,
+        cache_key: &str,
+        metadata: &CachedMetadata,
+    ) -> Result<(), String> {
         let metadata_path = self.get_metadata_cache_path(cache_key);
         let json_str = serde_json::to_string(metadata)
             .map_err(|e| format!("メタデータのJSON変換に失敗: {}", e))?;
-        
+
         fs::write(&metadata_path, json_str)
             .map_err(|e| format!("メタデータキャッシュの保存に失敗: {}", e))?;
-        
+
         Ok(())
     }
 
@@ -94,8 +98,8 @@ impl CacheManager {
     }
 
     fn clear_directory(&self, dir: &PathBuf) -> Result<(), String> {
-        let entries = fs::read_dir(dir)
-            .map_err(|e| format!("ディレクトリの読み取りに失敗: {}", e))?;
+        let entries =
+            fs::read_dir(dir).map_err(|e| format!("ディレクトリの読み取りに失敗: {}", e))?;
 
         for entry in entries.flatten() {
             let path = entry.path();

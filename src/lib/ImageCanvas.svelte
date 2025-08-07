@@ -1,16 +1,16 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte';
-	import type { ImageMetadata } from './image/types';
 	import {
-		createImageViewState,
-		resetImageViewState,
 		calculateFitScale,
+		createImageViewState,
+		endDrag,
 		handleZoom,
+		resetImageViewState,
 		startDrag,
 		updateDrag,
-		endDrag,
 		type ImageViewState
 	} from './image/image-manipulation';
+	import type { ImageMetadata } from './image/types';
 	import { updateImageRating } from './utils/rating-utils';
 
 	const {

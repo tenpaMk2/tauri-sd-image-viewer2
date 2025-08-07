@@ -15,7 +15,10 @@ impl MetadataHandler {
                     .as_secs();
 
                 Ok(CachedMetadata {
-                    rating: image_metadata.exif_info.as_ref().and_then(|exif| exif.rating),
+                    rating: image_metadata
+                        .exif_info
+                        .as_ref()
+                        .and_then(|exif| exif.rating),
                     exif_info: image_metadata.exif_info,
                     cached_at: current_time,
                 })

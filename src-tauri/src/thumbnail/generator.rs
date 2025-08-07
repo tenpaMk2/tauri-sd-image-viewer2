@@ -1,6 +1,6 @@
 use crate::types::ThumbnailInfo;
-use image::{GenericImageView, ImageFormat};
 use image::imageops::FilterType;
+use image::{GenericImageView, ImageFormat};
 use memmap2::MmapOptions;
 use std::fs::File;
 use std::time::Instant;
@@ -35,7 +35,7 @@ impl ThumbnailGenerator {
     /// サムネイルを生成
     pub fn generate_thumbnail(&self, image_path: &str) -> Result<ThumbnailInfo, String> {
         let start_time = Instant::now();
-        
+
         // 画像ファイルを最適化された方法で読み込み
         let load_start = Instant::now();
         let img = self.load_image_optimized(image_path)?;
@@ -59,7 +59,7 @@ impl ThumbnailGenerator {
         let webp_memory = encoder.encode(self.config.quality as f32);
         let webp_data = webp_memory.to_vec();
         let _webp_duration = webp_start.elapsed();
-        
+
         let _total_duration = start_time.elapsed();
 
         Ok(ThumbnailInfo {
@@ -74,17 +74,18 @@ impl ThumbnailGenerator {
     /// 最適化された画像読み込み
     fn load_image_optimized(&self, image_path: &str) -> Result<image::DynamicImage, String> {
         let path_lower = image_path.to_lowercase();
-        
+
         if path_lower.ends_with(".png") {
             // PNG画像：メモリマップド読み込みを使用
             let file = File::open(image_path)
                 .map_err(|e| format!("ファイルオープンに失敗: {} - {}", image_path, e))?;
-            
-            let mmap = unsafe { 
-                MmapOptions::new().map(&file)
+
+            let mmap = unsafe {
+                MmapOptions::new()
+                    .map(&file)
                     .map_err(|e| format!("メモリマップに失敗: {} - {}", image_path, e))?
             };
-            
+
             image::load_from_memory_with_format(&mmap, ImageFormat::Png)
                 .map_err(|e| format!("PNG画像の読み込みに失敗: {} - {}", image_path, e))
         } else {
@@ -95,14 +96,19 @@ impl ThumbnailGenerator {
     }
 
     /// 最適化された段階的リサイズ
-    fn resize_image_optimized(&self, img: image::DynamicImage, target_size: u32) -> image::DynamicImage {
+    fn resize_image_optimized(
+        &self,
+        img: image::DynamicImage,
+        target_size: u32,
+    ) -> image::DynamicImage {
         let (width, height) = img.dimensions();
         let max_dimension = width.max(height);
-        
+
         if max_dimension > 512 {
             // 大きな画像：段階的リサイズ
             let intermediate_size = (target_size * 4).min(512);
-            let intermediate = img.resize(intermediate_size, intermediate_size, FilterType::Triangle);
+            let intermediate =
+                img.resize(intermediate_size, intermediate_size, FilterType::Triangle);
             intermediate.thumbnail(target_size, target_size)
         } else {
             // 小さな画像：直接リサイズ

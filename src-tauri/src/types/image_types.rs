@@ -1,5 +1,5 @@
-use crate::sd_parameters::SdParameters;
 use crate::exif_info::ExifInfo;
+use crate::sd_parameters::SdParameters;
 use serde::{Deserialize, Serialize};
 
 /// 画像メタデータ情報（統合型）

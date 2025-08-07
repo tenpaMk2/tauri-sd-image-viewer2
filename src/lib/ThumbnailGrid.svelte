@@ -1,5 +1,4 @@
 <script lang="ts">
-	import type { BatchThumbnailResult } from './image/types';
 	import ImageThumbnail from './ImageThumbnail.svelte';
 	import { ThumbnailService } from './services/thumbnail-service';
 

@@ -1,7 +1,7 @@
 use crate::common::{read_file_safe, AppResult};
-use crate::sd_parameters::SdParameters;
-use crate::types::{PngImageInfo, ImageMetadataInfo};
 use crate::exif_info::ExifInfo;
+use crate::sd_parameters::SdParameters;
+use crate::types::{ImageMetadataInfo, PngImageInfo};
 use png::Decoder;
 use std::io::Cursor;
 
@@ -34,7 +34,7 @@ impl PngProcessor {
                 }
             }
         }
-        
+
         Ok(None)
     }
 
@@ -52,7 +52,8 @@ impl PngProcessor {
             color_type: format!("{:?}", info.color_type),
         };
 
-        let sd_parameters = info.uncompressed_latin1_text
+        let sd_parameters = info
+            .uncompressed_latin1_text
             .iter()
             .find(|entry| entry.keyword == "parameters")
             .and_then(|entry| SdParameters::parse(&entry.text).ok());
@@ -64,12 +65,12 @@ impl PngProcessor {
     pub fn extract_metadata_info(path: &str) -> AppResult<ImageMetadataInfo> {
         let data = read_file_safe(path)?;
         let file_size = data.len() as u64;
-        
+
         let (png_info, sd_parameters) = Self::extract_comprehensive_info(&data)?;
-        
+
         // Exif情報を抽出
         let exif_info = ExifInfo::from_bytes(&data, "png");
-        
+
         Ok(ImageMetadataInfo {
             width: png_info.width,
             height: png_info.height,
@@ -85,9 +86,9 @@ impl PngProcessor {
 #[tauri::command]
 pub fn read_png_image_info(path: String) -> Result<PngImageInfo, String> {
     let data = read_file_safe(&path).map_err(|e| e.to_string())?;
-    let (png_info, sd_parameters) = PngProcessor::extract_comprehensive_info(&data)
-        .map_err(|e| e.to_string())?;
-    
+    let (png_info, sd_parameters) =
+        PngProcessor::extract_comprehensive_info(&data).map_err(|e| e.to_string())?;
+
     Ok(PngImageInfo {
         width: png_info.width,
         height: png_info.height,

@@ -1,5 +1,5 @@
+import { basename, dirname } from '@tauri-apps/api/path';
 import { stat } from '@tauri-apps/plugin-fs';
-import { dirname, basename } from '@tauri-apps/api/path';
 import { loadImageWithMetadata } from './image-loader';
 import type { ImageMetadata } from './types';
 

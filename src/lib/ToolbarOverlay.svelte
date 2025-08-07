@@ -29,7 +29,7 @@
 </script>
 
 <!-- オーバーレイツールバー -->
-<div 
+<div
 	class="absolute top-0 right-0 left-0 z-10 bg-gradient-to-b from-black/70 to-transparent p-4 transition-opacity duration-300"
 	class:opacity-0={!isUIVisible}
 	class:pointer-events-none={!isUIVisible}
@@ -45,7 +45,7 @@
 		</div>
 
 		<!-- 中央: メインボタン群 -->
-		<div class="flex-1 flex justify-center items-center gap-2">
+		<div class="flex flex-1 items-center justify-center gap-2">
 			<button
 				class="btn text-white btn-ghost btn-sm"
 				onclick={openFileDialog}
@@ -68,7 +68,9 @@
 					class:btn-ghost={!isAutoNavActive}
 					class:btn-active={isAutoNavActive}
 					onclick={onToggleAutoNavigation}
-					title={isAutoNavActive ? '自動ナビゲーションを停止' : '最新画像への自動ナビゲーションを開始'}
+					title={isAutoNavActive
+						? '自動ナビゲーションを停止'
+						: '最新画像への自動ナビゲーションを開始'}
 				>
 					<Icon icon="lucide:skip-forward" class="h-4 w-4" />
 				</button>

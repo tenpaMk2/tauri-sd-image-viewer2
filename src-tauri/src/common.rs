@@ -70,12 +70,17 @@ pub fn detect_mime_type_from_path(path: &str) -> String {
 /// 安全なファイル読み込み処理
 pub fn read_file_safe(path: &str) -> AppResult<Vec<u8>> {
     if path.trim().is_empty() {
-        return Err(AppError::InvalidInput("空のファイルパスが指定されました".to_string()));
+        return Err(AppError::InvalidInput(
+            "空のファイルパスが指定されました".to_string(),
+        ));
     }
-    
+
     if !std::path::Path::new(path).exists() {
-        return Err(AppError::InvalidInput(format!("ファイルが存在しません: {}", path)));
+        return Err(AppError::InvalidInput(format!(
+            "ファイルが存在しません: {}",
+            path
+        )));
     }
-    
+
     std::fs::read(path).map_err(AppError::from)
 }

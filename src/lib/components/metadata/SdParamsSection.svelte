@@ -1,8 +1,8 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte';
 	import type { ImageMetadata } from '../../image/types';
-	import { copyToClipboard } from '../../utils/ui-utils';
 	import { formatSdTags } from '../../utils/image-utils';
+	import { copyToClipboard } from '../../utils/ui-utils';
 
 	const {
 		metadata

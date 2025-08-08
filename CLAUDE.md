@@ -35,8 +35,8 @@ Stable Diffusionの生成メタデータを表示可能。
 
 - **ユーザー向けUI表示は全て英語で統一すること**
 - ボタンのタイトル、メッセージ、エラー文など、ユーザーが視覚的に確認できる文言は英語にする
-- コメント、ログメッセージ、変数名などの開発者向け記述は日本語を使用可能
 - トースト通知、確認ダイアログ、フォームラベルなども英語表記とする
+- コメント、ログメッセージ、変数名などの開発者向け記述は日本語にする
 
 ## Git規約
 
@@ -175,12 +175,14 @@ src-tauri/src/
 ## 設定ファイル
 
 ### フロントエンド設定
+
 - `vite.config.ts` - Viteビルド設定とTailwind CSS統合
 - `svelte.config.js` - SvelteKit設定（SPA構成）
 - `tsconfig.json` - TypeScript設定
 - `src/app.css` - Tailwind CSS v4とDaisyUI設定
 
 ### Tauri設定
+
 - `src-tauri/Cargo.toml` - Rust依存関係管理
 - `src-tauri/tauri.conf.json` - Tauriアプリ設定
 - `src-tauri/capabilities/default.json` - セキュリティ権限設定
@@ -188,6 +190,7 @@ src-tauri/src/
 ## 主要依存関係
 
 ### フロントエンド
+
 - `@sveltejs/kit` - フレームワーク
 - `@tailwindcss/vite` - CSS フレームワーク（v4）
 - `daisyui` - UIコンポーネント
@@ -195,6 +198,7 @@ src-tauri/src/
 - `@tauri-apps/plugin-*` - Tauri統合プラグイン
 
 ### Rust（バックエンド）
+
 - `image`, `png`, `webp` - 画像処理
 - `little_exif` - EXIF メタデータ処理
 - `serde`, `serde_json` - シリアライゼーション
@@ -205,12 +209,14 @@ src-tauri/src/
 ## デバッグ・トラブルシューティング
 
 ### 開発時のトラブル対応
+
 1. 型エラー → `bun run check` で確認
 2. UI表示問題 → ブラウザ開発者ツールで確認
 3. Rust側エラー → `cargo check` および Tauriログで確認
 4. ビルドエラー → `bun run build` および `bun run tauri:build` で確認
 
 ### よくある問題
+
 - Rust-TypeScript型不整合 → TYPE_SYNC_GUIDE.md参照
 - パフォーマンス問題 → PERFORMANCE_OPTIMIZATION.md参照
 - 権限エラー → `src-tauri/capabilities/default.json`確認

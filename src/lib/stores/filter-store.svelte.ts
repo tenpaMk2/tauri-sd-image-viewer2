@@ -20,7 +20,7 @@ export type FilterState = {
 const createFilterStore = () => {
 	let state = $state<FilterState>({
 		targetRating: 0, // Always active: 0 = unrated, 1-5 = rated
-		ratingComparison: 'gte', // Default: >= 0 (show all)
+		ratingComparison: 'lte', // Default: <= 0 (show all)
 		filenamePattern: '',
 		isActive: false
 	});
@@ -38,8 +38,8 @@ const createFilterStore = () => {
 	};
 
 	const clearFilters = () => {
-		state.targetRating = 0; // Reset to >= 0 (show all)
-		state.ratingComparison = 'gte';
+		state.targetRating = 0; // Reset to <= 0 (show all)
+		state.ratingComparison = 'lte';
 		state.filenamePattern = '';
 		state.isActive = false;
 	};
@@ -71,11 +71,11 @@ const createFilterStore = () => {
 
 			switch (state.ratingComparison) {
 				case 'gte':
-					return normalizedRating >= state.targetRating;
+					return state.targetRating >= normalizedRating;
 				case 'eq':
-					return normalizedRating === state.targetRating;
+					return state.targetRating === normalizedRating;
 				case 'lte':
-					return normalizedRating <= state.targetRating;
+					return state.targetRating <= normalizedRating;
 				default:
 					return true;
 			}
@@ -91,8 +91,8 @@ const createFilterStore = () => {
 		if (!state.isActive) return '';
 
 		const filters = [];
-		// Always show rating filter (only show if not default >= 0)
-		if (!(state.targetRating === 0 && state.ratingComparison === 'gte')) {
+		// Always show rating filter (only show if not default <= 0)
+		if (!(state.targetRating === 0 && state.ratingComparison === 'lte')) {
 			const comparisonSymbol = state.ratingComparison === 'gte' ? '+' : 
 									state.ratingComparison === 'eq' ? '' : '-';
 			const ratingText = state.targetRating === 0 ? 'Unrated' : `${state.targetRating}${comparisonSymbol}`;

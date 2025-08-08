@@ -49,13 +49,6 @@
 		}, 300);
 	};
 
-	// Clear all filters
-	const clearAllFilters = () => {
-		filterStore.clearFilters();
-		selectedRating = 0;
-		selectedComparison = 'gte';
-		patternValue = '';
-	};
 
 	// Show help modal
 	const showHelp = () => {
@@ -67,47 +60,14 @@
 		showHelpModal = false;
 	};
 
-	// Get filter summary
-	const filterSummary = $derived(filterStore.getFilterSummary(totalImages, filteredImages));
-	const hasActiveFilters = $derived(filterStore.state.isActive);
 </script>
 
-<div class="border-b border-base-300 bg-base-100 p-3">
-	<div class="flex items-center justify-between gap-4">
-		<!-- Filter Summary -->
-		<div class="flex items-center gap-2">
-			{#if filterSummary}
-				<span class="text-xs text-base-content/60">{filterSummary}</span>
-			{/if}
-		</div>
-
-		<!-- Clear Button -->
-		{#if hasActiveFilters}
-			<button
-				class="btn btn-ghost btn-xs"
-				onclick={clearAllFilters}
-				title="Clear All Filters"
-			>
-				<Icon icon="lucide:x" class="h-3 w-3" />
-			</button>
-		{/if}
-	</div>
+<div class="border-b border-base-300 bg-base-100 p-4">
 
 	<!-- Compact Filter Controls -->
-	<div class="mt-3 grid grid-cols-1 gap-4 lg:grid-cols-2">
+	<div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
 		<!-- Rating Filter -->
 		<div class="flex items-center gap-2">
-			<span class="text-sm font-medium min-w-[4rem]">Rating</span>
-			<select
-				class="select select-bordered select-sm w-16"
-				value={selectedComparison}
-				onchange={handleComparisonChange}
-			>
-				<option value="gte">≥</option>
-				<option value="eq">=</option>
-				<option value="lte">≤</option>
-			</select>
-			
 			<!-- DaisyUI Rating Component -->
 			<div class="rating rating-sm">
 				{#each [1, 2, 3, 4, 5] as rating}
@@ -121,14 +81,23 @@
 					/>
 				{/each}
 			</div>
+			
+			<select
+				class="select select-bordered select-sm w-16"
+				value={selectedComparison}
+				onchange={handleComparisonChange}
+			>
+				<option value="lte">≤</option>
+				<option value="eq">=</option>
+				<option value="gte">≥</option>
+			</select>
 		</div>
 
 		<!-- Filename Pattern Filter -->
 		<div class="flex items-center gap-2">
-			<span class="text-sm font-medium min-w-[4rem]">Pattern</span>
 			<input
-				type="text"
-				placeholder="e.g., IMG, test, *.jpg"
+				type="search"
+				placeholder="Filter by filename..."
 				class="input input-bordered input-sm flex-1"
 				value={patternValue}
 				oninput={handlePatternChange}

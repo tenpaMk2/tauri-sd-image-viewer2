@@ -161,7 +161,7 @@
 		<div class="flex items-center gap-2">
 			<!-- Filter Button -->
 			<button
-				class="btn btn-ghost btn-sm {showFilterPanel ? 'btn-active' : ''}"
+				class="btn btn-ghost btn-sm {showFilterPanel ? 'btn-active btn-primary' : ''}"
 				onclick={toggleFilterPanel}
 				title="Toggle Filters"
 			>

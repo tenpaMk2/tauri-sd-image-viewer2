@@ -1,6 +1,6 @@
 import type {
 	BatchThumbnailResult,
-	CachedMetadata,
+	ThumbnailCacheInfo,
 	ExifInfo,
 	SdParameters,
 	ThumbnailInfo
@@ -35,4 +35,4 @@ export type ImageMetadata = {
 };
 
 // Re-export shared types for backwards compatibility
-export type { BatchThumbnailResult, CachedMetadata, ExifInfo, SdParameters, ThumbnailInfo };
+export type { BatchThumbnailResult, ThumbnailCacheInfo, ExifInfo, SdParameters, ThumbnailInfo };

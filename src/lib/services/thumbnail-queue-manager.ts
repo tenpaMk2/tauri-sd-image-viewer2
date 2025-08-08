@@ -131,8 +131,8 @@ export class ThumbnailQueueManager {
 					chunkThumbnails.set(result.path, thumbnailUrl);
 
 					// メタデータが存在する場合はキャッシュに保存
-					if (result.cached_metadata) {
-						chunkMetadata.set(result.path, result.cached_metadata);
+					if (result.cache_info) {
+						chunkMetadata.set(result.path, result.cache_info);
 					}
 
 					this.loadedCount++;

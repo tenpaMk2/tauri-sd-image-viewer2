@@ -93,17 +93,55 @@ export type ImageMetadataInfo = {
 
 // ==========================================
 // サムネイル関連
-// 対応ファイル: src-tauri/src/thumbnail.rs
+// 対応ファイル: src-tauri/src/types/thumbnail_types.rs
 // ==========================================
 
 /**
- * キャッシュされたメタデータ情報
- * 対応: `struct CachedMetadata`
+ * サムネイル生成設定
+ * 対応: `struct ThumbnailConfig`
  */
-export type CachedMetadata = {
+export type ThumbnailConfig = {
+	size: number; // Rust: u32
+	quality: number; // Rust: u8
+	format: string; // Rust: String
+};
+
+/**
+ * 元画像のファイル情報
+ * 対応: `struct OriginalFileInfo`
+ */
+export type OriginalFileInfo = {
+	path: string; // Rust: String
+	file_size: number; // Rust: u64
+	width: number; // Rust: u32
+	height: number; // Rust: u32
+	modified_time: number; // Rust: u64 (UNIXタイムスタンプ)
+};
+
+/**
+ * 包括的キャッシュ情報（JSONファイルで保存）
+ * 対応: `struct ThumbnailCacheInfo`
+ */
+export type ThumbnailCacheInfo = {
+	thumbnail_config: ThumbnailConfig; // Rust: ThumbnailConfig
+	original_file_info: OriginalFileInfo; // Rust: OriginalFileInfo
+	thumbnail_filename: string; // Rust: String
 	rating?: number; // Rust: Option<u8>
 	exif_info?: ExifInfo; // Rust: Option<ExifInfo>
+	sd_parameters?: SdParameters; // Rust: Option<SdParameters>
 	cached_at: number; // Rust: u64 (UNIXタイムスタンプ)
+};
+
+/**
+ * サムネイル情報（レスポンス用）
+ * 対応: `struct ThumbnailInfo`
+ */
+export type ThumbnailInfo = {
+	data: number[]; // Rust: Vec<u8>
+	width: number; // Rust: u32
+	height: number; // Rust: u32
+	mime_type: string; // Rust: String
+	cache_path?: string; // Rust: Option<String> - キャッシュファイルのパス
 };
 
 /**
@@ -113,20 +151,8 @@ export type CachedMetadata = {
 export type BatchThumbnailResult = {
 	path: string; // Rust: String
 	thumbnail?: ThumbnailInfo; // Rust: Option<ThumbnailInfo>
-	cached_metadata?: CachedMetadata; // Rust: Option<CachedMetadata>
+	cache_info?: ThumbnailCacheInfo; // Rust: Option<ThumbnailCacheInfo>
 	error?: string; // Rust: Option<String>
-};
-
-/**
- * サムネイル情報
- * 対応: `struct ThumbnailInfo`
- */
-export type ThumbnailInfo = {
-	data: number[]; // Rust: Vec<u8>
-	width: number; // Rust: u32
-	height: number; // Rust: u32
-	mime_type: string; // Rust: String
-	cache_path?: string; // Rust: Option<String> - キャッシュファイルのパス
 };
 
 // ==========================================

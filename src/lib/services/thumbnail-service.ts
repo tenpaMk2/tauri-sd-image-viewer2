@@ -1,12 +1,12 @@
 import { convertFileSrc, invoke } from '@tauri-apps/api/core';
 import { getImageFiles } from '../image/image-loader';
-import type { BatchThumbnailResult, CachedMetadata } from '../types/shared-types';
+import type { BatchThumbnailResult, ThumbnailCacheInfo } from '../types/shared-types';
 import { ThumbnailQueueManager, type ThumbnailQueueCallbacks } from './thumbnail-queue-manager';
 
 // サムネイル処理のサービス
 export class ThumbnailService {
 	// メタデータキャッシュ
-	private metadataCache = new Map<string, CachedMetadata>();
+	private metadataCache = new Map<string, ThumbnailCacheInfo>();
 	// キューマネージャ
 	private queueManager: ThumbnailQueueManager | null = null;
 
@@ -22,8 +22,8 @@ export class ThumbnailService {
 				const blob = new Blob([uint8Array], { type: result.thumbnail.mime_type });
 				const url = URL.createObjectURL(blob);
 
-				if (result.cached_metadata) {
-					this.metadataCache.set(result.path, result.cached_metadata);
+				if (result.cache_info) {
+					this.metadataCache.set(result.path, result.cache_info);
 				}
 
 				return url;
@@ -96,8 +96,8 @@ export class ThumbnailService {
 
 						chunkThumbnails.set(result.path, thumbnailUrl);
 
-						if (result.cached_metadata) {
-							this.metadataCache.set(result.path, result.cached_metadata);
+						if (result.cache_info) {
+							this.metadataCache.set(result.path, result.cache_info);
 						}
 
 						loadedCount++;
@@ -152,8 +152,8 @@ export class ThumbnailService {
 						newThumbnails.set(result.path, url);
 						chunkThumbnails.set(result.path, url);
 
-						if (result.cached_metadata) {
-							this.metadataCache.set(result.path, result.cached_metadata);
+						if (result.cache_info) {
+							this.metadataCache.set(result.path, result.cache_info);
 						}
 
 						loadedCount++;
@@ -183,7 +183,7 @@ export class ThumbnailService {
 		return await getImageFiles(directoryPath);
 	}
 
-	getImageMetadata(imagePath: string): CachedMetadata | undefined {
+	getImageMetadata(imagePath: string): ThumbnailCacheInfo | undefined {
 		return this.metadataCache.get(imagePath);
 	}
 
@@ -208,11 +208,8 @@ export class ThumbnailService {
 				};
 				this.metadataCache.set(imagePath, updatedMetadata);
 			} else {
-				this.metadataCache.set(imagePath, {
-					rating: newRating,
-					exif_info: undefined,
-					cached_at: Date.now() / 1000
-				});
+				// 新しいメタデータがない場合はキャッシュを削除して新しいサムネイルをロードさせる
+				this.metadataCache.delete(imagePath);
 			}
 
 			return true;
@@ -329,8 +326,8 @@ export class ThumbnailService {
 						newThumbnails.set(result.path, url);
 						chunkThumbnails.set(result.path, url);
 
-						if (result.cached_metadata) {
-							this.metadataCache.set(result.path, result.cached_metadata);
+						if (result.cache_info) {
+							this.metadataCache.set(result.path, result.cache_info);
 						}
 
 						loadedCount++;

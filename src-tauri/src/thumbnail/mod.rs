@@ -6,7 +6,10 @@ use cache::CacheManager;
 use generator::ThumbnailGenerator;
 use metadata_handler::MetadataHandler;
 
-use crate::types::{BatchThumbnailResult, ThumbnailCacheInfo, ThumbnailConfig, ThumbnailInfo};
+use crate::types::{
+    BatchThumbnailPathResult, BatchThumbnailResult, ThumbnailCacheInfo, ThumbnailConfig,
+    ThumbnailInfo, ThumbnailPathInfo,
+};
 use rayon::prelude::*;
 use std::fs;
 use std::path::PathBuf;
@@ -51,49 +54,35 @@ impl ThumbnailHandler {
             .map_err(|e| format!("キャッシュディレクトリの取得に失敗: {}", e))
     }
 
-    /// バッチでサムネイルを処理（並列読み込み・生成）
-    pub fn process_thumbnails_batch<R: Runtime>(
-        &self,
-        image_paths: &[String],
-        _app: &AppHandle<R>,
-    ) -> Vec<BatchThumbnailResult> {
-        image_paths
-            .par_iter()
-            .map(|path| self.process_single_thumbnail(path, false))
-            .collect()
-    }
 
     /// バッチでサムネイルを処理（キャッシュパスのみ返却）
     pub fn process_thumbnails_batch_path_only<R: Runtime>(
         &self,
         image_paths: &[String],
         _app: &AppHandle<R>,
-    ) -> Vec<BatchThumbnailResult> {
+    ) -> Vec<BatchThumbnailPathResult> {
         image_paths
             .par_iter()
-            .map(|path| self.process_single_thumbnail(path, true))
+            .map(|path| self.process_single_thumbnail_path_only(path))
             .collect()
     }
 
-    /// 単一のサムネイル処理
-    fn process_single_thumbnail(&self, path: &str, path_only: bool) -> BatchThumbnailResult {
+
+    /// 単一のサムネイル処理（パスのみ）
+    fn process_single_thumbnail_path_only(&self, path: &str) -> BatchThumbnailPathResult {
         let cache_key = self.cache_manager.generate_cache_key(path);
         let config = self.generator.get_config();
 
-        let result = if path_only {
-            self.load_or_generate_thumbnail_path_only(path, &cache_key, &config)
-        } else {
-            self.load_or_generate_thumbnail(path, &cache_key, &config)
-        };
+        let result = self.load_or_generate_thumbnail_path_only(path, &cache_key, &config);
 
         match result {
-            Ok((thumbnail, cache_info)) => BatchThumbnailResult {
+            Ok((thumbnail, cache_info)) => BatchThumbnailPathResult {
                 path: path.to_string(),
                 thumbnail: Some(thumbnail),
                 cache_info: Some(cache_info),
                 error: None,
             },
-            Err(e) => BatchThumbnailResult {
+            Err(e) => BatchThumbnailPathResult {
                 path: path.to_string(),
                 thumbnail: None,
                 cache_info: None,
@@ -102,60 +91,49 @@ impl ThumbnailHandler {
         }
     }
 
-    /// サムネイルを読み込みまたは生成（キャッシュ優先）
-    fn load_or_generate_thumbnail(
-        &self,
-        image_path: &str,
-        cache_key: &str,
-        config: &ThumbnailConfig,
-    ) -> Result<(ThumbnailInfo, ThumbnailCacheInfo), String> {
-        // キャッシュが有効かチェック
-        if let Some(cache_info) = self.cache_manager.is_cache_valid(cache_key, image_path, config) {
-            // キャッシュから画像データを読み込み
-            if let Ok(data) = self.cache_manager.load_thumbnail_image(cache_key) {
-                let thumbnail_info = ThumbnailInfo {
-                    data,
-                    width: config.size,
-                    height: config.size,
-                    mime_type: config.format.clone(),
-                    cache_path: Some(self.cache_manager.get_thumbnail_file_path(cache_key).to_string_lossy().to_string()),
-                };
-                return Ok((thumbnail_info, cache_info));
-            }
-        }
 
-        // 新しいサムネイルを生成
-        self.generate_and_cache_thumbnail(image_path, cache_key, config)
-    }
-
-    /// サムネイルを読み込みまたは生成（キャッシュパスのみ返却）
+    /// サムネイルを読み込みまたは生成（パスのみ返却）
     fn load_or_generate_thumbnail_path_only(
         &self,
         image_path: &str,
         cache_key: &str,
         config: &ThumbnailConfig,
-    ) -> Result<(ThumbnailInfo, ThumbnailCacheInfo), String> {
+    ) -> Result<(ThumbnailPathInfo, ThumbnailCacheInfo), String> {
         // キャッシュが有効かチェック
         if let Some(cache_info) = self.cache_manager.is_cache_valid(cache_key, image_path, config) {
-            let thumbnail_info = ThumbnailInfo {
-                data: Vec::new(), // 画像データは空
+            let cache_path = self.cache_manager.get_thumbnail_file_path(cache_key);
+            let cache_path_string = cache_path.to_string_lossy().to_string();
+            
+            // デバッグ：キャッシュパスの詳細確認（読み込み可能性もテスト）
+            let can_read = std::fs::metadata(&cache_path).is_ok();
+            println!("🔍 キャッシュパス詳細: image_path={}, cache_key={}, cache_path={}, exists={}, readable={}", 
+                     image_path, cache_key, cache_path_string, cache_path.exists(), can_read);
+            
+            let thumbnail_info = ThumbnailPathInfo {
                 width: config.size,
                 height: config.size,
                 mime_type: config.format.clone(),
-                cache_path: Some(self.cache_manager.get_thumbnail_file_path(cache_key).to_string_lossy().to_string()),
+                cache_path: cache_path_string,
             };
             return Ok((thumbnail_info, cache_info));
         }
 
-        // 新しいサムネイルを生成（データ付きで生成してからパスのみにする）
+        // 新しいサムネイルを生成
         let (full_thumbnail, cache_info) = self.generate_and_cache_thumbnail(image_path, cache_key, config)?;
         
-        let path_only_thumbnail = ThumbnailInfo {
-            data: Vec::new(), // 画像データは空
+        let cache_path_string = full_thumbnail.cache_path.unwrap_or_default();
+        
+        // デバッグ：新規生成時のキャッシュパス確認（読み込み可能性もテスト）
+        let cache_path_obj = std::path::Path::new(&cache_path_string);
+        let can_read = std::fs::metadata(&cache_path_obj).is_ok();
+        println!("🆕 新規生成キャッシュパス: image_path={}, cache_key={}, cache_path={}, exists={}, readable={}", 
+                 image_path, cache_key, cache_path_string, cache_path_obj.exists(), can_read);
+        
+        let path_only_thumbnail = ThumbnailPathInfo {
             width: full_thumbnail.width,
             height: full_thumbnail.height,
             mime_type: full_thumbnail.mime_type,
-            cache_path: full_thumbnail.cache_path,
+            cache_path: cache_path_string,
         };
 
         Ok((path_only_thumbnail, cache_info))
@@ -219,31 +197,6 @@ impl ThumbnailState {
     }
 }
 
-/// バッチでサムネイルを生成または取得するTauriコマンド
-#[tauri::command]
-pub async fn load_thumbnails_batch<R: Runtime>(
-    image_paths: Vec<String>,
-    app: AppHandle<R>,
-    state: tauri::State<'_, ThumbnailState>,
-) -> Result<Vec<BatchThumbnailResult>, String> {
-    let batch_start = Instant::now();
-    println!("\n📦 バッチ処理開始: {}個のファイル", image_paths.len());
-
-    let results = state.handler.process_thumbnails_batch(&image_paths, &app);
-
-    let success_count = results.iter().filter(|r| r.thumbnail.is_some()).count();
-    let error_count = results.iter().filter(|r| r.error.is_some()).count();
-    let batch_duration = batch_start.elapsed();
-    println!(
-        "✅ バッチ完了: 成功={}, エラー={}, 処理時間={:?} (平均 {:.2}ms/ファイル)\n",
-        success_count,
-        error_count,
-        batch_duration,
-        batch_duration.as_millis() as f64 / image_paths.len() as f64
-    );
-
-    Ok(results)
-}
 
 /// バッチでサムネイルを生成または取得するTauriコマンド（キャッシュパスのみ返却）
 #[tauri::command]
@@ -251,7 +204,7 @@ pub async fn load_thumbnails_batch_path_only<R: Runtime>(
     image_paths: Vec<String>,
     app: AppHandle<R>,
     state: tauri::State<'_, ThumbnailState>,
-) -> Result<Vec<BatchThumbnailResult>, String> {
+) -> Result<Vec<BatchThumbnailPathResult>, String> {
     println!(
         "チャンク処理（パスのみ）: {}個のファイル",
         image_paths.len()

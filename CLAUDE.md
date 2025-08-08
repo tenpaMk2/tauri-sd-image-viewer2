@@ -73,10 +73,17 @@ Stable Diffusionの生成メタデータを表示可能。
 ```
 src/
 ├── lib/
+│   ├── components/         # Svelteコンポーネント
+│   │   └── metadata/       # メタデータ表示コンポーネント
+│   │       ├── BasicInfoSection.svelte
+│   │       ├── CameraInfoSection.svelte
+│   │       ├── DateTimeSection.svelte
+│   │       ├── ExifInfoSection.svelte
+│   │       └── SdParamsSection.svelte
 │   ├── hooks/              # カスタムフック
-│   │   ├── use-resizer.ts
-│   │   ├── use-cleanup.ts
-│   │   └── use-keyboard-navigation.ts
+│   │   ├── use-cleanup.svelte
+│   │   ├── use-keyboard-navigation.ts
+│   │   └── use-resizer.svelte
 │   ├── image/              # 画像処理関連
 │   │   ├── image-loader.ts
 │   │   ├── image-manipulation.ts
@@ -84,20 +91,45 @@ src/
 │   │   ├── types.ts
 │   │   └── utils.ts
 │   ├── services/           # ビジネスロジック
+│   │   ├── global-thumbnail-service.ts
 │   │   ├── image-metadata-service.ts
 │   │   ├── logger.ts
 │   │   ├── navigation-service.ts
+│   │   ├── tag-aggregation-service.ts
+│   │   ├── thumbnail-queue-manager.ts
 │   │   └── thumbnail-service.ts
 │   ├── stores/             # グローバル状態管理
-│   │   └── app-store.ts
+│   │   ├── app-store.ts
+│   │   ├── filter-store.svelte.ts
+│   │   └── toast.svelte
 │   ├── types/              # 型定義
 │   │   ├── shared-types.ts # Rust-TypeScript共通型
 │   │   └── result.ts
 │   ├── ui/                 # UI関連
 │   │   └── types.ts
-│   └── utils/              # ユーティリティ関数
+│   ├── utils/              # ユーティリティ関数
+│   │   ├── delete-images.ts
+│   │   ├── glob-utils.ts
+│   │   ├── image-utils.ts
+│   │   ├── rating-utils.ts
+│   │   └── ui-utils.ts
+│   ├── FilterPanel.svelte
+│   ├── GridPage.svelte
+│   ├── ImageCanvas.svelte
+│   ├── ImageThumbnail.svelte
+│   ├── MetadataPanel.svelte
+│   ├── NavigationButtons.svelte
+│   ├── ThumbnailGrid.svelte
+│   ├── Toast.svelte
+│   ├── ToolbarOverlay.svelte
+│   ├── ViewerPage.svelte
+│   └── WelcomeScreen.svelte
 ├── routes/                 # SvelteKitルーティング
-└── app.css                # グローバルスタイル
+│   ├── +layout.svelte
+│   ├── +layout.ts
+│   └── +page.svelte
+├── app.css                # グローバルスタイル
+└── app.html               # HTMLテンプレート
 
 src-tauri/src/
 ├── image_handlers/         # 画像形式別処理
@@ -113,7 +145,13 @@ src-tauri/src/
 │   ├── mod.rs
 │   ├── image_types.rs
 │   └── thumbnail_types.rs
-└── [各種機能モジュール]
+├── clipboard.rs            # クリップボード機能
+├── common.rs               # 共通機能
+├── exif_info.rs            # EXIF情報処理
+├── image_info.rs           # 画像情報統合処理
+├── lib.rs                  # ライブラリエントリーポイント
+├── main.rs                 # メインエントリーポイント
+└── sd_parameters.rs        # Stable Diffusion パラメータ処理
 ```
 
 ## アーキテクチャ
@@ -132,6 +170,9 @@ src-tauri/src/
 - `/src/lib/GridPage.svelte` - ディレクトリ内画像のサムネイル一覧表示
 - `/src/lib/ImageCanvas.svelte` - 画像表示とズーム・パン機能
 - `/src/lib/MetadataPanel.svelte` - Exif/SDメタデータ表示
+- `/src/lib/FilterPanel.svelte` - タグフィルタリング機能
+- `/src/lib/ThumbnailGrid.svelte` - サムネイル表示グリッド
+- `/src/lib/Toast.svelte` - 通知表示システム
 - `/src/lib/image/image-loader.ts` - 統合画像読み込み（1回のIO操作で全情報取得）
 
 ### Tauri統合とRust-TypeScript型同期
@@ -157,6 +198,8 @@ src-tauri/src/
 - PNG画像からSDパラメータを抽出・表示
 - Positive/Negative プロンプト、Seed、CFG Scale等の表示
 - 生成設定の詳細情報をサイドパネルで確認可能
+- タグベースフィルタリング機能による画像検索
+- レーティングシステムによる画像評価・管理
 
 ## 重要な設計パターン
 
@@ -195,7 +238,11 @@ src-tauri/src/
 - `@tailwindcss/vite` - CSS フレームワーク（v4）
 - `daisyui` - UIコンポーネント
 - `@iconify/svelte` - アイコン
-- `@tauri-apps/plugin-*` - Tauri統合プラグイン
+- `@tauri-apps/api` - Tauri API
+- `@tauri-apps/plugin-dialog` - ファイルダイアログ
+- `@tauri-apps/plugin-fs` - ファイルシステム
+- `@tauri-apps/plugin-log` - ログ機能
+- `@tauri-apps/plugin-os` - OS情報
 
 ### Rust（バックエンド）
 
@@ -204,7 +251,10 @@ src-tauri/src/
 - `serde`, `serde_json` - シリアライゼーション
 - `memmap2` - メモリマップファイルアクセス
 - `rayon` - 並列処理
-- `objc2-*` - macOS ネイティブ機能統合
+- `objc2-*` - macOS ネイティブ機能統合（クリップボード）
+- `sha2`, `hex` - ハッシュ機能
+- `regex` - 正規表現
+- `once_cell` - グローバル変数管理
 
 ## デバッグ・トラブルシューティング
 

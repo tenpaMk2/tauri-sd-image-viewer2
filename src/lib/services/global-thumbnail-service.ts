@@ -41,7 +41,7 @@ class GlobalThumbnailService {
 
 	// アクティブなサービスの状態を取得
 	getActiveServiceStatus(): string | null {
-		return this.activeService?.getQueueStatus() || null;
+		return this.activeService ? 'active' : null;
 	}
 }
 

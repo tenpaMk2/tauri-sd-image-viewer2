@@ -122,9 +122,15 @@
 					}}
 					onerror={(e) => {
 						const fileName = imagePath.split('/').pop();
-						if (fileName && (fileName.includes('00047') || fileName.includes('00048'))) {
-							console.log('画像読み込みエラー:', fileName, e);
-						}
+						console.error('🚨 画像読み込みエラー詳細:', {
+							fileName,
+							thumbnailUrl,
+							actualSrc: (e.target as HTMLImageElement)?.src || 'unknown',
+							urlPrefix: thumbnailUrl?.substring(0, 100),
+							error: (e as Event).type || 'unknown error',
+							eventType: e.type,
+							currentTarget: (e.currentTarget as HTMLElement)?.tagName
+						});
 					}}
 				/>
 			</div>

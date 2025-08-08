@@ -1,4 +1,4 @@
-import type { BatchThumbnailResult } from '../types/shared-types';
+import type { BatchThumbnailPathResult } from '../types/shared-types';
 
 export type ThumbnailQueueConfig = {
 	chunkSize: number;
@@ -103,8 +103,17 @@ export class ThumbnailQueueManager {
 		const { invoke } = await import('@tauri-apps/api/core');
 
 		try {
-			const results: BatchThumbnailResult[] = await invoke('load_thumbnails_batch', {
+			const results: BatchThumbnailPathResult[] = await invoke('load_thumbnails_batch_path_only', {
 				imagePaths: chunk
+			});
+
+			// デバッグ：Rustからの全体的なレスポンス構造確認
+			console.log('🔧 CRITICAL DEBUG - Rust全レスポンス:', {
+				resultsType: typeof results,
+				isArray: Array.isArray(results),
+				length: results?.length,
+				firstResultKeys: results?.[0] ? Object.keys(results[0]) : null,
+				firstResultValue: results?.[0]
 			});
 
 			const chunkThumbnails = new Map<string, string>();
@@ -113,22 +122,41 @@ export class ThumbnailQueueManager {
 			for (const result of results) {
 				if (this.shouldStop) return;
 
-				if (result.thumbnail) {
-					let thumbnailUrl: string;
+				// デバッグ：Rustから返された結果の詳細確認
+				console.log('📦 Rust結果詳細:', {
+					path: result.path.split('/').pop(),
+					hasThumbnail: !!result.thumbnail,
+					thumbnailKeys: result.thumbnail ? Object.keys(result.thumbnail) : null,
+					cachePathExists: result.thumbnail?.cache_path !== undefined,
+					cachePathValue: result.thumbnail?.cache_path,
+					hasError: !!result.error,
+					errorMsg: result.error
+				});
 
-					if (result.thumbnail.cache_path) {
-						const { convertFileSrc } = await import('@tauri-apps/api/core');
-						thumbnailUrl = convertFileSrc(result.thumbnail.cache_path);
-					} else if (result.thumbnail.data && result.thumbnail.data.length > 0) {
-						const uint8Array = new Uint8Array(result.thumbnail.data);
-						const blob = new Blob([uint8Array], { type: result.thumbnail.mime_type });
-						thumbnailUrl = URL.createObjectURL(blob);
-					} else {
-						console.warn(`No thumbnail data: ${result.path}`);
+				if (result.thumbnail?.cache_path) {
+					try {
+						// tauri-fsでファイルを読み込んでBlobURL生成
+						const { readFile } = await import('@tauri-apps/plugin-fs');
+						const fileData = await readFile(result.thumbnail.cache_path);
+						const blob = new Blob([new Uint8Array(fileData)], { type: result.thumbnail.mime_type });
+						const thumbnailUrl = URL.createObjectURL(blob);
+						
+						// デバッグ：ファイル読み込みの詳細確認
+						console.log('🔄 QueueManager ファイル読み込み詳細:', {
+							originalPath: result.thumbnail.cache_path,
+							fileSize: fileData.length,
+							blobUrl: thumbnailUrl.substring(0, 50) + '...',
+							imagePath: result.path.split('/').pop()
+						});
+
+						chunkThumbnails.set(result.path, thumbnailUrl);
+					} catch (error) {
+						console.error('🚨 QueueManager ファイル読み込みエラー:', {
+							path: result.thumbnail.cache_path,
+							error: error
+						});
 						continue;
 					}
-
-					chunkThumbnails.set(result.path, thumbnailUrl);
 
 					// メタデータが存在する場合はキャッシュに保存
 					if (result.cache_info) {

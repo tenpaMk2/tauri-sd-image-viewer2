@@ -47,11 +47,29 @@ pub struct ThumbnailInfo {
     pub cache_path: Option<String>,
 }
 
+/// サムネイルパス情報（最適化版レスポンス用）
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ThumbnailPathInfo {
+    pub width: u32,
+    pub height: u32,
+    pub mime_type: String,
+    pub cache_path: String,
+}
+
 /// バッチサムネイル結果
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BatchThumbnailResult {
     pub path: String,
     pub thumbnail: Option<ThumbnailInfo>,
+    pub cache_info: Option<ThumbnailCacheInfo>,
+    pub error: Option<String>,
+}
+
+/// バッチサムネイルパス結果（最適化版）
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BatchThumbnailPathResult {
+    pub path: String,
+    pub thumbnail: Option<ThumbnailPathInfo>,
     pub cache_info: Option<ThumbnailCacheInfo>,
     pub error: Option<String>,
 }

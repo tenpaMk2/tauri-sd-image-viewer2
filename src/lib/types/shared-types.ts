@@ -145,12 +145,34 @@ export type ThumbnailInfo = {
 };
 
 /**
+ * サムネイルパス情報（最適化版レスポンス用）
+ * 対応: `struct ThumbnailPathInfo`
+ */
+export type ThumbnailPathInfo = {
+	width: number; // Rust: u32
+	height: number; // Rust: u32
+	mime_type: string; // Rust: String
+	cache_path: string; // Rust: String - キャッシュファイルのパス
+};
+
+/**
  * バッチサムネイル結果
  * 対応: `struct BatchThumbnailResult`
  */
 export type BatchThumbnailResult = {
 	path: string; // Rust: String
 	thumbnail?: ThumbnailInfo; // Rust: Option<ThumbnailInfo>
+	cache_info?: ThumbnailCacheInfo; // Rust: Option<ThumbnailCacheInfo>
+	error?: string; // Rust: Option<String>
+};
+
+/**
+ * バッチサムネイルパス結果（最適化版）
+ * 対応: `struct BatchThumbnailPathResult`
+ */
+export type BatchThumbnailPathResult = {
+	path: string; // Rust: String
+	thumbnail?: ThumbnailPathInfo; // Rust: Option<ThumbnailPathInfo>
 	cache_info?: ThumbnailCacheInfo; // Rust: Option<ThumbnailCacheInfo>
 	error?: string; // Rust: Option<String>
 };

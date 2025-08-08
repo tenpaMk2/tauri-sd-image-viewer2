@@ -32,7 +32,6 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             clipboard::set_clipboard_files,
-            thumbnail::load_thumbnails_batch,
             thumbnail::load_thumbnails_batch_path_only,
             thumbnail::clear_thumbnail_cache,
             image_handlers::png_processor::read_png_image_info,

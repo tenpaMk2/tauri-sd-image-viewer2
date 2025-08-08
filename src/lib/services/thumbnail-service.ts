@@ -1,32 +1,41 @@
-import { convertFileSrc, invoke } from '@tauri-apps/api/core';
+import { invoke } from '@tauri-apps/api/core';
+import { readFile } from '@tauri-apps/plugin-fs';
 import { getImageFiles } from '../image/image-loader';
-import type { BatchThumbnailResult, ThumbnailCacheInfo } from '../types/shared-types';
-import { ThumbnailQueueManager, type ThumbnailQueueCallbacks } from './thumbnail-queue-manager';
+import type { BatchThumbnailPathResult, ThumbnailCacheInfo } from '../types/shared-types';
 
 // サムネイル処理のサービス
 export class ThumbnailService {
 	// メタデータキャッシュ
 	private metadataCache = new Map<string, ThumbnailCacheInfo>();
-	// キューマネージャ
-	private queueManager: ThumbnailQueueManager | null = null;
 
 	async loadSingleThumbnail(imagePath: string): Promise<string | null> {
 		try {
-			const results: BatchThumbnailResult[] = await invoke('load_thumbnails_batch', {
+			const results: BatchThumbnailPathResult[] = await invoke('load_thumbnails_batch_path_only', {
 				imagePaths: [imagePath]
 			});
 
 			const result = results[0];
-			if (result?.thumbnail?.data) {
-				const uint8Array = new Uint8Array(result.thumbnail.data);
-				const blob = new Blob([uint8Array], { type: result.thumbnail.mime_type });
-				const url = URL.createObjectURL(blob);
+			if (result?.thumbnail?.cache_path) {
+				try {
+					// tauri-fsでファイルを読み込んでBlobURL生成
+					const fileData = await readFile(result.thumbnail.cache_path);
+					const blob = new Blob([new Uint8Array(fileData)], { type: result.thumbnail.mime_type });
+					const url = URL.createObjectURL(blob);
+					
+					// サムネイルファイル読み込み完了
 
-				if (result.cache_info) {
-					this.metadataCache.set(result.path, result.cache_info);
+					if (result.cache_info) {
+						this.metadataCache.set(result.path, result.cache_info);
+					}
+
+					return url;
+				} catch (readError) {
+					console.error('🚨 単一サムネイルファイル読み込みエラー:', {
+						path: result.thumbnail.cache_path,
+						error: readError
+					});
+					return null;
 				}
-
-				return url;
 			} else if (result?.error) {
 				console.warn(`サムネイル生成失敗: ${result.path} - ${result.error}`);
 			}
@@ -36,148 +45,8 @@ export class ThumbnailService {
 		return null;
 	}
 
-	async loadThumbnailsIndividually(
-		allImageFiles: string[],
-		onThumbnailLoaded: (imagePath: string, thumbnailUrl: string | null) => void,
-		onProgress?: (loadedCount: number, totalCount: number) => void
-	): Promise<void> {
-		let loadedCount = 0;
 
-		const promises = allImageFiles.map(async (imagePath, index) => {
-			await new Promise((resolve) => setTimeout(resolve, index * 50));
 
-			const thumbnailUrl = await this.loadSingleThumbnail(imagePath);
-			onThumbnailLoaded(imagePath, thumbnailUrl);
-
-			loadedCount++;
-			if (onProgress) {
-				onProgress(loadedCount, allImageFiles.length);
-			}
-		});
-
-		await Promise.all(promises);
-	}
-
-	async loadThumbnailsInChunksOptimized(
-		allImageFiles: string[],
-		chunkSize: number = 16,
-		onChunkLoaded: (chunkResults: Map<string, string>) => void,
-		onProgress?: (loadedCount: number, totalCount: number) => void
-	): Promise<void> {
-		const chunks: string[][] = [];
-		for (let i = 0; i < allImageFiles.length; i += chunkSize) {
-			chunks.push(allImageFiles.slice(i, i + chunkSize));
-		}
-
-		let loadedCount = 0;
-
-		for (const [chunkIndex, chunk] of chunks.entries()) {
-			try {
-				const results: BatchThumbnailResult[] = await invoke('load_thumbnails_batch', {
-					imagePaths: chunk
-				});
-
-				const chunkThumbnails = new Map<string, string>();
-
-				for (const result of results) {
-					if (result.thumbnail) {
-						let thumbnailUrl: string;
-
-						if (result.thumbnail.cache_path) {
-							thumbnailUrl = convertFileSrc(result.thumbnail.cache_path);
-						} else if (result.thumbnail.data && result.thumbnail.data.length > 0) {
-							const uint8Array = new Uint8Array(result.thumbnail.data);
-							const blob = new Blob([uint8Array], { type: result.thumbnail.mime_type });
-							thumbnailUrl = URL.createObjectURL(blob);
-						} else {
-							console.warn(`サムネイル生成失敗 (データなし): ${result.path}`);
-							continue;
-						}
-
-						chunkThumbnails.set(result.path, thumbnailUrl);
-
-						if (result.cache_info) {
-							this.metadataCache.set(result.path, result.cache_info);
-						}
-
-						loadedCount++;
-					} else if (result.error) {
-						console.warn(`サムネイル生成失敗: ${result.path} - ${result.error}`);
-					}
-				}
-
-				if (chunkThumbnails.size > 0) {
-					onChunkLoaded(chunkThumbnails);
-				}
-
-				if (onProgress) {
-					onProgress(loadedCount, allImageFiles.length);
-				}
-
-				await new Promise((resolve) => setTimeout(resolve, 10));
-			} catch (chunkError) {
-				console.error(`チャンク ${chunkIndex + 1} 処理エラー:`, chunkError);
-			}
-		}
-	}
-
-	async loadThumbnailsInChunks(
-		allImageFiles: string[],
-		chunkSize: number = 16,
-		onProgress?: (loadedCount: number, totalCount: number) => void,
-		onChunkLoaded?: (chunkResults: Map<string, string>) => void
-	): Promise<Map<string, string>> {
-		const newThumbnails = new Map<string, string>();
-		const chunks: string[][] = [];
-
-		for (let i = 0; i < allImageFiles.length; i += chunkSize) {
-			chunks.push(allImageFiles.slice(i, i + chunkSize));
-		}
-
-		let loadedCount = 0;
-
-		for (const [chunkIndex, chunk] of chunks.entries()) {
-			try {
-				const results: BatchThumbnailResult[] = await invoke('load_thumbnails_batch', {
-					imagePaths: chunk
-				});
-
-				const chunkThumbnails = new Map<string, string>();
-
-				for (const result of results) {
-					if (result.thumbnail && result.thumbnail.data) {
-						const uint8Array = new Uint8Array(result.thumbnail.data);
-						const blob = new Blob([uint8Array], { type: result.thumbnail.mime_type });
-						const url = URL.createObjectURL(blob);
-						newThumbnails.set(result.path, url);
-						chunkThumbnails.set(result.path, url);
-
-						if (result.cache_info) {
-							this.metadataCache.set(result.path, result.cache_info);
-						}
-
-						loadedCount++;
-					} else if (result.error) {
-						console.warn(`サムネイル生成失敗: ${result.path} - ${result.error}`);
-					}
-				}
-
-				if (onChunkLoaded && chunkThumbnails.size > 0) {
-					onChunkLoaded(chunkThumbnails);
-				}
-
-				if (onProgress) {
-					onProgress(loadedCount, allImageFiles.length);
-				}
-
-				await new Promise((resolve) => setTimeout(resolve, 10));
-			} catch (chunkError) {
-				console.error(`チャンク ${chunkIndex + 1} 処理エラー:`, chunkError);
-			}
-		}
-
-		return newThumbnails;
-	}
 
 	async getImageFiles(directoryPath: string): Promise<string[]> {
 		return await getImageFiles(directoryPath);
@@ -244,44 +113,10 @@ export class ThumbnailService {
 		return this.metadataCache.size;
 	}
 
-	// キューベースの新しいサムネイル生成メソッド
-	async loadThumbnailsWithQueue(
-		allImageFiles: string[],
-		callbacks: ThumbnailQueueCallbacks & {
-			onChunkComplete: (chunkResults: Map<string, string>) => void;
-		}
-	): Promise<void> {
-		// 既存のキューがあれば停止
-		this.stopCurrentQueue();
-
-		// 新しいキューマネージャを作成
-		this.queueManager = new ThumbnailQueueManager(
-			{ chunkSize: 16, delayBetweenChunks: 10 },
-			{
-				...callbacks,
-				onChunkComplete: (chunkResults, chunkMetadata) => {
-					// メタデータキャッシュを更新
-					if (chunkMetadata) {
-						for (const [imagePath, metadata] of chunkMetadata) {
-							this.metadataCache.set(imagePath, metadata);
-						}
-					}
-					callbacks.onChunkComplete(chunkResults);
-				}
-			}
-		);
-
-		await this.queueManager.startProcessing(allImageFiles);
-	}
 
 	// 現在のキューを停止
 	stopCurrentQueue(): void {
-		// 複雑なキューマネージャを停止
-		if (this.queueManager) {
-			this.queueManager.stop();
-			this.queueManager = null;
-		}
-		// シンプルキューも停止
+		// シンプルキューを停止
 		this.stopSimpleQueue();
 	}
 
@@ -310,8 +145,19 @@ export class ThumbnailService {
 			}
 
 			try {
-				const results: BatchThumbnailResult[] = await invoke('load_thumbnails_batch', {
+				const results: BatchThumbnailPathResult[] = await invoke('load_thumbnails_batch_path_only', {
 					imagePaths: chunk
+				});
+
+				// デバッグ：SimpleQueueからのRustレスポンス詳細確認
+				console.log('🔧 SimpleQueue CRITICAL DEBUG:', {
+					chunkIndex: chunkIndex + 1,
+					chunkSize: chunk.length,
+					resultsType: typeof results,
+					isArray: Array.isArray(results),
+					resultsLength: results?.length,
+					firstResultKeys: results?.[0] ? Object.keys(results[0]) : null,
+					firstResultValue: results?.[0]
 				});
 
 				const chunkThumbnails = new Map<string, string>();
@@ -319,18 +165,53 @@ export class ThumbnailService {
 				for (const result of results) {
 					if (this.stopQueue) break;
 
-					if (result.thumbnail && result.thumbnail.data) {
-						const uint8Array = new Uint8Array(result.thumbnail.data);
-						const blob = new Blob([uint8Array], { type: result.thumbnail.mime_type });
-						const url = URL.createObjectURL(blob);
-						newThumbnails.set(result.path, url);
-						chunkThumbnails.set(result.path, url);
+					// デバッグ：個別結果の詳細確認
+					console.log('📦 SimpleQueue Individual Result:', {
+						path: result.path.split('/').pop(),
+						hasThumbnail: !!result.thumbnail,
+						thumbnailKeys: result.thumbnail ? Object.keys(result.thumbnail) : null,
+						cachePathExists: result.thumbnail?.cache_path !== undefined,
+						cachePathValue: result.thumbnail?.cache_path,
+						hasError: !!result.error,
+						errorMsg: result.error
+					});
 
-						if (result.cache_info) {
-							this.metadataCache.set(result.path, result.cache_info);
+					if (result.thumbnail?.cache_path) {
+						try {
+							console.log('📁 ファイル読み込み開始:', result.thumbnail.cache_path);
+							const fileData = await readFile(result.thumbnail.cache_path);
+							console.log('📁 ファイル読み込み成功:', {
+								path: result.thumbnail.cache_path,
+								fileSize: fileData.length
+							});
+							
+							const blob = new Blob([new Uint8Array(fileData)], { type: result.thumbnail.mime_type });
+							const url = URL.createObjectURL(blob);
+							
+							console.log('🔄 SimpleQueue ファイル読み込み:', {
+								originalPath: result.thumbnail.cache_path,
+								fileSize: fileData.length,
+								blobUrl: url.substring(0, 50) + '...',
+								imagePath: result.path.split('/').pop()
+							});
+							
+							newThumbnails.set(result.path, url);
+							chunkThumbnails.set(result.path, url);
+
+							if (result.cache_info) {
+								this.metadataCache.set(result.path, result.cache_info);
+							}
+
+							loadedCount++;
+						} catch (readError) {
+							console.error('🚨 SimpleQueue ファイル読み込みエラー詳細:', {
+								path: result.thumbnail.cache_path,
+								errorName: (readError as Error)?.name,
+								errorMessage: (readError as Error)?.message,
+								errorStack: (readError as Error)?.stack,
+								fullError: readError
+							});
 						}
-
-						loadedCount++;
 					} else if (result.error) {
 						console.warn(`Thumbnail generation failed: ${result.path} - ${result.error}`);
 					}
@@ -358,13 +239,4 @@ export class ThumbnailService {
 		this.stopQueue = true;
 	}
 
-	// キューの状態を取得
-	getQueueStatus(): string {
-		return this.queueManager?.getStatus() || 'idle';
-	}
-
-	// キューのプログレス情報を取得
-	getQueueProgress(): { loadedCount: number; totalCount: number; percentage: number } {
-		return this.queueManager?.getProgress() || { loadedCount: 0, totalCount: 0, percentage: 0 };
-	}
 }

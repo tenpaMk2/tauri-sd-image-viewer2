@@ -43,17 +43,26 @@ export const matchFilename = (filename: string, pattern: string): boolean => {
 };
 
 /**
- * Filter files by glob pattern
+ * Filter files by glob pattern or partial match
  * @param filePaths - array of file paths
- * @param pattern - glob pattern to match against filenames
+ * @param pattern - pattern to match against filenames (glob or partial)
  * @returns filtered array of file paths
  */
 export const filterFilesByGlob = (filePaths: string[], pattern: string): string[] => {
 	if (!pattern || pattern.trim() === '') return filePaths;
 
+	const trimmedPattern = pattern.trim();
+
 	return filePaths.filter(filePath => {
 		const filename = filePath.split('/').pop() || '';
-		return matchFilename(filename, pattern);
+		
+		// If pattern contains glob characters, use glob matching
+		if (trimmedPattern.includes('*') || trimmedPattern.includes('?') || trimmedPattern.includes('[')) {
+			return matchFilename(filename, trimmedPattern);
+		} else {
+			// Otherwise use partial matching (case insensitive)
+			return filename.toLowerCase().includes(trimmedPattern.toLowerCase());
+		}
 	});
 };
 

@@ -27,6 +27,7 @@
 	let totalImageCount = $state<number>(0);
 	let isMacOS = $state<boolean>(false);
 	let lastSelectedIndex = $state<number>(-1); // Shift+Click用の基点インデックス
+	let showFilterPanel = $state<boolean>(false);
 
 	// ThumbnailGridから画像ファイル一覧を受け取る
 	const handleImageFilesLoaded = (files: string[]) => {
@@ -38,6 +39,11 @@
 	const handleFilteredImagesUpdate = (filtered: number, total: number) => {
 		filteredImageCount = filtered;
 		totalImageCount = total;
+	};
+
+	// フィルターパネルの表示切り替え
+	const toggleFilterPanel = () => {
+		showFilterPanel = !showFilterPanel;
 	};
 
 	// 画像選択/選択解除（OSファイル選択エミュレート）
@@ -153,6 +159,15 @@
 		</div>
 
 		<div class="flex items-center gap-2">
+			<!-- Filter Button -->
+			<button
+				class="btn btn-ghost btn-sm {showFilterPanel ? 'btn-active' : ''}"
+				onclick={toggleFilterPanel}
+				title="Toggle Filters"
+			>
+				<Icon icon="lucide:filter" class="h-4 w-4" />
+			</button>
+
 			<!-- Select All Button -->
 			{#if 0 < filteredImageCount}
 				<button
@@ -180,10 +195,12 @@
 	</div>
 
 	<!-- Filter Panel -->
-	<FilterPanel
-		totalImages={totalImageCount}
-		filteredImages={filteredImageCount}
-	/>
+	{#if showFilterPanel}
+		<FilterPanel
+			totalImages={totalImageCount}
+			filteredImages={filteredImageCount}
+		/>
+	{/if}
 
 	<!-- Grid View -->
 	<div class="flex-1">

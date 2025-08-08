@@ -61,7 +61,8 @@
 	// フィルタが変更されたときに画像リストを再計算
 	$effect(() => {
 		// フィルタストアの状態変更を監視
-		filterStore.state.minRating;
+		filterStore.state.targetRating;
+		filterStore.state.ratingComparison;
 		filterStore.state.filenamePattern;
 		// レーティング更新も監視
 		ratingUpdateTrigger;

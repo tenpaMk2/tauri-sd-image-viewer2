@@ -1,0 +1,212 @@
+/**
+ * Stable Diffusionタグの集計機能
+ * ディレクトリ内の全画像からSDタグを抽出・集計する
+ */
+
+import type { SdTag, SdParameters } from '../types/shared-types';
+import { ThumbnailService } from './thumbnail-service';
+import { imageMetadataService } from './image-metadata-service';
+
+export type TagCount = {
+	name: string;
+	count: number;
+	isNegative: boolean; // ネガティブタグかどうか
+};
+
+export type TagAggregationResult = {
+	allTags: TagCount[]; // 出現頻度順でソート済み
+	positiveTagNames: string[]; // ポジティブタグ名のみ（サジェスト用）
+	negativeTagNames: string[]; // ネガティブタグ名のみ（サジェスト用）
+	uniqueTagNames: string[]; // 全タグ名（重複排除、サジェスト用）
+};
+
+export class TagAggregationService {
+	private thumbnailService: ThumbnailService;
+	private imageTagsCache = new Map<string, Set<string>>(); // imagePath -> normalized tags set
+
+	constructor(thumbnailService: ThumbnailService) {
+		this.thumbnailService = thumbnailService;
+	}
+
+	/**
+	 * 指定されたファイルパス配列からSDタグを集計
+	 */
+	aggregateTagsFromFiles = async (imagePaths: string[]): Promise<TagAggregationResult> => {
+		const tagCounts = new Map<string, { count: number; isNegative: Set<boolean> }>();
+
+		// キャッシュをクリア
+		this.imageTagsCache.clear();
+
+		// 各画像ファイルからSDパラメータを取得してタグを集計
+		for (const imagePath of imagePaths) {
+			try {
+				const metadata = await imageMetadataService.getImageMetadataUnsafe(imagePath);
+
+				if (metadata?.sdParameters) {
+					// タグ情報をキャッシュに保存
+					const imageTags = new Set<string>();
+
+					for (const tag of metadata.sdParameters.positive_sd_tags) {
+						const normalizedTag = tag.name.trim().toLowerCase();
+						if (normalizedTag) imageTags.add(normalizedTag);
+					}
+					for (const tag of metadata.sdParameters.negative_sd_tags) {
+						const normalizedTag = tag.name.trim().toLowerCase();
+						if (normalizedTag) imageTags.add(normalizedTag);
+					}
+
+					this.imageTagsCache.set(imagePath, imageTags);
+
+					// 集計用の処理
+					this.addTagsToCount(tagCounts, metadata.sdParameters.positive_sd_tags, false);
+					this.addTagsToCount(tagCounts, metadata.sdParameters.negative_sd_tags, true);
+				} else {
+					// SDパラメータがない場合は空のSetを保存
+					this.imageTagsCache.set(imagePath, new Set());
+				}
+			} catch (error) {
+				console.warn(`SDタグ取得失敗: ${imagePath}`, error);
+				// エラーがあった場合も空のSetを保存
+				this.imageTagsCache.set(imagePath, new Set());
+			}
+		}
+
+		return this.processAggregationResult(tagCounts);
+	};
+
+	/**
+	 * タグ配列をカウントマップに追加
+	 */
+	private addTagsToCount = (
+		tagCounts: Map<string, { count: number; isNegative: Set<boolean> }>,
+		tags: SdTag[],
+		isNegative: boolean
+	): void => {
+		for (const tag of tags) {
+			const tagName = tag.name.trim().toLowerCase();
+			if (!tagName) continue;
+
+			if (!tagCounts.has(tagName)) {
+				tagCounts.set(tagName, { count: 0, isNegative: new Set() });
+			}
+
+			const existing = tagCounts.get(tagName)!;
+			existing.count++;
+			existing.isNegative.add(isNegative);
+		}
+	};
+
+	/**
+	 * 集計結果を処理して返却用の形式に変換
+	 */
+	private processAggregationResult = (
+		tagCounts: Map<string, { count: number; isNegative: Set<boolean> }>
+	): TagAggregationResult => {
+		const allTags: TagCount[] = [];
+		const positiveTagNames: string[] = [];
+		const negativeTagNames: string[] = [];
+		const uniqueTagNames: string[] = [];
+
+		for (const [tagName, data] of tagCounts.entries()) {
+			// ポジティブとネガティブ両方で使われている場合は両方のエントリを作成
+			if (data.isNegative.has(true) && data.isNegative.has(false)) {
+				// 両方で使用されている場合、より多く使用されている方をメインとする
+				allTags.push({ name: tagName, count: data.count, isNegative: false });
+				positiveTagNames.push(tagName);
+				negativeTagNames.push(tagName);
+			} else if (data.isNegative.has(true)) {
+				// ネガティブのみ
+				allTags.push({ name: tagName, count: data.count, isNegative: true });
+				negativeTagNames.push(tagName);
+			} else {
+				// ポジティブのみ
+				allTags.push({ name: tagName, count: data.count, isNegative: false });
+				positiveTagNames.push(tagName);
+			}
+
+			uniqueTagNames.push(tagName);
+		}
+
+		// 出現頻度順でソート
+		allTags.sort((a, b) => b.count - a.count);
+		positiveTagNames.sort();
+		negativeTagNames.sort();
+		uniqueTagNames.sort();
+
+		return {
+			allTags,
+			positiveTagNames,
+			negativeTagNames,
+			uniqueTagNames
+		};
+	};
+
+	/**
+	 * 特定の画像のSDタグが指定されたタグリストを全て含むかチェック（高速同期版）
+	 * キャッシュされたタグ情報を使用するため非常に高速
+	 */
+	imageContainsAllTagsSync = (imagePath: string, requiredTags: string[]): boolean => {
+		if (requiredTags.length === 0) return true;
+
+		// キャッシュからタグ情報を取得
+		const imageTags = this.imageTagsCache.get(imagePath);
+		if (!imageTags) return false;
+
+		// すべての必須タグが含まれているかチェック（AND条件）
+		return requiredTags.every((requiredTag) => imageTags.has(requiredTag.trim().toLowerCase()));
+	};
+
+	/**
+	 * 特定の画像のSDタグが指定されたタグリストを全て含むかチェック（レガシー版）
+	 * 後方互換性のため残しているが、imageContainsAllTagsSyncの使用を推奨
+	 */
+	imageContainsAllTags = async (imagePath: string, requiredTags: string[]): Promise<boolean> => {
+		if (requiredTags.length === 0) return true;
+
+		// キャッシュがあれば同期版を使用
+		if (this.imageTagsCache.has(imagePath)) {
+			return this.imageContainsAllTagsSync(imagePath, requiredTags);
+		}
+
+		try {
+			const metadata = await imageMetadataService.getImageMetadataUnsafe(imagePath);
+			if (!metadata?.sdParameters) return false;
+
+			// 正規化されたタグ名の配列を作成（positive + negative）
+			const imageTags = new Set<string>();
+
+			for (const tag of metadata.sdParameters.positive_sd_tags) {
+				imageTags.add(tag.name.trim().toLowerCase());
+			}
+			for (const tag of metadata.sdParameters.negative_sd_tags) {
+				imageTags.add(tag.name.trim().toLowerCase());
+			}
+
+			// すべての必須タグが含まれているかチェック（AND条件）
+			return requiredTags.every((requiredTag) => imageTags.has(requiredTag.trim().toLowerCase()));
+		} catch (error) {
+			console.warn(`SDタグチェック失敗: ${imagePath}`, error);
+			return false;
+		}
+	};
+
+	/**
+	 * キャッシュされたタグ情報を取得
+	 */
+	getImageTags = (imagePath: string): Set<string> | undefined => {
+		return this.imageTagsCache.get(imagePath);
+	};
+
+	/**
+	 * キャッシュの統計情報を取得（デバッグ用）
+	 */
+	getCacheStats = () => {
+		return {
+			cacheSize: this.imageTagsCache.size,
+			totalTags: Array.from(this.imageTagsCache.values()).reduce(
+				(total, tags) => total + tags.size,
+				0
+			)
+		};
+	};
+}

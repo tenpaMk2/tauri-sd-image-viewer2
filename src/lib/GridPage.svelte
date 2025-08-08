@@ -7,6 +7,7 @@
 	import ThumbnailGrid from './ThumbnailGrid.svelte';
 	import FilterPanel from './FilterPanel.svelte';
 	import { deleteSelectedImages as performDelete } from './utils/delete-images';
+	import type { TagAggregationResult } from './services/tag-aggregation-service';
 
 	const {
 		selectedDirectory,
@@ -28,6 +29,7 @@
 	let isMacOS = $state<boolean>(false);
 	let lastSelectedIndex = $state<number>(-1); // Shift+Click用の基点インデックス
 	let showFilterPanel = $state<boolean>(false);
+	let tagData = $state<TagAggregationResult | null>(null);
 
 	// ThumbnailGridから画像ファイル一覧を受け取る
 	const handleImageFilesLoaded = (files: string[]) => {
@@ -41,13 +43,22 @@
 		totalImageCount = total;
 	};
 
+	// タグデータを受け取る
+	const handleTagDataLoaded = (data: TagAggregationResult) => {
+		tagData = data;
+	};
+
 	// フィルターパネルの表示切り替え
 	const toggleFilterPanel = () => {
 		showFilterPanel = !showFilterPanel;
 	};
 
 	// 画像選択/選択解除（OSファイル選択エミュレート）
-	const toggleImageSelection = (imagePath: string, shiftKey: boolean = false, metaKey: boolean = false) => {
+	const toggleImageSelection = (
+		imagePath: string,
+		shiftKey: boolean = false,
+		metaKey: boolean = false
+	) => {
 		const currentIndex = imageFiles.indexOf(imagePath);
 
 		if (shiftKey && lastSelectedIndex !== -1) {
@@ -196,10 +207,7 @@
 
 	<!-- Filter Panel -->
 	{#if showFilterPanel}
-		<FilterPanel
-			totalImages={totalImageCount}
-			filteredImages={filteredImageCount}
-		/>
+		<FilterPanel totalImages={totalImageCount} filteredImages={filteredImageCount} {tagData} />
 	{/if}
 
 	<!-- Grid View -->
@@ -212,6 +220,7 @@
 			{refreshTrigger}
 			onImageFilesLoaded={handleImageFilesLoaded}
 			onFilteredImagesUpdate={handleFilteredImagesUpdate}
+			onTagDataLoaded={handleTagDataLoaded}
 		/>
 	</div>
 </div>

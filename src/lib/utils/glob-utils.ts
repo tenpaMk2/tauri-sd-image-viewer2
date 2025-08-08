@@ -53,11 +53,15 @@ export const filterFilesByGlob = (filePaths: string[], pattern: string): string[
 
 	const trimmedPattern = pattern.trim();
 
-	return filePaths.filter(filePath => {
+	return filePaths.filter((filePath) => {
 		const filename = filePath.split('/').pop() || '';
-		
+
 		// If pattern contains glob characters, use glob matching
-		if (trimmedPattern.includes('*') || trimmedPattern.includes('?') || trimmedPattern.includes('[')) {
+		if (
+			trimmedPattern.includes('*') ||
+			trimmedPattern.includes('?') ||
+			trimmedPattern.includes('[')
+		) {
 			return matchFilename(filename, trimmedPattern);
 		} else {
 			// Otherwise use partial matching (case insensitive)
@@ -77,7 +81,7 @@ export const testGlobPatterns = () => {
 		{ pattern: 'test?.jpg', filename: 'testa.jpg', expected: true },
 		{ pattern: 'test?.jpg', filename: 'test12.jpg', expected: false },
 		{ pattern: '*[0-9]*', filename: 'image123.png', expected: true },
-		{ pattern: 'DSC*', filename: 'DSC_0001.jpg', expected: true },
+		{ pattern: 'DSC*', filename: 'DSC_0001.jpg', expected: true }
 	];
 
 	console.log('Glob pattern test results:');

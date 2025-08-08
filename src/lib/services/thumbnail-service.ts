@@ -347,7 +347,7 @@ export class ThumbnailService {
 					onProgress(loadedCount, allImageFiles.length);
 				}
 
-				await new Promise(resolve => setTimeout(resolve, 10));
+				await new Promise((resolve) => setTimeout(resolve, 10));
 			} catch (chunkError) {
 				console.error(`Chunk ${chunkIndex + 1} processing error:`, chunkError);
 			}

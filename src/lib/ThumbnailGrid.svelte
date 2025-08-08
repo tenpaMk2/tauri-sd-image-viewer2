@@ -3,6 +3,8 @@
 	import { ThumbnailService } from './services/thumbnail-service';
 	import { globalThumbnailService } from './services/global-thumbnail-service';
 	import { filterStore } from './stores/filter-store.svelte';
+	import { TagAggregationService } from './services/tag-aggregation-service';
+	import type { TagAggregationResult } from './services/tag-aggregation-service';
 
 	const {
 		directoryPath,
@@ -11,7 +13,8 @@
 		onToggleSelection,
 		refreshTrigger = 0,
 		onImageFilesLoaded,
-		onFilteredImagesUpdate
+		onFilteredImagesUpdate,
+		onTagDataLoaded
 	}: {
 		directoryPath: string;
 		onImageSelect: (imagePath: string) => void;
@@ -20,6 +23,7 @@
 		refreshTrigger?: number;
 		onImageFilesLoaded?: (files: string[]) => void;
 		onFilteredImagesUpdate?: (filteredCount: number, totalCount: number) => void;
+		onTagDataLoaded?: (tagData: TagAggregationResult) => void;
 	} = $props();
 
 	// ローディング状態を統合
@@ -33,6 +37,7 @@
 
 	// サービスインスタンス
 	const thumbnailService = new ThumbnailService();
+	const tagAggregationService = new TagAggregationService(thumbnailService);
 
 	let imageFiles = $state<string[]>([]);
 	let filteredImageFiles = $state<string[]>([]);
@@ -64,12 +69,17 @@
 		filterStore.state.targetRating;
 		filterStore.state.ratingComparison;
 		filterStore.state.filenamePattern;
+		filterStore.state.selectedTags;
 		// レーティング更新も監視
 		ratingUpdateTrigger;
 
 		if (imageFiles.length > 0) {
-			// フィルタを適用して表示用の画像リストを更新
-			const filtered = filterStore.filterImages(imageFiles, thumbnailService);
+			// フィルタを適用して表示用の画像リストを更新（同期処理で高速化）
+			const filtered = filterStore.filterImages(
+				imageFiles,
+				thumbnailService,
+				tagAggregationService
+			);
 			filteredImageFiles = filtered;
 
 			// 親コンポーネントにフィルタ結果を通知
@@ -97,9 +107,9 @@
 
 			// ディレクトリ内の画像ファイル一覧を取得
 			imageFiles = await thumbnailService.getImageFiles(directoryPath);
-			
-			// 初期状態でフィルタを適用
-			filteredImageFiles = filterStore.filterImages(imageFiles, thumbnailService);
+
+			// 初期状態でフィルタを適用（同期処理のみ）
+			filteredImageFiles = imageFiles; // SDタグフィルタが設定されるまでは全画像を表示
 
 			// 親コンポーネントに画像ファイル一覧を通知
 			if (onImageFilesLoaded) {
@@ -125,6 +135,9 @@
 
 			// 第2段階：シンプルキューをテスト
 			loadThumbnailsWithSimpleQueue();
+
+			// 第3段階：SDタグデータを集計
+			loadTagData();
 		} catch (err) {
 			loadingState.error =
 				err instanceof Error ? err.message : '画像ファイルの読み込みに失敗しました';
@@ -339,7 +352,6 @@
 
 			console.log('シンプルキューベースのサムネイル生成完了');
 			loadingState.isProcessing = false;
-
 		} catch (err) {
 			console.error('シンプルキューベース処理エラー:', err);
 			loadingState.isProcessing = false;
@@ -396,7 +408,6 @@
 					loadingState.isProcessing = false;
 				}
 			});
-
 		} catch (err) {
 			console.error('キューベース処理エラー:', err);
 			loadingState.isProcessing = false;
@@ -453,7 +464,11 @@
 		onImageSelect(imagePath);
 	};
 
-	const handleToggleSelection = (imagePath: string, shiftKey: boolean = false, metaKey: boolean = false): void => {
+	const handleToggleSelection = (
+		imagePath: string,
+		shiftKey: boolean = false,
+		metaKey: boolean = false
+	): void => {
 		if (onToggleSelection) {
 			onToggleSelection(imagePath, shiftKey, metaKey);
 		}
@@ -468,6 +483,25 @@
 		} else {
 			// エラー時の処理
 			console.warn('Rating更新に失敗しました:', imagePath);
+		}
+	};
+
+	// SDタグデータを集計
+	const loadTagData = async () => {
+		try {
+			console.log('SDタグデータ集計開始:', imageFiles.length, '個のファイル');
+
+			const tagData = await tagAggregationService.aggregateTagsFromFiles(imageFiles);
+
+			console.log('SDタグデータ集計完了:', tagData.allTags.length, '個のユニークタグ');
+			console.log('SDタグキャッシュ統計:', tagAggregationService.getCacheStats());
+
+			// 親コンポーネントにタグデータを通知
+			if (onTagDataLoaded) {
+				onTagDataLoaded(tagData);
+			}
+		} catch (err) {
+			console.error('SDタグデータ集計エラー:', err);
 		}
 	};
 </script>

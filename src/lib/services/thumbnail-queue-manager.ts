@@ -50,7 +50,7 @@ export class ThumbnailQueueManager {
 		console.log(`Starting thumbnail queue processing: ${this.totalCount} images`);
 
 		this.processingPromise = this.processQueue();
-		
+
 		try {
 			await this.processingPromise;
 		} catch (error) {
@@ -74,7 +74,7 @@ export class ThumbnailQueueManager {
 
 			try {
 				await this.processChunk(chunk);
-				
+
 				// チャンク間の遅延
 				if (i < chunks.length - 1 && !this.shouldStop) {
 					await this.delay(this.config.delayBetweenChunks);
@@ -101,7 +101,7 @@ export class ThumbnailQueueManager {
 
 	private async processChunk(chunk: string[]): Promise<void> {
 		const { invoke } = await import('@tauri-apps/api/core');
-		
+
 		try {
 			const results: BatchThumbnailResult[] = await invoke('load_thumbnails_batch', {
 				imagePaths: chunk
@@ -129,12 +129,12 @@ export class ThumbnailQueueManager {
 					}
 
 					chunkThumbnails.set(result.path, thumbnailUrl);
-					
+
 					// メタデータが存在する場合はキャッシュに保存
 					if (result.cached_metadata) {
 						chunkMetadata.set(result.path, result.cached_metadata);
 					}
-					
+
 					this.loadedCount++;
 				} else if (result.error) {
 					console.warn(`Thumbnail generation failed: ${result.path} - ${result.error}`);
@@ -148,14 +148,13 @@ export class ThumbnailQueueManager {
 
 			// プログレス報告
 			this.callbacks.onProgress?.(this.loadedCount, this.totalCount);
-
 		} catch (error) {
 			throw new Error(`Failed to process chunk: ${error}`);
 		}
 	}
 
 	private delay(ms: number): Promise<void> {
-		return new Promise(resolve => setTimeout(resolve, ms));
+		return new Promise((resolve) => setTimeout(resolve, ms));
 	}
 
 	// キューの停止
@@ -173,7 +172,7 @@ export class ThumbnailQueueManager {
 		}
 	}
 
-	// キューの再開（将来的な拡張用）  
+	// キューの再開（将来的な拡張用）
 	resume(): void {
 		if (this.status === 'paused') {
 			this.status = 'running';

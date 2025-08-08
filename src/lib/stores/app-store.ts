@@ -50,7 +50,7 @@ const openFileDialog = async (): Promise<void> => {
 		if (selected && typeof selected === 'string') {
 			// ファイル選択でビューアーモードに移行する時は、サムネイル生成キューを停止
 			globalThumbnailService.stopActiveQueue();
-			
+
 			const imageMetadata = await imageMetadataService.getImageMetadataUnsafe(selected);
 			const selectedDirectory = await getDirectoryFromPath(selected);
 
@@ -111,7 +111,7 @@ const handleSwitchToGrid = (): void => {
 const handleImageSelect = async (imagePath: string): Promise<void> => {
 	// ビューアーモードに切り替える時は、サムネイル生成キューを停止
 	globalThumbnailService.stopActiveQueue();
-	
+
 	await updateSelectedImage(imagePath);
 	appState.update((state) => ({
 		...state,

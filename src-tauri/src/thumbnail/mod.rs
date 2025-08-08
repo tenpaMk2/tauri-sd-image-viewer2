@@ -6,14 +6,13 @@ use cache::CacheManager;
 use generator::ThumbnailGenerator;
 use metadata_handler::MetadataHandler;
 
-use crate::types::{BatchThumbnailResult, CachedMetadata, ThumbnailInfo};
+use crate::types::{BatchThumbnailResult, ThumbnailCacheInfo, ThumbnailConfig, ThumbnailInfo};
 use rayon::prelude::*;
 use std::fs;
 use std::path::PathBuf;
 use std::time::Instant;
 use tauri::{AppHandle, Manager, Runtime};
 
-pub use generator::ThumbnailConfig;
 
 /// サムネイルハンドラー
 pub struct ThumbnailHandler {
@@ -24,11 +23,10 @@ pub struct ThumbnailHandler {
 impl ThumbnailHandler {
     /// 新しいサムネイルハンドラーを作成
     pub fn new<R: Runtime>(
-        config: generator::ThumbnailConfig,
+        config: ThumbnailConfig,
         app: &AppHandle<R>,
     ) -> Result<Self, String> {
         let cache_dir = Self::get_cache_directory(app)?;
-        let metadata_cache_dir = cache_dir.join("metadata");
 
         // キャッシュディレクトリ作成
         if !cache_dir.exists() {
@@ -36,13 +34,8 @@ impl ThumbnailHandler {
                 .map_err(|e| format!("キャッシュディレクトリの作成に失敗: {}", e))?;
         }
 
-        if !metadata_cache_dir.exists() {
-            fs::create_dir_all(&metadata_cache_dir)
-                .map_err(|e| format!("メタデータキャッシュディレクトリの作成に失敗: {}", e))?;
-        }
-
         let generator = ThumbnailGenerator::new(config.clone());
-        let cache_manager = CacheManager::new(cache_dir, metadata_cache_dir);
+        let cache_manager = CacheManager::new(cache_dir);
 
         Ok(Self {
             generator,
@@ -84,119 +77,124 @@ impl ThumbnailHandler {
 
     /// 単一のサムネイル処理
     fn process_single_thumbnail(&self, path: &str, path_only: bool) -> BatchThumbnailResult {
-        let cache_key = self.cache_manager.generate_cache_key(path, 128, 80);
+        let cache_key = self.cache_manager.generate_cache_key(path);
+        let config = self.generator.get_config();
 
-        let thumbnail_result = if path_only {
-            self.load_or_generate_thumbnail_path_only(path)
+        let result = if path_only {
+            self.load_or_generate_thumbnail_path_only(path, &cache_key, &config)
         } else {
-            self.load_or_generate_thumbnail(path)
+            self.load_or_generate_thumbnail(path, &cache_key, &config)
         };
 
-        match thumbnail_result {
-            Ok(thumbnail) => {
-                let cached_metadata = self.load_or_generate_metadata(path, &cache_key);
-
-                BatchThumbnailResult {
-                    path: path.to_string(),
-                    thumbnail: Some(thumbnail),
-                    cached_metadata,
-                    error: None,
-                }
-            }
+        match result {
+            Ok((thumbnail, cache_info)) => BatchThumbnailResult {
+                path: path.to_string(),
+                thumbnail: Some(thumbnail),
+                cache_info: Some(cache_info),
+                error: None,
+            },
             Err(e) => BatchThumbnailResult {
                 path: path.to_string(),
                 thumbnail: None,
-                cached_metadata: None,
+                cache_info: None,
                 error: Some(e),
             },
         }
     }
 
     /// サムネイルを読み込みまたは生成（キャッシュ優先）
-    fn load_or_generate_thumbnail(&self, image_path: &str) -> Result<ThumbnailInfo, String> {
-        let cache_key = self.cache_manager.generate_cache_key(image_path, 128, 80);
-        let cache_path = self.cache_manager.get_thumbnail_cache_path(&cache_key);
-
+    fn load_or_generate_thumbnail(
+        &self,
+        image_path: &str,
+        cache_key: &str,
+        config: &ThumbnailConfig,
+    ) -> Result<(ThumbnailInfo, ThumbnailCacheInfo), String> {
         // キャッシュが有効かチェック
-        if self.cache_manager.is_cache_valid(&cache_path, image_path) {
-            if let Ok(data) = fs::read(&cache_path) {
-                return Ok(ThumbnailInfo {
+        if let Some(cache_info) = self.cache_manager.is_cache_valid(cache_key, image_path, config) {
+            // キャッシュから画像データを読み込み
+            if let Ok(data) = self.cache_manager.load_thumbnail_image(cache_key) {
+                let thumbnail_info = ThumbnailInfo {
                     data,
-                    width: 128,
-                    height: 128,
-                    mime_type: "image/webp".to_string(),
-                    cache_path: Some(cache_path.to_string_lossy().to_string()),
-                });
+                    width: config.size,
+                    height: config.size,
+                    mime_type: config.format.clone(),
+                    cache_path: Some(self.cache_manager.get_thumbnail_file_path(cache_key).to_string_lossy().to_string()),
+                };
+                return Ok((thumbnail_info, cache_info));
             }
         }
 
         // 新しいサムネイルを生成
-        let mut thumbnail_info = self.generator.generate_thumbnail(image_path)?;
-
-        // キャッシュに保存
-        if fs::write(&cache_path, &thumbnail_info.data).is_ok() {
-            thumbnail_info.cache_path = Some(cache_path.to_string_lossy().to_string());
-        }
-
-        Ok(thumbnail_info)
+        self.generate_and_cache_thumbnail(image_path, cache_key, config)
     }
 
     /// サムネイルを読み込みまたは生成（キャッシュパスのみ返却）
     fn load_or_generate_thumbnail_path_only(
         &self,
         image_path: &str,
-    ) -> Result<ThumbnailInfo, String> {
-        let cache_key = self.cache_manager.generate_cache_key(image_path, 128, 80);
-        let cache_path = self.cache_manager.get_thumbnail_cache_path(&cache_key);
-
+        cache_key: &str,
+        config: &ThumbnailConfig,
+    ) -> Result<(ThumbnailInfo, ThumbnailCacheInfo), String> {
         // キャッシュが有効かチェック
-        if self.cache_manager.is_cache_valid(&cache_path, image_path) {
-            return Ok(ThumbnailInfo {
-                data: Vec::new(),
-                width: 128,
-                height: 128,
-                mime_type: "image/webp".to_string(),
-                cache_path: Some(cache_path.to_string_lossy().to_string()),
-            });
+        if let Some(cache_info) = self.cache_manager.is_cache_valid(cache_key, image_path, config) {
+            let thumbnail_info = ThumbnailInfo {
+                data: Vec::new(), // 画像データは空
+                width: config.size,
+                height: config.size,
+                mime_type: config.format.clone(),
+                cache_path: Some(self.cache_manager.get_thumbnail_file_path(cache_key).to_string_lossy().to_string()),
+            };
+            return Ok((thumbnail_info, cache_info));
         }
 
-        // 新しいサムネイルを生成
-        let thumbnail_info = self.generator.generate_thumbnail(image_path)?;
+        // 新しいサムネイルを生成（データ付きで生成してからパスのみにする）
+        let (full_thumbnail, cache_info) = self.generate_and_cache_thumbnail(image_path, cache_key, config)?;
+        
+        let path_only_thumbnail = ThumbnailInfo {
+            data: Vec::new(), // 画像データは空
+            width: full_thumbnail.width,
+            height: full_thumbnail.height,
+            mime_type: full_thumbnail.mime_type,
+            cache_path: full_thumbnail.cache_path,
+        };
 
-        // キャッシュに保存
-        if fs::write(&cache_path, &thumbnail_info.data).is_ok() {
-            return Ok(ThumbnailInfo {
-                data: Vec::new(),
-                width: thumbnail_info.width,
-                height: thumbnail_info.height,
-                mime_type: thumbnail_info.mime_type,
-                cache_path: Some(cache_path.to_string_lossy().to_string()),
-            });
-        }
-
-        Ok(thumbnail_info)
+        Ok((path_only_thumbnail, cache_info))
     }
 
-    /// メタデータをロードまたは生成（キャッシュ優先）
-    fn load_or_generate_metadata(
+    /// サムネイルを生成してキャッシュに保存
+    fn generate_and_cache_thumbnail(
         &self,
         image_path: &str,
         cache_key: &str,
-    ) -> Option<CachedMetadata> {
-        // キャッシュから読み込み試行
-        if let Some(cached) = self.cache_manager.load_cached_metadata(cache_key) {
-            return Some(cached);
-        }
+        config: &ThumbnailConfig,
+    ) -> Result<(ThumbnailInfo, ThumbnailCacheInfo), String> {
+        // サムネイル画像を生成
+        let thumbnail_info = self.generator.generate_thumbnail(image_path)?;
 
-        // 新しいメタデータを生成
-        match MetadataHandler::generate_metadata(image_path) {
-            Ok(metadata) => {
-                // キャッシュに保存
-                let _ = self.cache_manager.save_metadata_cache(cache_key, &metadata);
-                Some(metadata)
-            }
-            Err(_) => None,
-        }
+        // サムネイル画像をファイルに保存
+        let thumbnail_filename = format!("{}.{}", cache_key, config.format);
+        self.cache_manager.save_thumbnail_image(cache_key, &thumbnail_info.data)?;
+
+        // 包括的なキャッシュ情報を生成
+        let cache_info = MetadataHandler::generate_cache_info(
+            image_path,
+            config,
+            thumbnail_filename,
+        )?;
+
+        // キャッシュ情報をJSONファイルに保存
+        self.cache_manager.save_cache_info(cache_key, &cache_info)?;
+
+        // レスポンス用のサムネイル情報を作成
+        let response_thumbnail = ThumbnailInfo {
+            data: thumbnail_info.data,
+            width: thumbnail_info.width,
+            height: thumbnail_info.height,
+            mime_type: thumbnail_info.mime_type,
+            cache_path: Some(self.cache_manager.get_thumbnail_file_path(cache_key).to_string_lossy().to_string()),
+        };
+
+        Ok((response_thumbnail, cache_info))
     }
 
     /// キャッシュをクリア
@@ -213,7 +211,7 @@ pub struct ThumbnailState {
 impl ThumbnailState {
     /// 新しいThumbnailStateを作成
     pub fn new<R: Runtime>(
-        config: generator::ThumbnailConfig,
+        config: ThumbnailConfig,
         app: &AppHandle<R>,
     ) -> Result<Self, String> {
         let handler = ThumbnailHandler::new(config, app)?;

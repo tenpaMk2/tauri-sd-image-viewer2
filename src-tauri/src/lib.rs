@@ -19,7 +19,7 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .setup(|app| {
             // サムネイル状態を初期化
-            let thumbnail_config = thumbnail::ThumbnailConfig::default();
+            let thumbnail_config = types::ThumbnailConfig::default();
             let thumbnail_state = match ThumbnailState::new(thumbnail_config, app.handle()) {
                 Ok(state) => state,
                 Err(e) => {

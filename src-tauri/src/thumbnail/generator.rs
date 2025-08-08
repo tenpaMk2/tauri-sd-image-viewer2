@@ -6,18 +6,14 @@ use std::fs::File;
 use std::time::Instant;
 use webp::Encoder;
 
-/// サムネイル生成の設定
-#[derive(Debug, Clone)]
-pub struct ThumbnailConfig {
-    pub size: u32,
-    pub quality: u8,
-}
+use crate::types::ThumbnailConfig;
 
 impl Default for ThumbnailConfig {
     fn default() -> Self {
         Self {
             size: 128,
             quality: 80,
+            format: "webp".to_string(),
         }
     }
 }
@@ -30,6 +26,10 @@ pub struct ThumbnailGenerator {
 impl ThumbnailGenerator {
     pub fn new(config: ThumbnailConfig) -> Self {
         Self { config }
+    }
+
+    pub fn get_config(&self) -> &ThumbnailConfig {
+        &self.config
     }
 
     /// サムネイルを生成

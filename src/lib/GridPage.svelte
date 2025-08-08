@@ -5,6 +5,7 @@
 	import { platform } from '@tauri-apps/plugin-os';
 	import { showSuccessToast } from './stores/toast.svelte';
 	import ThumbnailGrid from './ThumbnailGrid.svelte';
+	import FilterPanel from './FilterPanel.svelte';
 	import { deleteSelectedImages as performDelete } from './utils/delete-images';
 
 	const {
@@ -22,12 +23,21 @@
 	let selectedImages = $state<Set<string>>(new Set());
 	let refreshTrigger = $state<number>(0);
 	let imageFiles = $state<string[]>([]);
+	let filteredImageCount = $state<number>(0);
+	let totalImageCount = $state<number>(0);
 	let isMacOS = $state<boolean>(false);
 	let lastSelectedIndex = $state<number>(-1); // Shift+Click用の基点インデックス
 
 	// ThumbnailGridから画像ファイル一覧を受け取る
 	const handleImageFilesLoaded = (files: string[]) => {
 		imageFiles = files;
+		totalImageCount = files.length;
+	};
+
+	// フィルタリング結果を受け取る
+	const handleFilteredImagesUpdate = (filtered: number, total: number) => {
+		filteredImageCount = filtered;
+		totalImageCount = total;
 	};
 
 	// 画像選択/選択解除（OSファイル選択エミュレート）
@@ -131,23 +141,27 @@
 					{folderName || 'Folder'}
 				</h1>
 			{/await}
-			{#if 0 < imageFiles.length}
+			{#if 0 < totalImageCount}
 				<div class="text-sm opacity-80">
-					{imageFiles.length} images
+					{#if filteredImageCount < totalImageCount}
+						{filteredImageCount} of {totalImageCount} images
+					{:else}
+						{totalImageCount} images
+					{/if}
 				</div>
 			{/if}
 		</div>
 
 		<div class="flex items-center gap-2">
 			<!-- Select All Button -->
-			{#if 0 < imageFiles.length}
+			{#if 0 < filteredImageCount}
 				<button
 					class="btn btn-ghost btn-sm"
 					onclick={toggleSelectAll}
-					title={selectedImages.size === imageFiles.length ? 'Deselect All' : 'Select All'}
+					title={selectedImages.size === filteredImageCount ? 'Deselect All' : 'Select All'}
 				>
 					<Icon
-						icon={selectedImages.size === imageFiles.length
+						icon={selectedImages.size === filteredImageCount
 							? 'lucide:square-dashed'
 							: 'lucide:square-check-big'}
 						class="h-4 w-4"
@@ -165,6 +179,12 @@
 		</div>
 	</div>
 
+	<!-- Filter Panel -->
+	<FilterPanel
+		totalImages={totalImageCount}
+		filteredImages={filteredImageCount}
+	/>
+
 	<!-- Grid View -->
 	<div class="flex-1">
 		<ThumbnailGrid
@@ -174,6 +194,7 @@
 			onToggleSelection={toggleImageSelection}
 			{refreshTrigger}
 			onImageFilesLoaded={handleImageFilesLoaded}
+			onFilteredImagesUpdate={handleFilteredImagesUpdate}
 		/>
 	</div>
 </div>

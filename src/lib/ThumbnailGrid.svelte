@@ -2,6 +2,7 @@
 	import ImageThumbnail from './ImageThumbnail.svelte';
 	import { ThumbnailService } from './services/thumbnail-service';
 	import { globalThumbnailService } from './services/global-thumbnail-service';
+	import { filterStore } from './stores/filter-store.svelte';
 
 	const {
 		directoryPath,
@@ -9,7 +10,8 @@
 		selectedImages = new Set(),
 		onToggleSelection,
 		refreshTrigger = 0,
-		onImageFilesLoaded
+		onImageFilesLoaded,
+		onFilteredImagesUpdate
 	}: {
 		directoryPath: string;
 		onImageSelect: (imagePath: string) => void;
@@ -17,6 +19,7 @@
 		onToggleSelection?: (imagePath: string, shiftKey?: boolean, metaKey?: boolean) => void;
 		refreshTrigger?: number;
 		onImageFilesLoaded?: (files: string[]) => void;
+		onFilteredImagesUpdate?: (filteredCount: number, totalCount: number) => void;
 	} = $props();
 
 	// ローディング状態を統合
@@ -32,6 +35,7 @@
 	const thumbnailService = new ThumbnailService();
 
 	let imageFiles = $state<string[]>([]);
+	let filteredImageFiles = $state<string[]>([]);
 	let thumbnails = $state<Map<string, string>>(new Map());
 	let loadingState = $state<LoadingState>({
 		isLoading: true,
@@ -54,6 +58,28 @@
 		);
 	});
 
+	// フィルタが変更されたときに画像リストを再計算
+	$effect(() => {
+		// フィルタストアの状態変更を監視
+		filterStore.state.minRating;
+		filterStore.state.filenamePattern;
+		// レーティング更新も監視
+		ratingUpdateTrigger;
+
+		if (imageFiles.length > 0) {
+			// フィルタを適用して表示用の画像リストを更新
+			const filtered = filterStore.filterImages(imageFiles, thumbnailService);
+			filteredImageFiles = filtered;
+
+			// 親コンポーネントにフィルタ結果を通知
+			if (onFilteredImagesUpdate) {
+				onFilteredImagesUpdate(filtered.length, imageFiles.length);
+			}
+
+			console.log('フィルタ適用結果:', filtered.length, '/', imageFiles.length);
+		}
+	});
+
 	// 第1段階：画像ファイル一覧の取得とグリッド表示
 	const loadImageFileList = async () => {
 		if (loadingState.isProcessing) {
@@ -70,10 +96,18 @@
 
 			// ディレクトリ内の画像ファイル一覧を取得
 			imageFiles = await thumbnailService.getImageFiles(directoryPath);
+			
+			// 初期状態でフィルタを適用
+			filteredImageFiles = filterStore.filterImages(imageFiles, thumbnailService);
 
 			// 親コンポーネントに画像ファイル一覧を通知
 			if (onImageFilesLoaded) {
 				onImageFilesLoaded(imageFiles);
+			}
+
+			// フィルタ結果も通知
+			if (onFilteredImagesUpdate) {
+				onFilteredImagesUpdate(filteredImageFiles.length, imageFiles.length);
 			}
 
 			if (imageFiles.length === 0) {
@@ -474,7 +508,7 @@
 				<div
 					class="grid grid-cols-2 gap-3 p-1 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7"
 				>
-					{#each imageFiles as imagePath (imagePath)}
+					{#each filteredImageFiles as imagePath (imagePath)}
 						{@const isSelected = selectedImages.has(imagePath)}
 						{@const rating = (() => {
 							// ratingUpdateTriggerを参照することで、Rating更新時にリアクティブに再計算される

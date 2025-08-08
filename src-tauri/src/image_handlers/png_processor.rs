@@ -1,6 +1,5 @@
 use crate::common::{read_file_safe, AppResult};
 use crate::sd_parameters::SdParameters;
-use crate::types::PngImageInfo;
 use png::Decoder;
 use std::io::Cursor;
 
@@ -9,8 +8,6 @@ use std::io::Cursor;
 pub struct PngInfo {
     pub width: u32,
     pub height: u32,
-    pub bit_depth: u8,
-    pub color_type: String,
 }
 
 /// PNG画像処理の統合ハンドラー
@@ -47,8 +44,6 @@ impl PngProcessor {
         let png_info = PngInfo {
             width: info.width,
             height: info.height,
-            bit_depth: info.bit_depth as u8,
-            color_type: format!("{:?}", info.color_type),
         };
 
         let sd_parameters = info
@@ -62,23 +57,8 @@ impl PngProcessor {
 
 }
 
-/// PNG画像情報を読み込み（Tauri API）
-#[tauri::command]
-pub fn read_png_image_info(path: String) -> Result<PngImageInfo, String> {
-    let data = read_file_safe(&path).map_err(|e| e.to_string())?;
-    let (png_info, sd_parameters) =
-        PngProcessor::extract_comprehensive_info(&data).map_err(|e| e.to_string())?;
-
-    Ok(PngImageInfo {
-        width: png_info.width,
-        height: png_info.height,
-        bit_depth: png_info.bit_depth,
-        color_type: png_info.color_type,
-        sd_parameters,
-    })
-}
-
 /// ファイルパスからSDパラメーターのみを読み取り（Tauri API）
+/// @deprecated 統合API read_image_metadata_info を使用してください
 #[tauri::command]
 pub fn read_png_sd_parameters(path: String) -> Result<Option<SdParameters>, String> {
     let data = read_file_safe(&path).map_err(|e| e.to_string())?;

@@ -43,17 +43,6 @@ export type SdParameters = {
 // 対応ファイル: src-tauri/src/png_handler.rs
 // ==========================================
 
-/**
- * PNG画像の基本情報とSD情報
- * 対応: `struct PngImageInfo`
- */
-export type PngImageInfo = {
-	width: number; // Rust: u32
-	height: number; // Rust: u32
-	bit_depth: number; // Rust: u8
-	color_type: string; // Rust: String (formatted from enum)
-	sd_parameters?: SdParameters; // Rust: Option<SdParameters>
-};
 
 // ==========================================
 // Exif情報

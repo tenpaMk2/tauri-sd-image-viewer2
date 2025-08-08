@@ -34,7 +34,6 @@ pub fn run() {
             clipboard::set_clipboard_files,
             thumbnail::load_thumbnails_batch_path_only,
             thumbnail::clear_thumbnail_cache,
-            image_handlers::png_processor::read_png_image_info,
             image_handlers::png_processor::read_png_sd_parameters,
             image_info::read_image_metadata_info,
             exif_info::write_exif_image_rating,

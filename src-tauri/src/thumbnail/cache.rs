@@ -152,6 +152,7 @@ impl CacheManager {
     }
 
     /// サムネイル画像を読み込み
+    #[allow(dead_code)]
     pub fn load_thumbnail_image(&self, cache_key: &str) -> Result<Vec<u8>, String> {
         let thumbnail_path = self.get_thumbnail_file_path(cache_key);
         fs::read(&thumbnail_path).map_err(|e| format!("サムネイル画像の読み込みに失敗: {}", e))

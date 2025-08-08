@@ -7,13 +7,12 @@ use generator::ThumbnailGenerator;
 use metadata_handler::MetadataHandler;
 
 use crate::types::{
-    BatchThumbnailPathResult, BatchThumbnailResult, ThumbnailCacheInfo, ThumbnailConfig,
+    BatchThumbnailPathResult, ThumbnailCacheInfo, ThumbnailConfig,
     ThumbnailInfo, ThumbnailPathInfo,
 };
 use rayon::prelude::*;
 use std::fs;
 use std::path::PathBuf;
-use std::time::Instant;
 use tauri::{AppHandle, Manager, Runtime};
 
 

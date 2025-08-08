@@ -13,12 +13,3 @@ pub struct ImageMetadataInfo {
     pub exif_info: Option<ExifInfo>,
 }
 
-/// PNG画像情報（拡張）
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PngImageInfo {
-    pub width: u32,
-    pub height: u32,
-    pub bit_depth: u8,
-    pub color_type: String,
-    pub sd_parameters: Option<SdParameters>,
-}

@@ -165,6 +165,9 @@
 					{:else}
 						{totalImageCount} images
 					{/if}
+					{#if tagData && tagData.allTags.length > 0}
+						• {tagData.allTags.length} SD tags
+					{/if}
 				</div>
 			{/if}
 		</div>

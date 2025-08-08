@@ -186,12 +186,6 @@
 		</div>
 	</div>
 
-	<!-- Tag statistics -->
-	{#if tagData && tagData.allTags.length > 0}
-		<div class="mt-2 text-xs text-base-content/60">
-			Found {tagData.allTags.length} unique tags in {totalImages} images
-		</div>
-	{/if}
 </div>
 
 <!-- Help Modal -->

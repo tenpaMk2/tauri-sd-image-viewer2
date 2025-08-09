@@ -1,8 +1,8 @@
 {
 	"$schema": "https://schema.tauri.app/config/2",
-	"productName": "Image Viewer",
-	"version": "0.1.0",
-	"identifier": "com.example.imageviewer",
+	"productName": "Tauri SD Image Viewer",
+	"version": "2.0.0",
+	"identifier": "io.github.tenpamk2.tauri-sd-image-viewer2",
 	"build": {
 		"beforeDevCommand": "bun run dev",
 		"devUrl": "http://localhost:5173",
@@ -13,7 +13,7 @@
 		"withGlobalTauri": true,
 		"windows": [
 			{
-				"title": "Image Viewer",
+				"title": "Tauri SD Image Viewer",
 				"width": 1280,
 				"height": 720,
 				"resizable": true

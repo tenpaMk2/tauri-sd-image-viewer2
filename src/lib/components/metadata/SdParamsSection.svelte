@@ -3,6 +3,7 @@
 	import type { ImageMetadata } from '../../image/types';
 	import { formatSdTags } from '../../utils/image-utils';
 	import { copyToClipboard } from '../../utils/ui-utils';
+	import { showSuccessToast } from '../../stores/toast.svelte';
 
 	const {
 		metadata
@@ -16,12 +17,14 @@
 		<h3 class="mb-2 flex items-center gap-2 text-sm font-semibold">
 			Stable Diffusion
 			<button
-				class="badge badge-outline text-xs hover:badge-primary"
-				onclick={() => copyToClipboard(metadata.sdParameters?.raw || '')}
+				class="btn btn-ghost btn-xs"
+				onclick={async () => {
+					await copyToClipboard(metadata.sdParameters?.raw || '');
+					showSuccessToast('SD parameters copied to clipboard');
+				}}
 				title="Copy raw text"
 			>
-				<Icon icon="lucide:copy" class="mr-1 h-3 w-3" />
-				Copy
+				<Icon icon="lucide:copy" class="h-3 w-3" />
 			</button>
 		</h3>
 		<div class="space-y-2 text-xs">
@@ -32,8 +35,10 @@
 						<div class="font-medium text-base-content/70">Positive Prompt:</div>
 						<button
 							class="btn btn-ghost btn-xs"
-							onclick={() =>
-								copyToClipboard(formatSdTags(metadata.sdParameters?.positive_sd_tags || []))}
+							onclick={async () => {
+								await copyToClipboard(formatSdTags(metadata.sdParameters?.positive_sd_tags || []));
+								showSuccessToast('Positive prompt copied to clipboard');
+							}}
 							title="Copy positive prompt"
 						>
 							<Icon icon="lucide:copy" class="h-3 w-3" />
@@ -56,8 +61,10 @@
 						<div class="font-medium text-base-content/70">Negative Prompt:</div>
 						<button
 							class="btn btn-ghost btn-xs"
-							onclick={() =>
-								copyToClipboard(formatSdTags(metadata.sdParameters?.negative_sd_tags || []))}
+							onclick={async () => {
+								await copyToClipboard(formatSdTags(metadata.sdParameters?.negative_sd_tags || []));
+								showSuccessToast('Negative prompt copied to clipboard');
+							}}
 							title="Copy negative prompt"
 						>
 							<Icon icon="lucide:copy" class="h-3 w-3" />

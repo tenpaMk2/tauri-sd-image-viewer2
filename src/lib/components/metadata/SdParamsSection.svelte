@@ -25,16 +25,16 @@
 			</button>
 		</h3>
 		<div class="space-y-2 text-xs">
-			<!-- プロンプト -->
+			<!-- ポジティブプロンプト -->
 			{#if metadata.sdParameters.positive_sd_tags.length > 0}
 				<div class="space-y-1">
 					<div class="flex items-center gap-2">
-						<div class="font-medium text-base-content/70">Prompt:</div>
+						<div class="font-medium text-base-content/70">Positive Prompt:</div>
 						<button
 							class="btn btn-ghost btn-xs"
 							onclick={() =>
 								copyToClipboard(formatSdTags(metadata.sdParameters?.positive_sd_tags || []))}
-							title="Copy prompt"
+							title="Copy positive prompt"
 						>
 							<Icon icon="lucide:copy" class="h-3 w-3" />
 						</button>

@@ -1,6 +1,17 @@
 {
 	"name": "tauri-sd-image-viewer",
 	"version": "2.0.0",
+	"description": "Tauri SD Image Viewer - A desktop image viewer with Stable Diffusion metadata support",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/tenpaMk2/tauri-sd-image-viewer2.git"
+	},
+	"bugs": {
+		"url": "https://github.com/tenpaMk2/tauri-sd-image-viewer2/issues"
+	},
+	"homepage": "https://github.com/tenpaMk2/tauri-sd-image-viewer2#readme",
+	"author": "tenpaMk2",
+	"license": "MIT",
 	"private": true,
 	"scripts": {
 		"build": "vite build",

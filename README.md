@@ -2,6 +2,16 @@
 
 A desktop image viewer application built with Tauri v2, specifically designed for viewing and managing images with Stable Diffusion metadata.
 
+## Screenshots
+
+### Grid View
+![Grid View](images/sample-grid.png)
+*Browse images in thumbnail grid with rating system and SD tag filtering*
+
+### Single Image View
+![Single Image View](images/sample-single.png)
+*View images with detailed metadata including Stable Diffusion parameters*
+
 ## Features
 
 - **Image Viewing**: Support for PNG, JPEG, and WebP formats

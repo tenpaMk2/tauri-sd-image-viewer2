@@ -61,27 +61,6 @@ export const loadImage = async (filePath: string): Promise<ImageData> => {
 	}
 };
 
-/**
- * PNG画像からStable Diffusionメタデータを取得（レガシー関数）
- * @deprecated 新しい統合機能 loadComprehensiveImageInfo を使用してください
- */
-export const loadSdParameters = async (filePath: string): Promise<SdParameters | null> => {
-	try {
-		// PNG画像でない場合は早期リターン
-		const mimeType = await detectImageMimeType(filePath);
-		if (mimeType !== 'image/png') {
-			return null;
-		}
-
-		const result = await invoke<SdParameters | null>('read_png_sd_parameters', {
-			path: filePath
-		});
-		return result;
-	} catch (error) {
-		console.warn('SD parameters取得に失敗:', filePath, error);
-		return null;
-	}
-};
 
 /**
  * ハイブリッドアプローチ: 画像とメタデータを並行取得

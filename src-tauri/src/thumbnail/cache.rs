@@ -70,7 +70,7 @@ impl CacheManager {
         Some(cache_info)
     }
 
-    /// 現在のファイル情報を取得
+    /// 現在のファイル情報を取得（軽量版：解像度取得を除去）
     fn get_current_file_info(&self, image_path: &str) -> Result<OriginalFileInfo, String> {
         let metadata = fs::metadata(image_path)
             .map_err(|e| format!("ファイルメタデータの取得に失敗: {}", e))?;
@@ -82,19 +82,18 @@ impl CacheManager {
             .map_err(|e| format!("UNIX時刻への変換に失敗: {}", e))?
             .as_secs();
 
-        // 画像の解像度を取得
-        let (width, height) = self.get_image_dimensions(image_path)?;
-
         Ok(OriginalFileInfo {
             path: image_path.to_string(),
             file_size: metadata.len(),
-            width,
-            height,
+            width: 0,  // キャッシュ判定では使用しない
+            height: 0, // キャッシュ判定では使用しない
             modified_time,
         })
     }
 
     /// 画像の解像度を取得
+    /// NOTE: キャッシュ判定では使用しなくなったが、他の用途のため残存
+    #[allow(dead_code)]
     fn get_image_dimensions(&self, image_path: &str) -> Result<(u32, u32), String> {
         match read_image_metadata_internal(image_path) {
             Ok(metadata) => Ok((metadata.width, metadata.height)),
@@ -102,15 +101,13 @@ impl CacheManager {
         }
     }
 
-    /// ファイルが変更されたかチェック
+    /// ファイルが変更されたかチェック（軽量版：ファイルサイズ + 更新時刻のみ）
     fn is_file_changed(
         &self,
         cached_info: &OriginalFileInfo,
         current_info: &OriginalFileInfo,
     ) -> bool {
         cached_info.file_size != current_info.file_size
-            || cached_info.width != current_info.width
-            || cached_info.height != current_info.height
             || cached_info.modified_time != current_info.modified_time
     }
 

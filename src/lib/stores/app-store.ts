@@ -2,7 +2,7 @@ import { open } from '@tauri-apps/plugin-dialog';
 import { writable } from 'svelte/store';
 import type { ImageMetadata } from '../image/types';
 import { getDirectoryFromPath } from '../image/utils';
-import { imageMetadataService } from '../services/image-metadata-service';
+import { unifiedMetadataService } from '../services/unified-metadata-service';
 import { globalThumbnailService } from '../services/global-thumbnail-service';
 import type { ViewMode } from '../ui/types';
 
@@ -51,7 +51,7 @@ const openFileDialog = async (): Promise<void> => {
 			// ファイル選択でビューアーモードに移行する時は、サムネイル生成キューを停止
 			globalThumbnailService.stopActiveQueue();
 
-			const imageMetadata = await imageMetadataService.getImageMetadataUnsafe(selected);
+			const imageMetadata = await unifiedMetadataService.getImageMetadataUnsafe(selected);
 			const selectedDirectory = await getDirectoryFromPath(selected);
 
 			appState.update((state) => ({
@@ -87,7 +87,7 @@ const openDirectoryDialog = async (): Promise<void> => {
 };
 
 const updateSelectedImage = async (imagePath: string): Promise<void> => {
-	const newMetadata = await imageMetadataService.getImageMetadataUnsafe(imagePath);
+	const newMetadata = await unifiedMetadataService.getImageMetadataUnsafe(imagePath);
 
 	appState.update((state) => ({
 		...state,
@@ -140,7 +140,7 @@ const refreshCurrentImageMetadata = async (): Promise<void> => {
 	})();
 
 	if (currentImagePath) {
-		const refreshedMetadata = await imageMetadataService.refreshMetadataUnsafe(currentImagePath);
+		const refreshedMetadata = await unifiedMetadataService.refreshMetadataUnsafe(currentImagePath);
 		appState.update((state) => ({
 			...state,
 			imageMetadata: refreshedMetadata

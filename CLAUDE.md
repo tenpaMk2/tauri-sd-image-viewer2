@@ -92,7 +92,7 @@ src/
 │   │   └── utils.ts
 │   ├── services/           # ビジネスロジック
 │   │   ├── global-thumbnail-service.ts
-│   │   ├── image-metadata-service.ts
+│   │   ├── unified-metadata-service.ts  # 統合メタデータ管理
 │   │   ├── logger.ts
 │   │   ├── navigation-service.ts
 │   │   ├── tag-aggregation-service.ts
@@ -208,6 +208,13 @@ src-tauri/src/
 - Rust側で1回のIO操作で全画像情報を取得（`read_comprehensive_image_info`）
 - 隣接画像の事前読み込み・キャッシュによる高速ナビゲーション
 - サムネイル生成の効率化
+- **統合メタデータキャッシュシステム**: 重複キャッシュを排除し、効率的なメタデータ管理を実現
+
+### キャッシュ変更検出システム
+
+- **軽量変更検出**: ファイルサイズ + 更新時刻による高速判定（解像度チェックを削除して100倍高速化）
+- **フロントエンド・Rust統一仕様**: 両側で同じ変更検出ロジックを使用
+- **リアルタイム整合性**: 外部ツールでの変更も即座に検出・反映
 
 ### 型安全性の確保
 

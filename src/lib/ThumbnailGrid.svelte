@@ -42,6 +42,7 @@
 	let imageFiles = $state<string[]>([]);
 	let filteredImageFiles = $state<string[]>([]);
 	let thumbnails = $state<Map<string, string>>(new Map());
+	let ratings = $state<Map<string, number | undefined>>(new Map()); // レーティングキャッシュ
 	let loadingState = $state<LoadingState>({
 		isLoading: true,
 		isProcessing: false,
@@ -51,6 +52,21 @@
 	});
 	let lastRefreshTrigger = $state<number>(0);
 	let ratingUpdateTrigger = $state<number>(0); // Rating更新をトリガーするためのstate
+
+	// レーティング読み込み関数
+	const loadRatings = async (imagePaths: string[]) => {
+		const newRatings = new Map(ratings);
+		for (const imagePath of imagePaths) {
+			try {
+				const rating = await thumbnailService.getImageRating(imagePath);
+				newRatings.set(imagePath, rating);
+			} catch (error) {
+				console.warn('レーティング取得失敗:', imagePath, error);
+				newRatings.set(imagePath, undefined);
+			}
+		}
+		ratings = newRatings;
+	};
 
 	// サムネイル数の変化をリアルタイム監視
 	$effect(() => {
@@ -77,7 +93,7 @@
 			// フィルタを適用して表示用の画像リストを更新（同期処理で高速化）
 			const filtered = filterStore.filterImages(
 				imageFiles,
-				thumbnailService,
+				ratings,
 				tagAggregationService
 			);
 			filteredImageFiles = filtered;
@@ -177,7 +193,9 @@
 
 					thumbnails = newThumbnails;
 
-					// リアルタイム更新時にもRating表示を更新
+					// リアルタイム更新時にレーティングも読み込み
+					const chunkPaths = Array.from(chunkResults.keys());
+					loadRatings(chunkPaths);
 					ratingUpdateTrigger = Date.now();
 					console.log('🔄 リアルタイム更新、Rating表示更新トリガー:', ratingUpdateTrigger);
 					console.log('thumbnails更新 (リアルタイム):', thumbnails.size, '個のサムネイル');
@@ -191,6 +209,9 @@
 
 			// 最終結果をセット
 			thumbnails = resultThumbnails;
+			
+			// 全レーティングを読み込み
+			await loadRatings(imageFiles);
 			ratingUpdateTrigger = Date.now();
 
 			console.log('シンプルキューベースのサムネイル生成完了');
@@ -265,6 +286,11 @@
 	const handleRatingChange = async (imagePath: string, newRating: number): Promise<void> => {
 		const success = await thumbnailService.updateImageRating(imagePath, newRating);
 		if (success) {
+			// ローカルratingsマップを即座に更新
+			const newRatings = new Map(ratings);
+			newRatings.set(imagePath, newRating);
+			ratings = newRatings;
+			
 			// 成功時にリアクティブ更新をトリガー
 			ratingUpdateTrigger = Date.now();
 			console.log('Rating更新成功:', imagePath, newRating);
@@ -336,7 +362,7 @@
 						{@const rating = (() => {
 							// ratingUpdateTriggerを参照することで、Rating更新時にリアクティブに再計算される
 							ratingUpdateTrigger;
-							return thumbnailService.getImageRating(imagePath);
+							return ratings.get(imagePath);
 						})()}
 						{@const thumbnailUrl = thumbnails.get(imagePath)}
 						{@const isLoading = !thumbnails.has(imagePath)}

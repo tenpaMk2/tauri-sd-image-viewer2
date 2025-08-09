@@ -2,11 +2,11 @@ import { invoke } from '@tauri-apps/api/core';
 import { readFile } from '@tauri-apps/plugin-fs';
 import { getImageFiles } from '../image/image-loader';
 import type { BatchThumbnailPathResult, ThumbnailCacheInfo } from '../types/shared-types';
+import { unifiedMetadataService } from './unified-metadata-service';
 
-// サムネイル処理のサービス
+// サムネイル処理のサービス（統合メタデータサービス対応版）
 export class ThumbnailService {
-	// メタデータキャッシュ
-	private metadataCache = new Map<string, ThumbnailCacheInfo>();
+	// 注意: メタデータキャッシュは統合サービスに移行済み
 
 	async loadSingleThumbnail(imagePath: string): Promise<string | null> {
 		try {
@@ -25,7 +25,7 @@ export class ThumbnailService {
 					// サムネイルファイル読み込み完了
 
 					if (result.cache_info) {
-						this.metadataCache.set(result.path, result.cache_info);
+						unifiedMetadataService.setThumbnailCacheInfo(result.path, result.cache_info);
 					}
 
 					return url;
@@ -52,47 +52,23 @@ export class ThumbnailService {
 		return await getImageFiles(directoryPath);
 	}
 
-	getImageMetadata(imagePath: string): ThumbnailCacheInfo | undefined {
-		return this.metadataCache.get(imagePath);
+	async getImageMetadata(imagePath: string): Promise<ThumbnailCacheInfo | undefined> {
+		return await unifiedMetadataService.getThumbnailCacheInfo(imagePath);
 	}
 
-	getImageRating(imagePath: string): number | undefined {
-		const metadata = this.metadataCache.get(imagePath);
-		return metadata?.rating;
+	async getImageRating(imagePath: string): Promise<number | undefined> {
+		return await unifiedMetadataService.getImageRating(imagePath);
 	}
 
 	async updateImageRating(imagePath: string, newRating: number): Promise<boolean> {
-		try {
-			await invoke('write_exif_image_rating', {
-				path: imagePath,
-				rating: newRating
-			});
-
-			const existingMetadata = this.metadataCache.get(imagePath);
-			if (existingMetadata) {
-				const updatedMetadata = {
-					...existingMetadata,
-					rating: newRating,
-					cached_at: Date.now() / 1000
-				};
-				this.metadataCache.set(imagePath, updatedMetadata);
-			} else {
-				// 新しいメタデータがない場合はキャッシュを削除して新しいサムネイルをロードさせる
-				this.metadataCache.delete(imagePath);
-			}
-
-			return true;
-		} catch (error) {
-			console.error('Rating更新に失敗:', imagePath, error);
-			return false;
-		}
+		return await unifiedMetadataService.updateImageRating(imagePath, newRating);
 	}
 
 	cleanupThumbnails(thumbnails: Map<string, string>): void {
 		for (const url of thumbnails.values()) {
 			this.safeRevokeUrl(url);
 		}
-		this.metadataCache.clear();
+		// 注意: メタデータクリアは統合サービスで管理
 	}
 
 	private safeRevokeUrl(url: string): void {
@@ -106,11 +82,11 @@ export class ThumbnailService {
 	}
 
 	clearMetadataCache(): void {
-		this.metadataCache.clear();
+		unifiedMetadataService.clearCache();
 	}
 
 	getCacheSize(): number {
-		return this.metadataCache.size;
+		return unifiedMetadataService.getCacheSize();
 	}
 
 
@@ -199,7 +175,7 @@ export class ThumbnailService {
 							chunkThumbnails.set(result.path, url);
 
 							if (result.cache_info) {
-								this.metadataCache.set(result.path, result.cache_info);
+								unifiedMetadataService.setThumbnailCacheInfo(result.path, result.cache_info);
 							}
 
 							loadedCount++;

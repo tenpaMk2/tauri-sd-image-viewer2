@@ -5,7 +5,7 @@
 
 import type { SdTag, SdParameters } from '../types/shared-types';
 import { ThumbnailService } from './thumbnail-service';
-import { imageMetadataService } from './image-metadata-service';
+import { unifiedMetadataService } from './unified-metadata-service';
 
 export type TagCount = {
 	name: string;
@@ -40,7 +40,7 @@ export class TagAggregationService {
 		// 各画像ファイルからSDパラメータを取得してタグを集計
 		for (const imagePath of imagePaths) {
 			try {
-				const metadata = await imageMetadataService.getImageMetadataUnsafe(imagePath);
+				const metadata = await unifiedMetadataService.getImageMetadataUnsafe(imagePath);
 
 				if (metadata?.sdParameters) {
 					// タグ情報をキャッシュに保存
@@ -169,7 +169,7 @@ export class TagAggregationService {
 		}
 
 		try {
-			const metadata = await imageMetadataService.getImageMetadataUnsafe(imagePath);
+			const metadata = await unifiedMetadataService.getImageMetadataUnsafe(imagePath);
 			if (!metadata?.sdParameters) return false;
 
 			// 正規化されたタグ名の配列を作成（positive + negative）

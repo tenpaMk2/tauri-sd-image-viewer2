@@ -76,13 +76,13 @@ const createFilterStore = () => {
 	/**
 	 * Filter image files based on current filter settings
 	 * @param imagePaths - array of image file paths
-	 * @param thumbnailService - service to get rating information
+	 * @param ratingsMap - preloaded ratings map for synchronous access
 	 * @param tagAggregationService - service to check SD tags
 	 * @returns filtered array of image paths
 	 */
 	const filterImages = (
 		imagePaths: string[],
-		thumbnailService: ThumbnailService,
+		ratingsMap: Map<string, number | undefined>,
 		tagAggregationService?: TagAggregationService
 	): string[] => {
 		let filtered = imagePaths;
@@ -94,7 +94,7 @@ const createFilterStore = () => {
 
 		// Apply rating filter (always active)
 		filtered = filtered.filter((imagePath) => {
-			const rating = thumbnailService.getImageRating(imagePath);
+			const rating = ratingsMap.get(imagePath);
 			// rating: undefined または 0 = unrated (星0扱い)
 			const normalizedRating = rating === undefined ? 0 : rating;
 

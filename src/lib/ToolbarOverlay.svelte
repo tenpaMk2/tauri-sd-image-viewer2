@@ -49,7 +49,7 @@
 			<button class="btn text-white btn-ghost btn-sm" onclick={openFileDialog} title="Open File">
 				<Icon icon="lucide:image-plus" class="h-4 w-4" />
 			</button>
-			{#if isMacOS && onCopyToClipboard}
+			{#if onCopyToClipboard}
 				<button
 					class="btn text-white btn-ghost btn-sm"
 					onclick={onCopyToClipboard}

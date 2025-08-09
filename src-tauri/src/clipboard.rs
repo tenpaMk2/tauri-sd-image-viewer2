@@ -7,6 +7,18 @@ use {
     objc2_foundation::{NSArray, NSString, NSURL},
 };
 
+#[cfg(target_os = "windows")]
+use {
+    std::os::windows::ffi::OsStrExt,
+    windows::{
+        Win32::Foundation::{BOOL, HANDLE, HWND},
+        Win32::System::Com::{CoInitialize, CoUninitialize},
+        Win32::System::DataExchange::{CloseClipboard, EmptyClipboard, OpenClipboard, SetClipboardData},
+        Win32::System::Memory::{GlobalAlloc, GlobalLock, GlobalUnlock, GMEM_MOVEABLE},
+        Win32::UI::Shell::DROPFILES,
+    },
+};
+
 /// macOS専用：指定されたファイルパスをクリップボードに書き込むTauriコマンド
 #[cfg(target_os = "macos")]
 #[tauri::command]
@@ -61,9 +73,129 @@ pub fn set_clipboard_files(paths: Vec<String>) -> Result<(), String> {
     })
 }
 
-/// 非macOSプラットフォーム向けの互換性スタブ実装
-#[cfg(not(target_os = "macos"))]
+/// Windows専用：指定されたファイルパスをクリップボードに書き込むTauriコマンド
+#[cfg(target_os = "windows")]
 #[tauri::command]
 pub fn set_clipboard_files(paths: Vec<String>) -> Result<(), String> {
-    Err("この機能は現在macOSのみでサポートされています".to_string())
+    use std::path::Path;
+
+    println!(
+        "Starting clipboard operation: processing {} file paths",
+        paths.len()
+    );
+
+    // COM初期化
+    unsafe {
+        let hr = CoInitialize(None);
+        if hr.is_err() {
+            return Err("Failed to initialize COM".to_string());
+        }
+    }
+
+    let result = (|| -> Result<(), String> {
+        // ファイルパスの検証
+        for path in &paths {
+            if !Path::new(path).exists() {
+                return Err(format!("File not found: {}", path));
+            }
+        }
+
+        // Windows Shell APIを使用してクリップボードにファイルを設定
+        unsafe {
+            // IDataObjectを作成してクリップボードに設定する簡易実装
+            let clipboard = OpenClipboard(HWND::default());
+            if clipboard.is_err() {
+                return Err("Failed to open clipboard".to_string());
+            }
+
+            let empty_result = EmptyClipboard();
+            if empty_result.is_err() {
+                let _ = CloseClipboard();
+                return Err("Failed to clear clipboard".to_string());
+            }
+
+            // CF_HDROPフォーマットでファイルパスを設定
+            let cf_hdrop = 15u32; // CF_HDROP定数値
+            
+            // パス文字列を準備（各パスはNull終端、最後は二重Null終端）
+            let mut buffer = Vec::new();
+            let dropfiles_size = std::mem::size_of::<DROPFILES>();
+            
+            // DROPFILES構造体のサイズ分を確保
+            buffer.resize(dropfiles_size, 0u8);
+            
+            for path in &paths {
+                let wide_path: Vec<u16> = std::ffi::OsStr::new(path)
+                    .encode_wide()
+                    .chain(std::iter::once(0))
+                    .collect();
+                
+                let byte_slice = std::slice::from_raw_parts(
+                    wide_path.as_ptr() as *const u8,
+                    wide_path.len() * 2,
+                );
+                buffer.extend_from_slice(byte_slice);
+            }
+            
+            // 最終的なNull終端を追加
+            buffer.extend_from_slice(&[0u8, 0u8]);
+            
+            // DROPFILES構造体を設定
+            let dropfiles = buffer.as_mut_ptr() as *mut DROPFILES;
+            (*dropfiles).pFiles = dropfiles_size as u32;
+            (*dropfiles).pt.x = 0;
+            (*dropfiles).pt.y = 0;
+            (*dropfiles).fNC = BOOL(0);
+            (*dropfiles).fWide = BOOL(1); // Unicodeを使用
+
+            // グローバルメモリにコピー
+            let hmem = match GlobalAlloc(GMEM_MOVEABLE, buffer.len()) {
+                Ok(h) => h,
+                Err(_) => {
+                    let _ = CloseClipboard();
+                    return Err("Failed to allocate global memory".to_string());
+                }
+            };
+            
+            if hmem.is_invalid() {
+                let _ = CloseClipboard();
+                return Err("Failed to allocate global memory".to_string());
+            }
+
+            let ptr = GlobalLock(hmem);
+            if ptr.is_null() {
+                let _ = CloseClipboard();
+                return Err("Failed to lock global memory".to_string());
+            }
+
+            std::ptr::copy_nonoverlapping(buffer.as_ptr(), ptr as *mut u8, buffer.len());
+            GlobalUnlock(hmem).ok();
+
+            // クリップボードにデータを設定
+            let set_result = SetClipboardData(cf_hdrop, HANDLE(hmem.0));
+            
+            let _ = CloseClipboard();
+            
+            if let Err(_) = set_result {
+                return Err("Failed to set clipboard data".to_string());
+            }
+
+            println!("Successfully copied files to clipboard");
+            Ok(())
+        }
+    })();
+
+    // COM終了処理
+    unsafe {
+        CoUninitialize();
+    }
+
+    result
+}
+
+/// macOSとWindows以外のプラットフォーム向けの互換性スタブ実装
+#[cfg(not(any(target_os = "macos", target_os = "windows")))]
+#[tauri::command]
+pub fn set_clipboard_files(paths: Vec<String>) -> Result<(), String> {
+    Err("This feature is only supported on macOS and Windows".to_string())
 }

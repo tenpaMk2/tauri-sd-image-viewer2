@@ -238,15 +238,13 @@
 				{selectedImages.size} images selected
 			</div>
 			<div class="flex items-center gap-4">
-				{#if isMacOS}
-					<button
-						class="btn text-white btn-ghost btn-sm"
-						onclick={copySelectedToClipboard}
-						title="Copy to Clipboard"
-					>
-						<Icon icon="lucide:copy" class="h-4 w-4" />
-					</button>
-				{/if}
+				<button
+					class="btn text-white btn-ghost btn-sm"
+					onclick={copySelectedToClipboard}
+					title="Copy to Clipboard"
+				>
+					<Icon icon="lucide:copy" class="h-4 w-4" />
+				</button>
 				<button
 					class="btn text-white btn-ghost btn-sm"
 					onclick={deleteSelectedImages}

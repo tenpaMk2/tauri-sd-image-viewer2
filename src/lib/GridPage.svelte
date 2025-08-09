@@ -30,6 +30,7 @@
 	let lastSelectedIndex = $state<number>(-1); // Shift+Click用の基点インデックス
 	let showFilterPanel = $state<boolean>(false);
 	let tagData = $state<TagAggregationResult | null>(null);
+	let showOptionsModal = $state<boolean>(false);
 
 	// ThumbnailGridから画像ファイル一覧を受け取る
 	const handleImageFilesLoaded = (files: string[]) => {
@@ -51,6 +52,23 @@
 	// フィルターパネルの表示切り替え
 	const toggleFilterPanel = () => {
 		showFilterPanel = !showFilterPanel;
+	};
+
+	// オプションモーダルの表示切り替え
+	const toggleOptionsModal = () => {
+		showOptionsModal = !showOptionsModal;
+	};
+
+	// キャッシュ削除
+	const clearCache = async () => {
+		try {
+			await invoke('clear_thumbnail_cache');
+			showSuccessToast('Thumbnail cache cleared');
+			showOptionsModal = false;
+			refreshTrigger = Date.now(); // グリッドを再表示
+		} catch (error) {
+			console.error('Failed to clear cache:', error);
+		}
 	};
 
 	// 画像選択/選択解除（OSファイル選択エミュレート）
@@ -173,6 +191,15 @@
 		</div>
 
 		<div class="flex items-center gap-2">
+			<!-- Options Button -->
+			<button
+				class="btn btn-ghost btn-sm"
+				onclick={toggleOptionsModal}
+				title="Options"
+			>
+				<Icon icon="lucide:settings" class="h-4 w-4" />
+			</button>
+
 			<!-- Filter Button -->
 			<button
 				class="btn btn-ghost btn-sm {showFilterPanel ? 'btn-active btn-primary' : ''}"
@@ -254,5 +281,37 @@
 				</button>
 			</div>
 		</div>
+	</div>
+{/if}
+
+<!-- Options Modal -->
+{#if showOptionsModal}
+	<div class="modal modal-open">
+		<div class="modal-box">
+			<h3 class="text-lg font-bold mb-4">Options</h3>
+			
+			<div class="space-y-4">
+				<div class="flex items-center justify-between">
+					<div>
+						<div class="font-medium">Clear Thumbnail Cache</div>
+						<div class="text-sm opacity-70">Remove all cached thumbnails to free up disk space</div>
+					</div>
+					<button
+						class="btn btn-outline btn-sm"
+						onclick={clearCache}
+					>
+						<Icon icon="lucide:trash-2" class="h-4 w-4" />
+						Clear
+					</button>
+				</div>
+			</div>
+
+			<div class="modal-action">
+				<button class="btn" onclick={toggleOptionsModal}>Close</button>
+			</div>
+		</div>
+		<!-- svelte-ignore a11y_click_events_have_key_events -->
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
+		<div class="modal-backdrop" onclick={toggleOptionsModal}></div>
 	</div>
 {/if}

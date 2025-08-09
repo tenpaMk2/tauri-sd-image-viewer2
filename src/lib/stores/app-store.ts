@@ -18,10 +18,10 @@ export type AppActions = {
 	openDirectoryDialog: () => Promise<void>;
 	updateSelectedImage: (imagePath: string) => Promise<void>;
 	handleImageChange: (newPath: string) => Promise<void>;
-	handleSwitchToGrid: () => void;
+	handleSwitchToGrid: () => Promise<void>;
 	handleImageSelect: (imagePath: string) => Promise<void>;
-	handleBackToGrid: () => void;
-	handleBackToWelcome: () => void;
+	handleBackToGrid: () => Promise<void>;
+	handleBackToWelcome: () => Promise<void>;
 	refreshCurrentImageMetadata: () => Promise<void>;
 	handleDroppedPaths: (paths: string[]) => Promise<void>;
 };
@@ -101,7 +101,10 @@ const handleImageChange = async (newPath: string): Promise<void> => {
 	await updateSelectedImage(newPath);
 };
 
-const handleSwitchToGrid = (): void => {
+const handleSwitchToGrid = async (): Promise<void> => {
+	// Rating書き込み処理を待機（クラッシュ防止）
+	await unifiedMetadataService.waitForAllRatingWrites();
+	
 	// グリッドモードに戻る時は、前のキューが動いていても継続させる
 	appState.update((state) => ({
 		...state,
@@ -110,6 +113,9 @@ const handleSwitchToGrid = (): void => {
 };
 
 const handleImageSelect = async (imagePath: string): Promise<void> => {
+	// Rating書き込み処理を待機（クラッシュ防止）
+	await unifiedMetadataService.waitForAllRatingWrites();
+	
 	// ビューアーモードに切り替える時は、サムネイル生成キューを停止
 	globalThumbnailService.stopActiveQueue();
 
@@ -120,14 +126,20 @@ const handleImageSelect = async (imagePath: string): Promise<void> => {
 	}));
 };
 
-const handleBackToGrid = (): void => {
+const handleBackToGrid = async (): Promise<void> => {
+	// Rating書き込み処理を待機（クラッシュ防止）
+	await unifiedMetadataService.waitForAllRatingWrites();
+	
 	appState.update((state) => ({
 		...state,
 		viewMode: 'grid'
 	}));
 };
 
-const handleBackToWelcome = (): void => {
+const handleBackToWelcome = async (): Promise<void> => {
+	// Rating書き込み処理を待機（クラッシュ防止）
+	await unifiedMetadataService.waitForAllRatingWrites();
+	
 	// ウェルカム画面に戻る時は、サムネイル生成キューを停止してクリア
 	globalThumbnailService.clearActiveService();
 	appState.set(initialState);

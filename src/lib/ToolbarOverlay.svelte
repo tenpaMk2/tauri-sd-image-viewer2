@@ -17,7 +17,7 @@
 		imageFiles: string[];
 		currentIndex: number;
 		openFileDialog: () => void;
-		onSwitchToGrid?: () => void;
+		onSwitchToGrid?: () => Promise<void>;
 		onToggleInfoPanel?: () => void;
 		isInfoPanelVisible?: boolean;
 		onToggleAutoNavigation?: () => void;
@@ -70,7 +70,7 @@
 				</button>
 			{/if}
 			{#if onSwitchToGrid}
-				<button class="btn text-white btn-ghost btn-sm" onclick={onSwitchToGrid} title="Grid View">
+				<button class="btn text-white btn-ghost btn-sm" onclick={() => onSwitchToGrid?.()} title="Grid View">
 					<Icon icon="lucide:layout-grid" class="h-4 w-4" />
 				</button>
 			{/if}

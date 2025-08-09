@@ -255,6 +255,23 @@ export class UnifiedMetadataService {
 	}
 
 	/**
+	 * 全てのRating書き込み処理の完了を待機
+	 */
+	async waitForAllRatingWrites(): Promise<void> {
+		let maxWait = 50; // 5秒の最大待機時間
+		while (this.writingFilesArray.length > 0 && maxWait > 0) {
+			await new Promise(resolve => setTimeout(resolve, 100));
+			maxWait--;
+		}
+		
+		if (this.writingFilesArray.length > 0) {
+			console.warn('Rating書き込み処理のタイムアウト:', this.writingFilesArray);
+			// 強制的にクリア（安全のため）
+			this.writingFilesArray.length = 0;
+		}
+	}
+
+	/**
 	 * キャッシュサイズを取得
 	 */
 	getCacheSize(): number {

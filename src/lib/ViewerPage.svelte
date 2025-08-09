@@ -22,7 +22,7 @@
 		imagePath: string;
 		onImageChange: (newPath: string) => Promise<void>;
 		openFileDialog: () => void;
-		onSwitchToGrid?: () => void;
+		onSwitchToGrid?: () => Promise<void>;
 		refreshMetadata?: () => Promise<void>;
 	} = $props();
 

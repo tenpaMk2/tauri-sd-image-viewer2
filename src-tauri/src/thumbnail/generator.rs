@@ -11,7 +11,7 @@ use crate::types::ThumbnailConfig;
 impl Default for ThumbnailConfig {
     fn default() -> Self {
         Self {
-            size: 128,
+            size: 240,
             quality: 80,
             format: "webp".to_string(),
         }

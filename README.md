@@ -1,16 +1,22 @@
 # Tauri SD Image Viewer
 
+*English | [日本語](README.ja.md)*
+
 A desktop image viewer application built with Tauri v2, specifically designed for viewing and managing images with Stable Diffusion metadata.
 
 ## Screenshots
 
 ### Grid View
+
 ![Grid View](images/sample-grid.png)
-*Browse images in thumbnail grid with rating system and SD tag filtering*
+
+_Browse images in thumbnail grid with rating system and SD tag filtering_
 
 ### Single Image View
+
 ![Single Image View](images/sample-single.png)
-*View images with detailed metadata including Stable Diffusion parameters*
+
+_View images with detailed metadata including Stable Diffusion parameters_
 
 ## Features
 
@@ -39,17 +45,20 @@ A desktop image viewer application built with Tauri v2, specifically designed fo
 ### Getting Started
 
 1. Clone the repository:
+
 ```bash
 git clone https://github.com/tenpaMk2/tauri-sd-image-viewer2.git
 cd tauri-sd-image-viewer2
 ```
 
 2. Install dependencies:
+
 ```bash
 bun install
 ```
 
 3. Start development server:
+
 ```bash
 bun run tauri:dev
 ```
@@ -72,11 +81,11 @@ bun run tauri:dev
 
 ## Image Format Support
 
-| Format | Features |
-|--------|----------|
-| **PNG** | Full support: SD metadata, EXIF, EXIF+XMP Rating writing |
+| Format   | Features                                                        |
+| -------- | --------------------------------------------------------------- |
+| **PNG**  | Full support: SD metadata, EXIF, EXIF+XMP Rating writing        |
 | **JPEG** | Limited support: EXIF, EXIF+XMP Rating writing (no SD metadata) |
-| **WebP** | Basic support: EXIF reading only |
+| **WebP** | Basic support: EXIF reading only                                |
 
 ## Architecture
 

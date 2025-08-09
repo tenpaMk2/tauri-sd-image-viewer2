@@ -126,7 +126,7 @@
 			await invoke('set_clipboard_files', { paths });
 			showSuccessToast(`${selectedImages.size} images copied to clipboard`);
 		} catch (error) {
-			console.error('クリップボードへのコピーに失敗:', error);
+			console.error('Failed to copy to clipboard:', error);
 		}
 	};
 
@@ -137,7 +137,7 @@
 				const currentPlatform = await platform();
 				isMacOS = currentPlatform === 'macos';
 			} catch (error) {
-				console.error('プラットフォーム判定に失敗:', error);
+				console.error('Failed to detect platform:', error);
 				isMacOS = false;
 			}
 		};

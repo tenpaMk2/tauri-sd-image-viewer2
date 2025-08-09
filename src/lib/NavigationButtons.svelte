@@ -30,7 +30,7 @@
 			<button
 				class="btn btn-circle btn-ghost btn-lg"
 				class:btn-disabled={isNavigating}
-				aria-label="前の画像"
+				aria-label="Previous image"
 				onclick={goToPrevious}
 			>
 				{#if isNavigating}
@@ -52,7 +52,7 @@
 			<button
 				class="btn btn-circle btn-ghost btn-lg"
 				class:btn-disabled={isNavigating}
-				aria-label="次の画像"
+				aria-label="Next image"
 				onclick={goToNext}
 			>
 				{#if isNavigating}

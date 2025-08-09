@@ -10,7 +10,7 @@
 
 {#if metadata.exifInfo}
 	<div class="rounded-lg bg-base-300 p-3">
-		<h3 class="mb-2 text-sm font-semibold">Exif情報</h3>
+		<h3 class="mb-2 text-sm font-semibold">Exif Info</h3>
 		<div class="space-y-1.5 text-xs">
 			{#if metadata.exifInfo.date_time_original}
 				<div class="flex justify-between">

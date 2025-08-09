@@ -138,7 +138,7 @@
 			}
 
 			if (imageFiles.length === 0) {
-				loadingState.error = '画像ファイルが見つかりません';
+				loadingState.error = 'No image files found';
 				loadingState.isLoading = false;
 				loadingState.isProcessing = false;
 				return;
@@ -156,7 +156,7 @@
 			loadTagData();
 		} catch (err) {
 			loadingState.error =
-				err instanceof Error ? err.message : '画像ファイルの読み込みに失敗しました';
+				err instanceof Error ? err.message : 'Failed to load image files';
 			console.error('Failed to load image files:', err);
 			loadingState.isLoading = false;
 			loadingState.isProcessing = false;
@@ -344,10 +344,10 @@
 				<div class="mb-4 flex items-center justify-between rounded-lg bg-base-200 p-3">
 					<div class="flex items-center gap-3">
 						<div class="loading loading-sm loading-spinner"></div>
-						<span class="text-sm">サムネイル生成中...</span>
+						<span class="text-sm">Generating thumbnails...</span>
 					</div>
 					<div class="text-sm text-base-content/70">
-						{loadingState.loadedCount} / {loadingState.totalCount} 完了 ({thumbnails.size} 表示中)
+						{loadingState.loadedCount} / {loadingState.totalCount} completed ({thumbnails.size} displayed)
 					</div>
 				</div>
 			{/if}

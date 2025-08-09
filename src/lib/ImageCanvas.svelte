@@ -144,7 +144,7 @@
 	{:else if isLoading}
 		<div class="flex flex-col items-center gap-2 text-white">
 			<span class="loading loading-lg loading-spinner"></span>
-			<span class="opacity-80">画像を読み込み中...</span>
+			<span class="opacity-80">Loading image...</span>
 		</div>
 	{/if}
 
@@ -153,11 +153,11 @@
 		<button
 			class="btn absolute right-4 bottom-4 bg-black/60 text-white btn-ghost backdrop-blur-sm btn-sm hover:bg-black/80"
 			onclick={resetZoom}
-			title="ズームをリセット (1:1)"
-			aria-label="ズームをリセット"
+			title="Reset zoom (1:1)"
+			aria-label="Reset zoom"
 		>
 			<Icon icon="lucide:zoom-out" class="h-4 w-4" />
-			リセット
+			Reset
 		</button>
 	{/if}
 
@@ -174,7 +174,7 @@
 						class="mask bg-white mask-star-2 hover:bg-gray-200"
 						checked={i + 1 === (metadata.exifInfo.rating || 0)}
 						onchange={() => updateRating(i + 1)}
-						aria-label="{i + 1}つ星"
+						aria-label="{i + 1} star"
 					/>
 				{/each}
 			</div>

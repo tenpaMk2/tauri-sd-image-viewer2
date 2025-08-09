@@ -18,10 +18,10 @@
 			<button
 				class="badge badge-outline text-xs hover:badge-primary"
 				onclick={() => copyToClipboard(metadata.sdParameters?.raw || '')}
-				title="原文をコピー"
+				title="Copy raw text"
 			>
 				<Icon icon="lucide:copy" class="mr-1 h-3 w-3" />
-				コピー
+				Copy
 			</button>
 		</h3>
 		<div class="space-y-2 text-xs">
@@ -29,12 +29,12 @@
 			{#if metadata.sdParameters.positive_sd_tags.length > 0}
 				<div class="space-y-1">
 					<div class="flex items-center gap-2">
-						<div class="font-medium text-base-content/70">プロンプト:</div>
+						<div class="font-medium text-base-content/70">Prompt:</div>
 						<button
 							class="btn btn-ghost btn-xs"
 							onclick={() =>
 								copyToClipboard(formatSdTags(metadata.sdParameters?.positive_sd_tags || []))}
-							title="プロンプトをコピー"
+							title="Copy prompt"
 						>
 							<Icon icon="lucide:copy" class="h-3 w-3" />
 						</button>
@@ -53,12 +53,12 @@
 			{#if metadata.sdParameters.negative_sd_tags.length > 0}
 				<div class="space-y-1">
 					<div class="flex items-center gap-2">
-						<div class="font-medium text-base-content/70">ネガティブプロンプト:</div>
+						<div class="font-medium text-base-content/70">Negative Prompt:</div>
 						<button
 							class="btn btn-ghost btn-xs"
 							onclick={() =>
 								copyToClipboard(formatSdTags(metadata.sdParameters?.negative_sd_tags || []))}
-							title="ネガティブプロンプトをコピー"
+							title="Copy negative prompt"
 						>
 							<Icon icon="lucide:copy" class="h-3 w-3" />
 						</button>

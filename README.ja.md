@@ -1,6 +1,6 @@
 # Tauri SD Image Viewer
 
-_[English](README.md) | 日本語_
+_[English🌐](README.md) | 日本語🇯🇵_
 
 Tauri v2で構築されたデスクトップ画像ビューアーアプリケーション。Stable Diffusionのメタデータ表示と管理に特化しています。
 

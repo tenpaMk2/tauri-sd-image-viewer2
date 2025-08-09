@@ -1,7 +1,7 @@
 import { open } from '@tauri-apps/plugin-dialog';
 import { writable } from 'svelte/store';
 import type { ImageMetadata } from '../image/types';
-import { getDirectoryFromPath } from '../image/utils';
+import { getDirectoryFromPath, isDirectory, isImageFile } from '../image/utils';
 import { unifiedMetadataService } from '../services/unified-metadata-service';
 import { globalThumbnailService } from '../services/global-thumbnail-service';
 import type { ViewMode } from '../ui/types';
@@ -23,6 +23,7 @@ export type AppActions = {
 	handleBackToGrid: () => void;
 	handleBackToWelcome: () => void;
 	refreshCurrentImageMetadata: () => Promise<void>;
+	handleDroppedPaths: (paths: string[]) => Promise<void>;
 };
 
 // 従来のwritableストアを使用
@@ -148,6 +149,38 @@ const refreshCurrentImageMetadata = async (): Promise<void> => {
 	}
 };
 
+const handleDroppedPaths = async (paths: string[]): Promise<void> => {
+	if (paths.length === 0) return;
+
+	const firstPath = paths[0];
+
+	try {
+		if (await isDirectory(firstPath)) {
+			globalThumbnailService.clearActiveService();
+			appState.update((state) => ({
+				...state,
+				selectedDirectory: firstPath,
+				viewMode: 'grid'
+			}));
+		} else if (isImageFile(firstPath)) {
+			globalThumbnailService.stopActiveQueue();
+
+			const imageMetadata = await unifiedMetadataService.getImageMetadataUnsafe(firstPath);
+			const selectedDirectory = await getDirectoryFromPath(firstPath);
+
+			appState.update((state) => ({
+				...state,
+				selectedImagePath: firstPath,
+				imageMetadata,
+				selectedDirectory,
+				viewMode: 'viewer'
+			}));
+		}
+	} catch (error) {
+		console.error('Error processing dropped path:', error);
+	}
+};
+
 export const appStore = {
 	subscribe: appState.subscribe,
 	actions: {
@@ -159,6 +192,7 @@ export const appStore = {
 		handleImageSelect,
 		handleBackToGrid,
 		handleBackToWelcome,
-		refreshCurrentImageMetadata
+		refreshCurrentImageMetadata,
+		handleDroppedPaths
 	}
 };

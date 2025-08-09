@@ -4,9 +4,34 @@
 	import ViewerPage from '$lib/ViewerPage.svelte';
 	import WelcomeScreen from '$lib/WelcomeScreen.svelte';
 	import { appStore } from '$lib/stores/app-store';
+	import { getCurrentWebview } from '@tauri-apps/api/webview';
+	import { onMount } from 'svelte';
 
 	$: state = $appStore;
 	const { actions } = appStore;
+
+	onMount(() => {
+		const setupDragDrop = async () => {
+			const webview = getCurrentWebview();
+			const unlisten = await webview.onDragDropEvent((event) => {
+				if (event.payload.type === 'drop' && event.payload.paths?.length > 0) {
+					actions.handleDroppedPaths(event.payload.paths);
+				}
+			});
+
+			return unlisten;
+		};
+
+		let unlistenPromise: Promise<() => void> | null = null;
+
+		unlistenPromise = setupDragDrop();
+
+		return () => {
+			if (unlistenPromise) {
+				unlistenPromise.then((unlisten) => unlisten());
+			}
+		};
+	});
 </script>
 
 <svelte:head>

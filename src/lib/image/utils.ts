@@ -65,3 +65,18 @@ const formatFileSize = (bytes: number): string => {
 export const getDirectoryFromPath = async (path: string): Promise<string> => {
 	return await dirname(path);
 };
+
+export const isDirectory = async (path: string): Promise<boolean> => {
+	try {
+		const fileStats = await stat(path);
+		return fileStats.isDirectory;
+	} catch {
+		return false;
+	}
+};
+
+export const isImageFile = (path: string): boolean => {
+	const supportedExtensions = ['png', 'jpg', 'jpeg', 'webp'];
+	const extension = path.split('.').pop()?.toLowerCase();
+	return extension ? supportedExtensions.includes(extension) : false;
+};

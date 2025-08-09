@@ -31,8 +31,11 @@
 		hoveredRating = 0;
 	};
 
-	const handleRatingClick = async (e: Event, newRating: number) => {
+	const handleRatingClick = async (e: Event, clickedRating: number) => {
 		e.stopPropagation(); // 親要素のクリックイベントを防ぐ
+		
+		// 同じ星をクリックした場合は0に戻す、そうでなければ新しいRating値を設定
+		const newRating = (rating || 0) === clickedRating ? 0 : clickedRating;
 		
 		if (onRatingChange) {
 			onRatingChange(newRating);

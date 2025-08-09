@@ -27,7 +27,7 @@
 
 <div class="flex h-full flex-col items-center justify-center bg-base-100 text-center">
 	<div class="mb-4 text-6xl">📁</div>
-	<h2 class="mb-2 text-2xl font-bold">Image Viewer</h2>
+	<h2 class="mb-2 text-2xl font-bold">Tauri SD Image Viewer</h2>
 	{#if version}
 		<p class="mb-2 text-sm text-base-content/50">v{version}</p>
 	{/if}

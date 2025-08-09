@@ -11,7 +11,7 @@
 		type ImageViewState
 	} from './image/image-manipulation';
 	import type { ImageMetadata } from './image/types';
-	import { updateImageRating } from './utils/rating-utils';
+	import { unifiedMetadataService } from './services/unified-metadata-service.svelte';
 
 	const {
 		imageUrl,
@@ -30,6 +30,11 @@
 		onRatingUpdate?: () => void;
 		isUIVisible?: boolean;
 	} = $props();
+
+	// Rating書き込み中かどうかをリアクティブにチェック
+	const isRatingWriting = $derived(
+		imagePath ? unifiedMetadataService.isRatingWriting(imagePath) : false
+	);
 
 	let containerRef: HTMLDivElement;
 	let imageRef = $state<HTMLImageElement>();
@@ -81,16 +86,16 @@
 		});
 	};
 
-	// Rating更新機能
+	// Rating更新機能（排他制御付き）
 	const updateRating = async (rating: number) => {
 		if (!imagePath) return;
 
-		try {
-			await updateImageRating(imagePath, rating);
-			// Rating更新後のコールバック実行
+		const success = await unifiedMetadataService.updateImageRating(imagePath, rating);
+		if (success) {
+			// Rating更新成功時のコールバック実行
 			onRatingUpdate?.();
-		} catch (error) {
-			// エラーハンドリングは共通関数内で処理済み
+		} else {
+			console.warn('Rating更新が拒否されました（書き込み中またはエラー）:', imagePath);
 		}
 	};
 
@@ -166,18 +171,24 @@
 		<div
 			class="absolute bottom-4 left-1/2 -translate-x-1/2 transform rounded-lg bg-black/60 px-3 pt-1 pb-2 opacity-70 backdrop-blur-sm"
 		>
-			<div class="rating-sm rating gap-0.5">
-				{#each Array(5) as _, i}
-					<input
-						type="radio"
-						name="rating-overlay-{imagePath}"
-						class="mask bg-white mask-star-2 hover:bg-gray-200"
-						checked={i + 1 === (metadata.exifInfo.rating || 0)}
-						onchange={() => updateRating(i + 1)}
-						aria-label="{i + 1} star"
-					/>
-				{/each}
-			</div>
+			{#if isRatingWriting}
+				<!-- Rating書き込み中のスピナー -->
+				<span class="loading loading-sm loading-spinner text-white" title="Saving rating..."></span>
+			{:else}
+				<!-- 通常のRating表示 -->
+				<div class="rating-sm rating gap-0.5">
+					{#each Array(5) as _, i}
+						<input
+							type="radio"
+							name="rating-overlay-{imagePath}"
+							class="mask bg-white mask-star-2 hover:bg-gray-200"
+							checked={i + 1 === (metadata.exifInfo.rating || 0)}
+							onchange={() => updateRating(i + 1)}
+							aria-label="{i + 1} star"
+						/>
+					{/each}
+				</div>
+			{/if}
 		</div>
 	{/if}
 </div>

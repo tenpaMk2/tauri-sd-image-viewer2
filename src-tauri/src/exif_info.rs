@@ -530,9 +530,9 @@ fn write_xmp_to_png(path: &Path, file_data: &[u8], xmp_data: &str) -> Result<(),
     Ok(())
 }
 
-/// 画像のレーティングをEXIFに書き込み（Tauri API）
+/// 画像のレーティングをEXIFに書き込み（Tauri API 非同期版）
 #[tauri::command]
-pub fn write_exif_image_rating(path: String, rating: u32) -> Result<(), String> {
+pub async fn write_exif_image_rating(path: String, rating: u32) -> Result<(), String> {
     if 5 < rating {
         return Err("レーティングは0-5の範囲で指定してください".to_string());
     }
@@ -581,7 +581,6 @@ pub fn write_exif_image_rating(path: String, rating: u32) -> Result<(), String> 
     if let Err(e) = write_xmp_rating_to_file(&image_path, rating) {
         // XMP書き込みに失敗してもExifは成功しているので警告レベルで記録
         eprintln!("XMP書き込み警告: {}", e);
-    } else {
     }
 
     Ok(())

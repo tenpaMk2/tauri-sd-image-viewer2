@@ -2,7 +2,7 @@ import { open } from '@tauri-apps/plugin-dialog';
 import { writable } from 'svelte/store';
 import type { ImageMetadata } from '../image/types';
 import { getDirectoryFromPath, isDirectory, isImageFile } from '../image/utils';
-import { unifiedMetadataService } from '../services/unified-metadata-service';
+import { unifiedMetadataService } from '../services/unified-metadata-service.svelte';
 import { globalThumbnailService } from '../services/global-thumbnail-service';
 import type { ViewMode } from '../ui/types';
 

@@ -13,7 +13,9 @@
 	<div class="space-y-1.5 text-xs">
 		<div class="flex justify-between">
 			<div class="text-base-content/70">Filename:</div>
-			<div class="text-right font-mono max-w-[60%] break-words overflow-wrap-anywhere">{metadata.filename}</div>
+			<div class="overflow-wrap-anywhere max-w-[60%] text-right font-mono break-words">
+				{metadata.filename}
+			</div>
 		</div>
 
 		<div class="flex justify-between">

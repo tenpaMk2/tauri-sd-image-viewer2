@@ -144,7 +144,7 @@
 			<div class="flex items-center gap-2">
 				<input
 					type="text"
-					placeholder={tagData ? "Filter by SD tags..." : "Loading SD tags..."}
+					placeholder={tagData ? 'Filter by SD tags...' : 'Loading SD tags...'}
 					class="input-bordered input input-sm flex-1"
 					list="sd-tags"
 					bind:value={tagInput}
@@ -185,7 +185,6 @@
 			{/if}
 		</div>
 	</div>
-
 </div>
 
 <!-- Help Modal -->

@@ -140,7 +140,7 @@ export class ThumbnailQueueManager {
 						const fileData = await readFile(result.thumbnail.cache_path);
 						const blob = new Blob([new Uint8Array(fileData)], { type: result.thumbnail.mime_type });
 						const thumbnailUrl = URL.createObjectURL(blob);
-						
+
 						// デバッグ：ファイル読み込みの詳細確認
 						console.log('🔄 QueueManager ファイル読み込み詳細:', {
 							originalPath: result.thumbnail.cache_path,

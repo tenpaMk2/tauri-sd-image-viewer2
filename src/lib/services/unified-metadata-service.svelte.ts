@@ -33,6 +33,10 @@ export class UnifiedMetadataService {
 	private loadingPromises = new Map<string, Promise<UnifiedMetadataEntry>>();
 	private maxCacheSize = 100;
 
+	// Rating書き込み中のファイルを管理（リアクティブ）
+	// Setの代わりに配列を使用してより確実なリアクティビティを実現
+	private writingFilesArray = $state<string[]>([]);
+
 	/**
 	 * 画像メタデータを取得（ViewerPage用）
 	 */
@@ -74,21 +78,36 @@ export class UnifiedMetadataService {
 	}
 
 	/**
-	 * レーティングを更新
+	 * レーティングを更新（ロック制御付き）
 	 */
 	async updateImageRating(imagePath: string, newRating: number): Promise<boolean> {
+		// 既に書き込み中の場合は拒否
+		if (this.writingFilesArray.includes(imagePath)) {
+			console.warn('Rating書き込み中のためスキップ:', imagePath);
+			return false;
+		}
+
+		// ロック取得（配列に追加）
+		this.writingFilesArray.push(imagePath);
+
 		try {
 			await invoke('write_exif_image_rating', {
 				path: imagePath,
 				rating: newRating
 			});
 
-			// キャッシュを無効化して次回取得時に最新データを取得
-			this.invalidateMetadata(imagePath);
+			// キャッシュされたrating情報のみを更新（重い再読み込みを回避）
+			this.updateCachedRating(imagePath, newRating);
 			return true;
 		} catch (error) {
 			console.error('Rating更新に失敗:', imagePath, error);
 			return false;
+		} finally {
+			// ロック解除（配列から削除）
+			const index = this.writingFilesArray.indexOf(imagePath);
+			if (index > -1) {
+				this.writingFilesArray.splice(index, 1);
+			}
 		}
 	}
 
@@ -164,11 +183,16 @@ export class UnifiedMetadataService {
 	/**
 	 * 軽量なファイル変更検出
 	 */
-	private async isFileUnchanged(imagePath: string, cachedFileInfo: LightweightFileInfo): Promise<boolean> {
+	private async isFileUnchanged(
+		imagePath: string,
+		cachedFileInfo: LightweightFileInfo
+	): Promise<boolean> {
 		try {
 			const currentFileInfo = await this.getCurrentFileInfo(imagePath);
-			return currentFileInfo.size === cachedFileInfo.size &&
-				   currentFileInfo.mtime === cachedFileInfo.mtime;
+			return (
+				currentFileInfo.size === cachedFileInfo.size &&
+				currentFileInfo.mtime === cachedFileInfo.mtime
+			);
 		} catch {
 			return false; // ファイルアクセス不可 = 変更とみなす
 		}
@@ -242,6 +266,37 @@ export class UnifiedMetadataService {
 	 */
 	hasMetadata(imagePath: string): boolean {
 		return this.cache.has(imagePath);
+	}
+
+	/**
+	 * Rating書き込み中のファイル一覧を取得（リアクティブ追跡用）
+	 */
+	get currentWritingFiles(): readonly string[] {
+		return this.writingFilesArray;
+	}
+
+	/**
+	 * Rating書き込み中かどうかをチェック（リアクティブ）
+	 */
+	isRatingWriting(imagePath: string): boolean {
+		return this.writingFilesArray.includes(imagePath);
+	}
+
+	/**
+	 * キャッシュされたRating情報のみを更新（軽量処理）
+	 */
+	private updateCachedRating(imagePath: string, newRating: number): void {
+		const entry = this.cache.get(imagePath);
+		if (entry) {
+			// ImageMetadataのrating更新
+			if (entry.imageMetadata.exifInfo) {
+				entry.imageMetadata.exifInfo.rating = newRating;
+			}
+			// ThumbnailCacheInfoのrating更新
+			if (entry.thumbnailCacheInfo) {
+				entry.thumbnailCacheInfo.rating = newRating;
+			}
+		}
 	}
 }
 

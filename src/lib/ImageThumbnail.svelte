@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { unifiedMetadataService } from './services/unified-metadata-service.svelte';
+
 	const {
 		imagePath,
 		thumbnailUrl,
@@ -21,33 +23,11 @@
 
 	let isRatingHovered = $state(false);
 	let hoveredRating = $state(0);
+	
+	// Rating書き込み中かどうかをリアクティブにチェック（配列版）
+	const isRatingWriting = $derived(unifiedMetadataService.currentWritingFiles.includes(imagePath));
 
-	// デバッグログ
-	$effect(() => {
-		if (imagePath.includes('00047') || imagePath.includes('00048')) {
-			console.log('ImageThumbnail デバッグ:', {
-				imagePath: imagePath.split('/').pop(),
-				thumbnailUrl: thumbnailUrl?.substring(0, 50) + '...',
-				isLoading,
-				hasThumbnailUrl: !!thumbnailUrl,
-				componentState: thumbnailUrl ? 'サムネイル有り' : isLoading ? 'ローディング中' : 'No Image'
-			});
-		}
-	});
 
-	// サムネイル表示状態の詳細ログ
-	$effect(() => {
-		const fileName = imagePath.split('/').pop();
-		if (fileName && (fileName.includes('00047') || fileName.includes('00048'))) {
-			console.log('レンダリング状態:', {
-				fileName,
-				renderCondition: thumbnailUrl ? 'thumbnailUrl' : isLoading ? 'loading' : 'noImage',
-				willShowThumbnail: !!thumbnailUrl,
-				willShowLoading: isLoading,
-				willShowNoImage: !thumbnailUrl && !isLoading
-			});
-		}
-	});
 
 	const handleClick = (event?: MouseEvent): void => {
 		if (onToggleSelection) {
@@ -114,24 +94,6 @@
 					alt="thumbnail"
 					class="h-full w-full rounded object-contain"
 					loading="lazy"
-					onload={() => {
-						const fileName = imagePath.split('/').pop();
-						if (fileName && (fileName.includes('00047') || fileName.includes('00048'))) {
-							console.log('画像読み込み完了:', fileName);
-						}
-					}}
-					onerror={(e) => {
-						const fileName = imagePath.split('/').pop();
-						console.error('🚨 画像読み込みエラー詳細:', {
-							fileName,
-							thumbnailUrl,
-							actualSrc: (e.target as HTMLImageElement)?.src || 'unknown',
-							urlPrefix: thumbnailUrl?.substring(0, 100),
-							error: (e as Event).type || 'unknown error',
-							eventType: e.type,
-							currentTarget: (e.currentTarget as HTMLElement)?.tagName
-						});
-					}}
 				/>
 			</div>
 		{:else if isLoading}
@@ -154,20 +116,29 @@
 		aria-label="Image Rating"
 		onmouseleave={handleRatingMouseLeave}
 	>
-		<div class="flex gap-0.5" title={`Rating: ${rating || 0}/5 (click to change)`}>
-			{#each Array(5) as _, i}
-				<button
-					class="text-sm transition-colors duration-100 hover:scale-110 {i < displayRating
-						? 'text-white'
-						: 'text-white/30'}"
-					onmouseenter={() => handleRatingMouseEnter(i + 1)}
-					onclick={(e) => handleRatingClick(e, i + 1)}
-					style="text-shadow: 0 1px 2px rgba(0,0,0,0.8);"
-					aria-label={`${i + 1} star rating`}
-				>
-					★
-				</button>
-			{/each}
-		</div>
+		{#if isRatingWriting}
+			<!-- Rating書き込み中のスピナー -->
+			<div class="flex items-center gap-1 bg-black/50 px-2 py-1 rounded">
+				<span class="loading loading-xs loading-spinner text-white"></span>
+				<span class="text-xs text-white">Saving...</span>
+			</div>
+		{:else}
+			<!-- 通常のRating表示 -->
+			<div class="flex gap-0.5" title={`Rating: ${rating || 0}/5 (click to change)`}>
+				{#each Array(5) as _, i}
+					<button
+						class="text-sm transition-colors duration-100 hover:scale-110 {i < displayRating
+							? 'text-white'
+							: 'text-white/30'}"
+						onmouseenter={() => handleRatingMouseEnter(i + 1)}
+						onclick={(e) => handleRatingClick(e, i + 1)}
+						style="text-shadow: 0 1px 2px rgba(0,0,0,0.8);"
+						aria-label={`${i + 1} star rating`}
+					>
+						★
+					</button>
+				{/each}
+			</div>
+		{/if}
 	</div>
 </div>

@@ -1,7 +1,7 @@
 import { invoke } from '@tauri-apps/api/core';
 import { join } from '@tauri-apps/api/path';
 import { readDir, readFile } from '@tauri-apps/plugin-fs';
-import type { ImageMetadataInfo, SdParameters } from '../types/shared-types';
+import type { ImageMetadataInfo } from '../types/shared-types';
 import { detectImageMimeType, SUPPORTED_IMAGE_EXTS } from './mime-type';
 import type { ImageData, MimeType } from './types';
 
@@ -61,7 +61,6 @@ export const loadImage = async (filePath: string): Promise<ImageData> => {
 	}
 };
 
-
 /**
  * ハイブリッドアプローチ: 画像とメタデータを並行取得
  * 画像データはフロントエンド、メタデータはRustで効率的に処理
@@ -87,9 +86,3 @@ export const loadImageWithMetadata = async (
 		throw new Error(`Failed to get image info: ${filePath}`);
 	}
 };
-
-/**
- * レガシー関数（後方互換性のため）
- * @deprecated loadImageWithMetadata を使用してください
- */
-export const loadComprehensiveImageInfo = loadImageWithMetadata;

@@ -1,11 +1,19 @@
 <script lang="ts">
 	import type { ImageMetadata } from '../../image/types';
+	import { unifiedMetadataService } from '../../services/unified-metadata-service.svelte';
 
 	const {
-		metadata
+		metadata,
+		imagePath
 	}: {
 		metadata: ImageMetadata;
+		imagePath?: string;
 	} = $props();
+
+	// Rating書き込み中かどうかをリアクティブにチェック（配列版）
+	const isRatingWriting = $derived(
+		imagePath ? unifiedMetadataService.currentWritingFiles.includes(imagePath) : false
+	);
 </script>
 
 {#if metadata.exifInfo}
@@ -36,7 +44,18 @@
 			{#if metadata.exifInfo.rating !== undefined && metadata.exifInfo.rating !== null}
 				<div class="flex justify-between">
 					<div class="text-base-content/70">Rating:</div>
-					<div>{metadata.exifInfo.rating || 0}/5</div>
+					<div class="flex items-center gap-2">
+						{#if isRatingWriting}
+							<!-- Rating書き込み中のスピナー -->
+							<div class="flex items-center gap-1">
+								<span class="loading loading-xs loading-spinner"></span>
+								<span class="text-xs opacity-70">Saving...</span>
+							</div>
+						{:else}
+							<!-- 通常のRating表示 -->
+							<span>{metadata.exifInfo.rating || 0}/5</span>
+						{/if}
+					</div>
 				</div>
 			{/if}
 		</div>

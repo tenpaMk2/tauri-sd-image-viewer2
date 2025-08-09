@@ -5,7 +5,7 @@
 
 import type { SdTag, SdParameters } from '../types/shared-types';
 import { ThumbnailService } from './thumbnail-service';
-import { unifiedMetadataService } from './unified-metadata-service';
+import { unifiedMetadataService } from './unified-metadata-service.svelte';
 
 export type TagCount = {
 	name: string;

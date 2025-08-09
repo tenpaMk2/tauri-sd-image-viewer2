@@ -2,6 +2,7 @@
 	import ImageThumbnail from './ImageThumbnail.svelte';
 	import { ThumbnailService } from './services/thumbnail-service';
 	import { globalThumbnailService } from './services/global-thumbnail-service';
+	import { unifiedMetadataService } from './services/unified-metadata-service.svelte';
 	import { filterStore } from './stores/filter-store.svelte';
 	import { TagAggregationService } from './services/tag-aggregation-service';
 	import type { TagAggregationResult } from './services/tag-aggregation-service';
@@ -91,11 +92,7 @@
 
 		if (imageFiles.length > 0) {
 			// フィルタを適用して表示用の画像リストを更新（同期処理で高速化）
-			const filtered = filterStore.filterImages(
-				imageFiles,
-				ratings,
-				tagAggregationService
-			);
+			const filtered = filterStore.filterImages(imageFiles, ratings, tagAggregationService);
 			filteredImageFiles = filtered;
 
 			// 親コンポーネントにフィルタ結果を通知
@@ -155,16 +152,12 @@
 			// 第3段階：SDタグデータを集計
 			loadTagData();
 		} catch (err) {
-			loadingState.error =
-				err instanceof Error ? err.message : 'Failed to load image files';
+			loadingState.error = err instanceof Error ? err.message : 'Failed to load image files';
 			console.error('Failed to load image files:', err);
 			loadingState.isLoading = false;
 			loadingState.isProcessing = false;
 		}
 	};
-
-
-
 
 	// シンプルなキューベースのサムネイル生成（キュー停止機能付き）
 	const loadThumbnailsWithSimpleQueue = async () => {
@@ -209,7 +202,7 @@
 
 			// 最終結果をセット
 			thumbnails = resultThumbnails;
-			
+
 			// 全レーティングを読み込み
 			await loadRatings(imageFiles);
 			ratingUpdateTrigger = Date.now();
@@ -221,7 +214,6 @@
 			loadingState.isProcessing = false;
 		}
 	};
-
 
 	// クリーンアップ関数
 	const cleanup = () => {
@@ -284,19 +276,31 @@
 	};
 
 	const handleRatingChange = async (imagePath: string, newRating: number): Promise<void> => {
-		const success = await thumbnailService.updateImageRating(imagePath, newRating);
+		// 既に書き込み中の場合は処理をスキップ
+		if (unifiedMetadataService.isRatingWriting(imagePath)) {
+			console.log('Rating書き込み中のためスキップ:', imagePath);
+			return;
+		}
+
+		// UI応答性向上のため、ローカル状態を先に更新
+		const newRatings = new Map(ratings);
+		newRatings.set(imagePath, newRating);
+		ratings = newRatings;
+		ratingUpdateTrigger = Date.now(); // フィルタ更新をトリガー
+
+		// 非同期でファイル更新（排他制御付き）
+		// この時点でスピナーが表示されるはず
+		const success = await unifiedMetadataService.updateImageRating(imagePath, newRating);
+		
 		if (success) {
-			// ローカルratingsマップを即座に更新
-			const newRatings = new Map(ratings);
-			newRatings.set(imagePath, newRating);
-			ratings = newRatings;
-			
-			// 成功時にリアクティブ更新をトリガー
-			ratingUpdateTrigger = Date.now();
 			console.log('Rating更新成功:', imagePath, newRating);
 		} else {
-			// エラー時の処理
+			// 失敗時は元の値に戻す（排他制御により拒否された場合も含む）
 			console.warn('Rating更新に失敗しました:', imagePath);
+			const revertRatings = new Map(ratings);
+			revertRatings.delete(imagePath); // 元の値を再取得させる
+			ratings = revertRatings;
+			ratingUpdateTrigger = Date.now();
 		}
 	};
 

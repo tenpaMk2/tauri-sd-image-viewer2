@@ -15,13 +15,15 @@
 		imagePath,
 		onImageChange,
 		openFileDialog,
-		onSwitchToGrid
+		onSwitchToGrid,
+		refreshMetadata
 	}: {
 		metadata: ImageMetadata;
 		imagePath: string;
 		onImageChange: (newPath: string) => Promise<void>;
 		openFileDialog: () => void;
 		onSwitchToGrid?: () => void;
+		refreshMetadata?: () => Promise<void>;
 	} = $props();
 
 	// 画像表示関連の状態
@@ -130,6 +132,20 @@
 
 	const handleInfoPanelBlur = (): void => {
 		isInfoPanelFocused = false;
+	};
+
+	// Rating更新用の軽量メタデータ再読み込み（画像は再読み込みしない）
+	const refreshMetadataOnly = async (): Promise<void> => {
+		if (refreshMetadata) {
+			// 軽量なメタデータ更新を実行
+			await refreshMetadata();
+		} else {
+			// fallback: 従来の方法
+			const currentPath = navigationState.files[navigationState.currentIndex];
+			if (currentPath) {
+				await onImageChange(currentPath);
+			}
+		}
 	};
 
 	const refreshCurrentImage = async (): Promise<void> => {
@@ -326,7 +342,7 @@
 			error={imageState.error}
 			{metadata}
 			imagePath={navigationState.files[navigationState.currentIndex]}
-			onRatingUpdate={() => refreshCurrentImage()}
+			onRatingUpdate={() => refreshMetadataOnly()}
 			{isUIVisible}
 		/>
 		<NavigationButtons
@@ -358,7 +374,7 @@
 			<MetadataPanel
 				{metadata}
 				imagePath={navigationState.files[navigationState.currentIndex]}
-				onRatingUpdate={() => refreshCurrentImage()}
+				onRatingUpdate={() => refreshMetadataOnly()}
 				onFocus={handleInfoPanelFocus}
 				onBlur={handleInfoPanelBlur}
 			/>

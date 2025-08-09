@@ -2,7 +2,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { readFile } from '@tauri-apps/plugin-fs';
 import { getImageFiles } from '../image/image-loader';
 import type { BatchThumbnailPathResult, ThumbnailCacheInfo } from '../types/shared-types';
-import { unifiedMetadataService } from './unified-metadata-service';
+import { unifiedMetadataService } from './unified-metadata-service.svelte';
 
 // サムネイル処理のサービス（統合メタデータサービス対応版）
 export class ThumbnailService {
@@ -21,7 +21,7 @@ export class ThumbnailService {
 					const fileData = await readFile(result.thumbnail.cache_path);
 					const blob = new Blob([new Uint8Array(fileData)], { type: result.thumbnail.mime_type });
 					const url = URL.createObjectURL(blob);
-					
+
 					// サムネイルファイル読み込み完了
 
 					if (result.cache_info) {
@@ -44,9 +44,6 @@ export class ThumbnailService {
 		}
 		return null;
 	}
-
-
-
 
 	async getImageFiles(directoryPath: string): Promise<string[]> {
 		return await getImageFiles(directoryPath);
@@ -89,7 +86,6 @@ export class ThumbnailService {
 		return unifiedMetadataService.getCacheSize();
 	}
 
-
 	// 現在のキューを停止
 	stopCurrentQueue(): void {
 		// シンプルキューを停止
@@ -121,9 +117,12 @@ export class ThumbnailService {
 			}
 
 			try {
-				const results: BatchThumbnailPathResult[] = await invoke('load_thumbnails_batch_path_only', {
-					imagePaths: chunk
-				});
+				const results: BatchThumbnailPathResult[] = await invoke(
+					'load_thumbnails_batch_path_only',
+					{
+						imagePaths: chunk
+					}
+				);
 
 				// デバッグ：SimpleQueueからのRustレスポンス詳細確認
 				console.log('🔧 SimpleQueue CRITICAL DEBUG:', {
@@ -160,17 +159,19 @@ export class ThumbnailService {
 								path: result.thumbnail.cache_path,
 								fileSize: fileData.length
 							});
-							
-							const blob = new Blob([new Uint8Array(fileData)], { type: result.thumbnail.mime_type });
+
+							const blob = new Blob([new Uint8Array(fileData)], {
+								type: result.thumbnail.mime_type
+							});
 							const url = URL.createObjectURL(blob);
-							
+
 							console.log('🔄 SimpleQueue ファイル読み込み:', {
 								originalPath: result.thumbnail.cache_path,
 								fileSize: fileData.length,
 								blobUrl: url.substring(0, 50) + '...',
 								imagePath: result.path.split('/').pop()
 							});
-							
+
 							newThumbnails.set(result.path, url);
 							chunkThumbnails.set(result.path, url);
 
@@ -214,5 +215,4 @@ export class ThumbnailService {
 	stopSimpleQueue(): void {
 		this.stopQueue = true;
 	}
-
 }

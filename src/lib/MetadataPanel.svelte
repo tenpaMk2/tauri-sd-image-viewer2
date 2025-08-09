@@ -4,7 +4,7 @@
 	import ExifInfoSection from './components/metadata/ExifInfoSection.svelte';
 	import SdParamsSection from './components/metadata/SdParamsSection.svelte';
 	import type { ImageMetadata } from './image/types';
-	import { updateImageRating } from './utils/rating-utils';
+	import { unifiedMetadataService } from './services/unified-metadata-service.svelte';
 
 	const {
 		metadata,
@@ -20,16 +20,16 @@
 		onBlur?: () => void;
 	} = $props();
 
-	// Rating更新機能
+	// Rating更新機能（排他制御付き）
 	const updateRating = async (rating: number) => {
 		if (!imagePath) return;
 
-		try {
-			await updateImageRating(imagePath, rating);
-			// Rating更新後のコールバック実行
+		const success = await unifiedMetadataService.updateImageRating(imagePath, rating);
+		if (success) {
+			// Rating更新成功時のコールバック実行
 			onRatingUpdate?.();
-		} catch (error) {
-			// エラーハンドリングは共通関数内で処理済み
+		} else {
+			console.warn('Rating更新が拒否されました（書き込み中またはエラー）:', imagePath);
 		}
 	};
 </script>
@@ -46,7 +46,7 @@
 	<div class="p-3">
 		<div class="metadata-content space-y-3">
 			<BasicInfoSection {metadata} />
-			<ExifInfoSection {metadata} />
+			<ExifInfoSection {metadata} {imagePath} />
 			<SdParamsSection {metadata} />
 			<CameraInfoSection {metadata} />
 		</div>

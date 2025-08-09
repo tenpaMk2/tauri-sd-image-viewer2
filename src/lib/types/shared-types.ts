@@ -43,7 +43,6 @@ export type SdParameters = {
 // 対応ファイル: src-tauri/src/png_handler.rs
 // ==========================================
 
-
 // ==========================================
 // Exif情報
 // 対応ファイル: src-tauri/src/exif_info.rs (予定)

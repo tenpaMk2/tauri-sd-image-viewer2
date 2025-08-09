@@ -6,11 +6,11 @@ A desktop image viewer application built with Tauri v2, specifically designed fo
 
 - **Image Viewing**: Support for PNG, JPEG, and WebP formats
 - **Stable Diffusion Metadata**: Extract and display SD parameters from generated images
-- **EXIF Support**: View detailed EXIF information
-- **Rating System**: Rate images with star ratings (XMP metadata)
+- **EXIF Support**: View basic EXIF information
+- **Rating System**: Rate images with star ratings (writes to both EXIF and XMP metadata)
 - **Thumbnail Grid**: Browse images in a grid layout
 - **Keyboard Navigation**: Navigate images with arrow keys
-- **Tag Filtering**: Filter images by detected tags
+- **SD Tag Filtering**: Filter images by Stable Diffusion tags
 - **Cross-Platform**: Works on macOS and Windows
 
 ## Technology Stack
@@ -64,8 +64,8 @@ bun run tauri:dev
 
 | Format | Features |
 |--------|----------|
-| **PNG** | Full support: SD metadata, EXIF, XMP Rating writing |
-| **JPEG** | Limited support: EXIF, XMP Rating writing (no SD metadata) |
+| **PNG** | Full support: SD metadata, EXIF, EXIF+XMP Rating writing |
+| **JPEG** | Limited support: EXIF, EXIF+XMP Rating writing (no SD metadata) |
 | **WebP** | Basic support: EXIF reading only |
 
 ## Architecture

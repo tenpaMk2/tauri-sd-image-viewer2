@@ -41,7 +41,7 @@ export class UnifiedMetadataService {
 		try {
 			return await invoke<BasicImageInfo>('read_image_metadata_basic', { path: imagePath });
 		} catch (error) {
-			console.error('基本情報の取得に失敗:', imagePath, error);
+			console.error('基本情報の取得に失敗: ' + imagePath + ' ' + error);
 			throw new Error(`Failed to get basic info: ${imagePath}`);
 		}
 	}
@@ -106,7 +106,7 @@ export class UnifiedMetadataService {
 			this.invalidateMetadata(imagePath);
 			return true;
 		} catch (error) {
-			console.error('Rating更新に失敗:', imagePath, error);
+			console.error('Rating更新に失敗: ' + imagePath + ' ' + error);
 			return false;
 		} finally {
 			// ロック解除（配列から削除）

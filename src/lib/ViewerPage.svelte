@@ -92,7 +92,7 @@
 			navigationState.files = updatedNavigation.files;
 			navigationState.currentIndex = updatedNavigation.currentIndex;
 		} catch (error) {
-			console.error('Failed to update navigation from path:', error);
+			console.error('Failed to update navigation from path: ' + error);
 		}
 	};
 
@@ -300,7 +300,7 @@
 			await invoke('set_clipboard_files', { paths: [currentPath] });
 			showSuccessToast('Image copied to clipboard');
 		} catch (error) {
-			console.error('Failed to copy to clipboard:', error);
+			console.error('Failed to copy to clipboard: ' + error);
 		}
 	};
 
@@ -317,7 +317,7 @@
 				const currentPlatform = await platform();
 				isMacOS = currentPlatform === 'macos';
 			} catch (error) {
-				console.error('Failed to detect platform:', error);
+				console.error('Failed to detect platform: ' + error);
 				isMacOS = false;
 			}
 		};

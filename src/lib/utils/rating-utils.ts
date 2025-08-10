@@ -15,7 +15,7 @@ export const updateImageRating = async (imagePath: string, rating: number): Prom
 			rating: rating
 		});
 	} catch (error) {
-		console.error('Rating更新に失敗:', error);
+		console.error('Rating更新に失敗: ' + error);
 		throw error;
 	}
 };

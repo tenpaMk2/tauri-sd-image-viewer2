@@ -1,11 +1,11 @@
 <script lang="ts">
 	import ImageThumbnail from './ImageThumbnail.svelte';
-	import { ThumbnailService } from './services/thumbnail-service';
 	import { globalThumbnailService } from './services/global-thumbnail-service';
+	import type { TagAggregationResult } from './services/tag-aggregation-service';
+	import { TagAggregationService } from './services/tag-aggregation-service';
+	import { ThumbnailService } from './services/thumbnail-service';
 	import { unifiedMetadataService } from './services/unified-metadata-service.svelte';
 	import { filterStore } from './stores/filter-store.svelte';
-	import { TagAggregationService } from './services/tag-aggregation-service';
-	import type { TagAggregationResult } from './services/tag-aggregation-service';
 
 	const {
 		directoryPath,
@@ -71,7 +71,7 @@
 
 	// サムネイル数の変化をリアルタイム監視
 	$effect(() => {
-		console.log('=== サムネイル総数変化 ===', thumbnails.size, '/', imageFiles.length);
+		console.log('=== サムネイル総数変化 === ' + thumbnails.size + ' / ' + imageFiles.length);
 		console.log(
 			'表示可能なサムネイル:',
 			Array.from(thumbnails.keys())
@@ -100,7 +100,7 @@
 				onFilteredImagesUpdate(filtered.length, imageFiles.length);
 			}
 
-			console.log('フィルタ適用結果:', filtered.length, '/', imageFiles.length);
+			console.log('フィルタ適用結果: ' + filtered.length + ' / ' + imageFiles.length);
 		}
 	});
 
@@ -144,7 +144,7 @@
 			loadingState.totalCount = imageFiles.length;
 			loadingState.isLoading = false; // グリッドを表示可能にする
 
-			console.log('画像ファイル一覧取得完了:', imageFiles.length, '個のファイル');
+			console.log('画像ファイル一覧取得完了: ' + imageFiles.length + '個のファイル');
 
 			// 第2段階：シンプルキューをテスト
 			loadThumbnailsWithSimpleQueue();
@@ -153,7 +153,7 @@
 			loadTagData();
 		} catch (err) {
 			loadingState.error = err instanceof Error ? err.message : 'Failed to load image files';
-			console.error('Failed to load image files:', err);
+			console.error('Failed to load image files: ' + err);
 			loadingState.isLoading = false;
 			loadingState.isProcessing = false;
 		}
@@ -162,24 +162,24 @@
 	// シンプルなキューベースのサムネイル生成（キュー停止機能付き）
 	const loadThumbnailsWithSimpleQueue = async () => {
 		console.log('=== loadThumbnailsWithSimpleQueue 開始 ===');
-		console.log('imageFiles:', imageFiles.length, '個のファイル');
+		console.log('imageFiles: ' + imageFiles.length + '個のファイル');
 
 		try {
-			console.log('シンプルキューベースのサムネイル生成開始:', imageFiles.length, '個のファイル');
+			console.log(
+				'シンプルキューベースのサムネイル生成開始: ' + imageFiles.length + '個のファイル'
+			);
 
 			const resultThumbnails = await thumbnailService.loadThumbnailsWithSimpleQueue(
 				imageFiles,
 				(chunkResults) => {
 					console.log('=== シンプルチャンク完了 ===');
-					console.log('チャンク結果受信:', chunkResults.size, '個のサムネイル');
+					console.log('チャンク結果受信: ' + chunkResults.size + '個のサムネイル');
 
 					// 既存のthumbnailsに新しいチャンク結果をマージ
 					const newThumbnails = new Map(thumbnails);
 					for (const [imagePath, thumbnailUrl] of chunkResults) {
 						console.log(
-							'サムネイル追加:',
-							imagePath.split('/').pop(),
-							thumbnailUrl.substring(0, 50) + '...'
+							'サムネイル追加:' + imagePath.split('/').pop() + thumbnailUrl.substring(0, 50) + '...'
 						);
 						newThumbnails.set(imagePath, thumbnailUrl);
 					}
@@ -190,11 +190,11 @@
 					const chunkPaths = Array.from(chunkResults.keys());
 					loadRatings(chunkPaths);
 					ratingUpdateTrigger = Date.now();
-					console.log('🔄 リアルタイム更新、Rating表示更新トリガー:', ratingUpdateTrigger);
+					console.log('🔄 リアルタイム更新、Rating表示更新トリガー: ' + ratingUpdateTrigger);
 					console.log('thumbnails更新 (リアルタイム):', thumbnails.size, '個のサムネイル');
 				},
 				(loadedCount, totalCount) => {
-					console.log('プロセス通知:', loadedCount, '/', totalCount);
+					console.log('プロセス通知: ' + loadedCount + ' / ' + totalCount);
 					loadingState.loadedCount = loadedCount;
 					loadingState.totalCount = totalCount;
 				}
@@ -210,7 +210,7 @@
 			console.log('シンプルキューベースのサムネイル生成完了');
 			loadingState.isProcessing = false;
 		} catch (err) {
-			console.error('シンプルキューベース処理エラー:', err);
+			console.error('シンプルキューベース処理エラー: ' + err);
 			loadingState.isProcessing = false;
 		}
 	};
@@ -244,7 +244,7 @@
 	// directoryPath が変更された時の処理（watcherとして）
 	$effect(() => {
 		if (directoryPath && directoryPath !== currentDirectory && !loadingState.isProcessing) {
-			console.log('ディレクトリ変更検出:', currentDirectory, '->', directoryPath);
+			console.log('ディレクトリ変更検出: ' + currentDirectory + ' -> ' + directoryPath);
 			currentDirectory = directoryPath;
 			cleanup();
 			loadImageFileList();
@@ -254,7 +254,7 @@
 	// refreshTrigger が変更された時の処理（削除後の再読み込み用）
 	$effect(() => {
 		if (0 < refreshTrigger && refreshTrigger !== lastRefreshTrigger && !loadingState.isProcessing) {
-			console.log('リフレッシュトリガー検出:', refreshTrigger);
+			console.log('リフレッシュトリガー検出: ' + refreshTrigger);
 			lastRefreshTrigger = refreshTrigger;
 			cleanup();
 			loadImageFileList();
@@ -278,7 +278,7 @@
 	const handleRatingChange = async (imagePath: string, newRating: number): Promise<void> => {
 		// 既に書き込み中の場合は処理をスキップ
 		if (unifiedMetadataService.isRatingWriting(imagePath)) {
-			console.log('Rating書き込み中のためスキップ:', imagePath);
+			console.log('Rating書き込み中のためスキップ: ' + imagePath);
 			return;
 		}
 
@@ -291,9 +291,9 @@
 		// 非同期でファイル更新（排他制御付き）
 		// この時点でスピナーが表示されるはず
 		const success = await unifiedMetadataService.updateImageRating(imagePath, newRating);
-		
+
 		if (success) {
-			console.log('Rating更新成功:', imagePath, newRating);
+			console.log('Rating更新成功: ' + imagePath + ' ' + newRating);
 		} else {
 			// 失敗時は元の値に戻す（排他制御により拒否された場合も含む）
 			console.warn('Rating更新に失敗しました:', imagePath);
@@ -307,19 +307,19 @@
 	// SDタグデータを集計
 	const loadTagData = async () => {
 		try {
-			console.log('SDタグデータ集計開始:', imageFiles.length, '個のファイル');
+			console.log('SDタグデータ集計開始: ' + imageFiles.length + '個のファイル');
 
 			const tagData = await tagAggregationService.aggregateTagsFromFiles(imageFiles);
 
-			console.log('SDタグデータ集計完了:', tagData.allTags.length, '個のユニークタグ');
-			console.log('SDタグキャッシュ統計:', tagAggregationService.getCacheStats());
+			console.log('SDタグデータ集計完了: ' + tagData.allTags.length + '個のユニークタグ');
+			console.log('SDタグキャッシュ統計: ' + JSON.stringify(tagAggregationService.getCacheStats()));
 
 			// 親コンポーネントにタグデータを通知
 			if (onTagDataLoaded) {
 				onTagDataLoaded(tagData);
 			}
 		} catch (err) {
-			console.error('SDタグデータ集計エラー:', err);
+			console.error('SDタグデータ集計エラー: ' + err);
 		}
 	};
 </script>

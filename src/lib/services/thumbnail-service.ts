@@ -30,17 +30,17 @@ export class ThumbnailService {
 
 					return url;
 				} catch (readError) {
-					console.error('🚨 単一サムネイルファイル読み込みエラー:', {
+					console.error('🚨 単一サムネイルファイル読み込みエラー: ' + JSON.stringify({
 						path: result.thumbnail.cache_path,
 						error: readError
-					});
+					}));
 					return null;
 				}
 			} else if (result?.error) {
 				console.warn(`サムネイル生成失敗: ${result.path} - ${result.error}`);
 			}
 		} catch (error) {
-			console.error(`サムネイル生成エラー: ${imagePath}`, error);
+			console.error('サムネイル生成エラー: ' + imagePath + ' ' + error);
 		}
 		return null;
 	}
@@ -125,7 +125,7 @@ export class ThumbnailService {
 				);
 
 				// デバッグ：SimpleQueueからのRustレスポンス詳細確認
-				console.log('🔧 SimpleQueue CRITICAL DEBUG:', {
+				console.log('🔧 SimpleQueue CRITICAL DEBUG: ' + JSON.stringify({
 					chunkIndex: chunkIndex + 1,
 					chunkSize: chunk.length,
 					resultsType: typeof results,
@@ -133,7 +133,7 @@ export class ThumbnailService {
 					resultsLength: results?.length,
 					firstResultKeys: results?.[0] ? Object.keys(results[0]) : null,
 					firstResultValue: results?.[0]
-				});
+				}));
 
 				const chunkThumbnails = new Map<string, string>();
 
@@ -141,7 +141,7 @@ export class ThumbnailService {
 					if (this.stopQueue) break;
 
 					// デバッグ：個別結果の詳細確認
-					console.log('📦 SimpleQueue Individual Result:', {
+					console.log('📦 SimpleQueue Individual Result: ' + JSON.stringify({
 						path: result.path.split('/').pop(),
 						hasThumbnail: !!result.thumbnail,
 						thumbnailKeys: result.thumbnail ? Object.keys(result.thumbnail) : null,
@@ -149,28 +149,28 @@ export class ThumbnailService {
 						cachePathValue: result.thumbnail?.cache_path,
 						hasError: !!result.error,
 						errorMsg: result.error
-					});
+					}));
 
 					if (result.thumbnail?.cache_path) {
 						try {
-							console.log('📁 ファイル読み込み開始:', result.thumbnail.cache_path);
+							console.log('📁 ファイル読み込み開始: ' + result.thumbnail.cache_path);
 							const fileData = await readFile(result.thumbnail.cache_path);
-							console.log('📁 ファイル読み込み成功:', {
+							console.log('📁 ファイル読み込み成功: ' + JSON.stringify({
 								path: result.thumbnail.cache_path,
 								fileSize: fileData.length
-							});
+							}));
 
 							const blob = new Blob([new Uint8Array(fileData)], {
 								type: result.thumbnail.mime_type
 							});
 							const url = URL.createObjectURL(blob);
 
-							console.log('🔄 SimpleQueue ファイル読み込み:', {
+							console.log('🔄 SimpleQueue ファイル読み込み: ' + JSON.stringify({
 								originalPath: result.thumbnail.cache_path,
 								fileSize: fileData.length,
 								blobUrl: url.substring(0, 50) + '...',
 								imagePath: result.path.split('/').pop()
-							});
+							}));
 
 							newThumbnails.set(result.path, url);
 							chunkThumbnails.set(result.path, url);
@@ -181,13 +181,13 @@ export class ThumbnailService {
 
 							loadedCount++;
 						} catch (readError) {
-							console.error('🚨 SimpleQueue ファイル読み込みエラー詳細:', {
+							console.error('🚨 SimpleQueue ファイル読み込みエラー詳細: ' + JSON.stringify({
 								path: result.thumbnail.cache_path,
 								errorName: (readError as Error)?.name,
 								errorMessage: (readError as Error)?.message,
 								errorStack: (readError as Error)?.stack,
 								fullError: readError
-							});
+							}));
 						}
 					} else if (result.error) {
 						console.warn(`Thumbnail generation failed: ${result.path} - ${result.error}`);
@@ -204,7 +204,7 @@ export class ThumbnailService {
 
 				await new Promise((resolve) => setTimeout(resolve, 10));
 			} catch (chunkError) {
-				console.error(`Chunk ${chunkIndex + 1} processing error:`, chunkError);
+				console.error('Chunk ' + (chunkIndex + 1) + ' processing error: ' + chunkError);
 			}
 		}
 

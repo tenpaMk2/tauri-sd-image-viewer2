@@ -8,9 +8,9 @@ import type { ImageData, MimeType } from './types';
  */
 export const getImageFiles = async (directoryPath: string): Promise<string[]> => {
 	try {
-		console.log('ディレクトリ読み込み:', directoryPath);
+		console.log('ディレクトリ読み込み: ' + directoryPath);
 		const entries = await readDir(directoryPath);
-		console.log('ディレクトリエントリ数:', entries.length);
+		console.log('ディレクトリエントリ数: ' + entries.length);
 
 		const imageExtensions = SUPPORTED_IMAGE_EXTS.map((ext) => `.${ext}`);
 		const imageEntries = entries.filter(
@@ -25,10 +25,10 @@ export const getImageFiles = async (directoryPath: string): Promise<string[]> =>
 				.map(async (entry): Promise<string> => await join(directoryPath, entry.name))
 		);
 
-		console.log('画像ファイル一覧:', imageFiles);
+		console.log('画像ファイル一覧: ' + imageFiles.length + '個のファイル');
 		return imageFiles;
 	} catch (error) {
-		console.error('ディレクトリの読み込みに失敗しました:', directoryPath, error);
+		console.error('ディレクトリの読み込みに失敗しました: ' + directoryPath + ' ' + error);
 		throw new Error(`Failed to load directory: ${directoryPath}`);
 	}
 };
@@ -54,7 +54,7 @@ export const loadImage = async (filePath: string): Promise<ImageData> => {
 			filePath
 		};
 	} catch (error) {
-		console.error('Failed to load image:', error);
+		console.error('Failed to load image: ' + error);
 		throw new Error(`Failed to load image: ${filePath}`);
 	}
 };

@@ -54,7 +54,7 @@ export class ThumbnailQueueManager {
 		try {
 			await this.processingPromise;
 		} catch (error) {
-			console.error('Queue processing error:', error);
+			console.error('Queue processing error: ' + error);
 			this.callbacks.onError?.(error as Error, []);
 		}
 	}
@@ -80,7 +80,7 @@ export class ThumbnailQueueManager {
 					await this.delay(this.config.delayBetweenChunks);
 				}
 			} catch (error) {
-				console.error(`Chunk ${i + 1} processing error:`, error);
+				console.error('Chunk ' + (i + 1) + ' processing error: ' + error);
 				this.callbacks.onError?.(error as Error, chunk);
 			}
 		}
@@ -108,13 +108,13 @@ export class ThumbnailQueueManager {
 			});
 
 			// デバッグ：Rustからの全体的なレスポンス構造確認
-			console.log('🔧 CRITICAL DEBUG - Rust全レスポンス:', {
+			console.log('🔧 CRITICAL DEBUG - Rust全レスポンス: ' + JSON.stringify({
 				resultsType: typeof results,
 				isArray: Array.isArray(results),
 				length: results?.length,
 				firstResultKeys: results?.[0] ? Object.keys(results[0]) : null,
 				firstResultValue: results?.[0]
-			});
+			}));
 
 			const chunkThumbnails = new Map<string, string>();
 			const chunkMetadata = new Map<string, any>();
@@ -123,7 +123,7 @@ export class ThumbnailQueueManager {
 				if (this.shouldStop) return;
 
 				// デバッグ：Rustから返された結果の詳細確認
-				console.log('📦 Rust結果詳細:', {
+				console.log('📦 Rust結果詳細: ' + JSON.stringify({
 					path: result.path.split('/').pop(),
 					hasThumbnail: !!result.thumbnail,
 					thumbnailKeys: result.thumbnail ? Object.keys(result.thumbnail) : null,
@@ -131,7 +131,7 @@ export class ThumbnailQueueManager {
 					cachePathValue: result.thumbnail?.cache_path,
 					hasError: !!result.error,
 					errorMsg: result.error
-				});
+				}));
 
 				if (result.thumbnail?.cache_path) {
 					try {
@@ -142,19 +142,19 @@ export class ThumbnailQueueManager {
 						const thumbnailUrl = URL.createObjectURL(blob);
 
 						// デバッグ：ファイル読み込みの詳細確認
-						console.log('🔄 QueueManager ファイル読み込み詳細:', {
+						console.log('🔄 QueueManager ファイル読み込み詳細: ' + JSON.stringify({
 							originalPath: result.thumbnail.cache_path,
 							fileSize: fileData.length,
 							blobUrl: thumbnailUrl.substring(0, 50) + '...',
 							imagePath: result.path.split('/').pop()
-						});
+						}));
 
 						chunkThumbnails.set(result.path, thumbnailUrl);
 					} catch (error) {
-						console.error('🚨 QueueManager ファイル読み込みエラー:', {
+						console.error('🚨 QueueManager ファイル読み込みエラー: ' + JSON.stringify({
 							path: result.thumbnail.cache_path,
 							error: error
-						});
+						}));
 						continue;
 					}
 

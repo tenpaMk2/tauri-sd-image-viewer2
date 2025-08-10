@@ -67,7 +67,7 @@
 			showOptionsModal = false;
 			refreshTrigger = Date.now(); // グリッドを再表示
 		} catch (error) {
-			console.error('Failed to clear cache:', error);
+			console.error('Failed to clear cache: ' + error);
 		}
 	};
 
@@ -144,7 +144,7 @@
 			await invoke('set_clipboard_files', { paths });
 			showSuccessToast(`${selectedImages.size} images copied to clipboard`);
 		} catch (error) {
-			console.error('Failed to copy to clipboard:', error);
+			console.error('Failed to copy to clipboard: ' + error);
 		}
 	};
 
@@ -155,7 +155,7 @@
 				const currentPlatform = await platform();
 				isMacOS = currentPlatform === 'macos';
 			} catch (error) {
-				console.error('Failed to detect platform:', error);
+				console.error('Failed to detect platform: ' + error);
 				isMacOS = false;
 			}
 		};

@@ -23,7 +23,7 @@ export const deleteSelectedImages = async (
 	try {
 		const { remove } = await import('@tauri-apps/plugin-fs');
 
-		console.log('削除開始:', Array.from(selectedImages));
+		console.log('削除開始: ' + JSON.stringify(Array.from(selectedImages)));
 
 		let successCount = 0;
 		let errorCount = 0;
@@ -53,7 +53,7 @@ export const deleteSelectedImages = async (
 
 		return { successCount, errorCount, errors };
 	} catch (err) {
-		console.error('削除処理エラー:', err);
+		console.error('削除処理エラー: ' + err);
 		alert(`Deletion process failed: ${err}`);
 		throw err;
 	}

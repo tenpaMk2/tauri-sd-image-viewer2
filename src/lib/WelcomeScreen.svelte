@@ -17,7 +17,7 @@
 			try {
 				version = await getVersion();
 			} catch (error) {
-				console.error('Failed to get app version:', error);
+				console.error('Failed to get app version: ' + error);
 			}
 		};
 

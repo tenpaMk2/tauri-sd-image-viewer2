@@ -64,7 +64,7 @@ const openFileDialog = async (): Promise<void> => {
 			}));
 		}
 	} catch (error) {
-		console.error('ファイル選択エラー:', error);
+		console.error('ファイル選択エラー: ' + error);
 	}
 };
 
@@ -83,7 +83,7 @@ const openDirectoryDialog = async (): Promise<void> => {
 			}));
 		}
 	} catch (error) {
-		console.error('フォルダ選択エラー:', error);
+		console.error('フォルダ選択エラー: ' + error);
 	}
 };
 
@@ -189,7 +189,7 @@ const handleDroppedPaths = async (paths: string[]): Promise<void> => {
 			}));
 		}
 	} catch (error) {
-		console.error('Error processing dropped path:', error);
+		console.error('Error processing dropped path: ' + error);
 	}
 };
 

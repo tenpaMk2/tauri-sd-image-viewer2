@@ -3,29 +3,16 @@ use crate::sd_parameters::SdParameters;
 use png::Decoder;
 use std::io::Cursor;
 
-/// PNG画像の基本情報
-#[derive(Debug, Clone)]
-pub struct PngInfo {
-    pub width: u32,
-    pub height: u32,
-}
-
-/// PNG画像処理の統合ハンドラー
+/// PNG画像処理ハンドラー（SDパラメーター特化）
 pub struct PngProcessor;
 
 impl PngProcessor {
-
-    /// バイト配列からPNG情報とSDパラメーターを一括抽出
-    pub fn extract_comprehensive_info(data: &[u8]) -> AppResult<(PngInfo, Option<SdParameters>)> {
+    /// PNG画像からSDパラメーターのみを抽出
+    pub fn extract_sd_parameters(data: &[u8]) -> AppResult<Option<SdParameters>> {
         let cursor = Cursor::new(data);
         let decoder = Decoder::new(cursor);
         let reader = decoder.read_info()?;
         let info = reader.info();
-
-        let png_info = PngInfo {
-            width: info.width,
-            height: info.height,
-        };
 
         let sd_parameters = info
             .uncompressed_latin1_text
@@ -33,8 +20,7 @@ impl PngProcessor {
             .find(|entry| entry.keyword == "parameters")
             .and_then(|entry| SdParameters::parse(&entry.text).ok());
 
-        Ok((png_info, sd_parameters))
+        Ok(sd_parameters)
     }
-
 }
 

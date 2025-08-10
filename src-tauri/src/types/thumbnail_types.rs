@@ -55,18 +55,6 @@ pub struct ThumbnailInfo {
     pub cache_path: Option<String>,
 }
 
-/// 元画像解像度付きサムネイル情報（重複読み込み回避用）
-#[derive(Debug, Clone)]
-pub struct ThumbnailWithDimensions {
-    pub data: Vec<u8>,
-    pub thumbnail_width: u32,
-    pub thumbnail_height: u32,
-    pub mime_type: String,
-    pub cache_path: Option<String>,
-    pub original_width: u32,  // 元画像の解像度
-    pub original_height: u32, // 元画像の解像度
-}
-
 /// 包括的サムネイル情報（メタデータ統合版）
 #[derive(Debug, Clone)]
 pub struct ComprehensiveThumbnail {

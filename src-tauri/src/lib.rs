@@ -3,6 +3,7 @@ mod common;
 mod exif_info;
 mod image_handlers;
 mod image_info;
+mod image_loader;
 mod sd_parameters;
 mod thumbnail;
 mod types;

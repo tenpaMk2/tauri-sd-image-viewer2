@@ -1,9 +1,8 @@
 use crate::image_info::read_image_metadata_internal;
+use crate::image_loader::ImageReader;
 use crate::types::{ComprehensiveThumbnail};
 use image::imageops::FilterType;
-use image::{GenericImageView, ImageFormat};
-use memmap2::MmapOptions;
-use std::fs::File;
+use image::{GenericImageView};
 use std::time::Instant;
 use webp::Encoder;
 
@@ -37,13 +36,16 @@ impl ThumbnailGenerator {
     pub fn generate_comprehensive_thumbnail(&self, image_path: &str) -> Result<ComprehensiveThumbnail, String> {
         let start_time = Instant::now();
 
-        // 画像ファイルを最適化された方法で読み込み（1回のみ）
+        // 統一画像リーダーで読み込み（1回のみ、全形式mmap対応）
         let load_start = Instant::now();
-        let img = self.load_image_optimized(image_path)?;
+        let reader = ImageReader::from_file(image_path)?;
         let _load_duration = load_start.elapsed();
 
-        // 元画像の解像度を取得
-        let (original_width, original_height) = img.dimensions();
+        // 軽量解像度取得
+        let (original_width, original_height) = reader.get_dimensions()?;
+
+        // DynamicImageに変換（サムネイル処理用）
+        let img = reader.to_dynamic_image()?;
 
         // 段階的リサイズでサムネイル生成
         let resize_start = Instant::now();
@@ -88,29 +90,6 @@ impl ThumbnailGenerator {
         })
     }
 
-    /// 最適化された画像読み込み
-    fn load_image_optimized(&self, image_path: &str) -> Result<image::DynamicImage, String> {
-        let path_lower = image_path.to_lowercase();
-
-        if path_lower.ends_with(".png") {
-            // PNG画像：メモリマップド読み込みを使用
-            let file = File::open(image_path)
-                .map_err(|e| format!("ファイルオープンに失敗: {} - {}", image_path, e))?;
-
-            let mmap = unsafe {
-                MmapOptions::new()
-                    .map(&file)
-                    .map_err(|e| format!("メモリマップに失敗: {} - {}", image_path, e))?
-            };
-
-            image::load_from_memory_with_format(&mmap, ImageFormat::Png)
-                .map_err(|e| format!("PNG画像の読み込みに失敗: {} - {}", image_path, e))
-        } else {
-            // その他の形式：従来の方法
-            image::open(image_path)
-                .map_err(|e| format!("画像の読み込みに失敗: {} - {}", image_path, e))
-        }
-    }
 
     /// 最適化された段階的リサイズ
     fn resize_image_optimized(

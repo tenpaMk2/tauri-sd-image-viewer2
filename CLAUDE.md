@@ -43,6 +43,7 @@ Stable Diffusionの生成メタデータを表示可能。
 ## Git規約
 
 - コミットメッセージの先頭には https://gitmoji.dev/ のアイコンを使うこと。
+- コミットメッセージは日本語
 
 ## 開発コマンド
 
@@ -277,7 +278,8 @@ src-tauri/src/
 ### よくある問題
 
 - Rust-TypeScript型不整合 → TYPE_SYNC_GUIDE.md参照
-- パフォーマンス問題 → PERFORMANCE_OPTIMIZATION.md参照
 - 権限エラー → `src-tauri/capabilities/default.json`確認
+
+### その他ルール
 
 - `console` はRustにForwardingされる関係上、第１引数までしか使えない。

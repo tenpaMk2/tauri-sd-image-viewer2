@@ -279,3 +279,5 @@ src-tauri/src/
 - Rust-TypeScript型不整合 → TYPE_SYNC_GUIDE.md参照
 - パフォーマンス問題 → PERFORMANCE_OPTIMIZATION.md参照
 - 権限エラー → `src-tauri/capabilities/default.json`確認
+
+- `console` はRustにForwardingされる関係上、第１引数までしか使えない。

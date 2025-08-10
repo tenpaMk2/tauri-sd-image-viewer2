@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use crate::common::calculate_file_hash;
 use crate::image_info::read_image_metadata_internal;
 use crate::types::ThumbnailConfig;
-use crate::types::{OriginalFileInfo, ThumbnailCacheInfo};
+use crate::types::{ImageFileInfo, ThumbnailCacheInfo};
 
 /// 新しいキャッシュシステム - ファイルパスベースのキャッシュ管理
 pub struct CacheManager {
@@ -75,7 +75,7 @@ impl CacheManager {
         };
 
         // 元ファイルの現在の情報を取得
-        let current_file_info = match self.get_current_file_info(original_path) {
+        let current_file_info = match self.get_original_file_info(original_path) {
             Ok(info) => {
                 println!("✅ 現在ファイル情報取得成功: size={}, modified={}", 
                          info.file_size, info.modified_time);
@@ -107,16 +107,27 @@ impl CacheManager {
     }
 
     /// 現在のファイル情報を取得（高速解像度付き）
-    fn get_current_file_info(&self, image_path: &str) -> Result<OriginalFileInfo, String> {
+    fn get_original_file_info(&self, image_path: &str) -> Result<ImageFileInfo, String> {
         use crate::image_loader::ImageReader;
         use crate::thumbnail::metadata_handler::MetadataHandler;
         
-        // ImageReaderで高速解像度取得
+        // ImageReaderで高速解像度とMIMEタイプ取得
         let reader = ImageReader::from_file(image_path)?;
         let (width, height) = reader.get_dimensions()?;
+        let mime_type = reader.mime_type().to_string();
         
-        // メタデータハンドラーでファイル情報を取得
-        MetadataHandler::get_basic_file_info(image_path, width, height)
+        // メタデータハンドラーで基本ファイル情報を取得
+        let basic_file_info = MetadataHandler::get_basic_file_info(image_path)?;
+        
+        // 解像度情報を組み合わせて完全な情報を作成
+        Ok(ImageFileInfo {
+            path: basic_file_info.path,
+            file_size: basic_file_info.file_size,
+            modified_time: basic_file_info.modified_time,
+            width,
+            height,
+            mime_type,
+        })
     }
 
     /// 画像の解像度を取得
@@ -132,8 +143,8 @@ impl CacheManager {
     /// ファイルが変更されたかチェック（軽量版：ファイルサイズ + 更新時刻のみ）
     fn is_file_changed_lightweight(
         &self,
-        cached_info: &OriginalFileInfo,
-        current_info: &OriginalFileInfo,
+        cached_info: &ImageFileInfo,
+        current_info: &ImageFileInfo,
     ) -> bool {
         cached_info.file_size != current_info.file_size
             || cached_info.modified_time != current_info.modified_time

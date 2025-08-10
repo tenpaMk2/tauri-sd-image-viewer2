@@ -65,14 +65,16 @@ export type ExifInfo = {
 // ==========================================
 
 /**
- * 画像基本情報（軽量版）
- * 対応: `struct BasicImageInfo`
+ * 画像ファイル情報
+ * 対応: `struct ImageFileInfo`
  */
-export type BasicImageInfo = {
+export type ImageFileInfo = {
+	path: string; // Rust: String
 	width: number; // Rust: u32
 	height: number; // Rust: u32
 	file_size: number; // Rust: u64
 	mime_type: string; // Rust: String
+	modified_time: number; // Rust: u64 (UNIXタイムスタンプ)
 };
 
 /**

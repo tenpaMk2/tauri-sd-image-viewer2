@@ -2,12 +2,12 @@ use crate::common::{detect_mime_type_from_path, read_file_safe, AppResult};
 use crate::exif_info::ExifInfo;
 use crate::image_handlers::PngProcessor;
 use crate::image_loader::ImageReader;
-use crate::types::{BasicImageInfo, ImageMetadataInfo};
+use crate::types::{ImageFileInfo, ImageMetadataInfo};
 
 /// 画像基本情報のみを軽量取得
 #[tauri::command]
-pub fn read_image_metadata_basic(path: String) -> Result<BasicImageInfo, String> {
-    extract_basic_info_with_reader(&path)
+pub fn read_image_metadata_basic(path: String) -> Result<ImageFileInfo, String> {
+    extract_image_file_info_with_reader(&path)
 }
 
 /// 画像Rating値のみを軽量取得
@@ -31,38 +31,35 @@ fn read_file_and_detect_mime(path: &str) -> AppResult<(Vec<u8>, String)> {
     Ok((data, mime_type))
 }
 
-/// ImageReaderを使用した軽量基本情報取得
-fn extract_basic_info_with_reader(path: &str) -> Result<BasicImageInfo, String> {
+/// ImageReaderを使用した画像ファイル情報取得
+fn extract_image_file_info_with_reader(path: &str) -> Result<ImageFileInfo, String> {
+    use std::fs;
+    
     let reader = ImageReader::from_file(path)?;
     let (width, height) = reader.get_dimensions()?;
     let file_size = reader.as_bytes().len() as u64;
     let mime_type = reader.mime_type().to_string();
 
-    Ok(BasicImageInfo {
+    // ファイルシステム情報を取得
+    let metadata = fs::metadata(path)
+        .map_err(|e| format!("ファイルメタデータの取得に失敗: {}", e))?;
+    let modified_time = metadata
+        .modified()
+        .map_err(|e| format!("ファイル更新時刻の取得に失敗: {}", e))?
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_err(|e| format!("UNIX時刻への変換に失敗: {}", e))?
+        .as_secs();
+
+    Ok(ImageFileInfo {
+        path: path.to_string(),
         width,
         height,
         file_size,
         mime_type,
+        modified_time,
     })
 }
 
-/// 共通: 画像基本情報の抽出（バイト配列版、互換性のため残存）
-fn extract_basic_info(data: &[u8], mime_type: &str, _path: &str) -> BasicImageInfo {
-    let file_size = data.len() as u64;
-    
-    // 全形式統一: imageクレートで高速解像度取得
-    let (width, height) = match image::load_from_memory(data) {
-        Ok(img) => (img.width(), img.height()),
-        Err(_) => (0, 0),
-    };
-
-    BasicImageInfo {
-        width,
-        height,
-        file_size,
-        mime_type: mime_type.to_string(),
-    }
-}
 
 /// 共通: EXIF情報の抽出
 fn extract_exif_info(data: &[u8], mime_type: &str, path: &str) -> Option<ExifInfo> {
@@ -82,8 +79,12 @@ fn extract_rating_only(data: &[u8], mime_type: &str, path: &str) -> Option<u8> {
 pub fn read_image_metadata_internal(path: &str) -> AppResult<ImageMetadataInfo> {
     let (data, mime_type) = read_file_and_detect_mime(path)?;
     
-    // 基本情報を取得
-    let basic_info = extract_basic_info(&data, &mime_type, path);
+    // 基本情報を取得（直接構築）
+    let file_size = data.len() as u64;
+    let (width, height) = match image::load_from_memory(&data) {
+        Ok(img) => (img.width(), img.height()),
+        Err(_) => (0, 0), // エラー時は0を設定
+    };
     
     // SD Parametersを取得（PNGのみ）
     let sd_parameters = if mime_type == "image/png" {
@@ -99,10 +100,10 @@ pub fn read_image_metadata_internal(path: &str) -> AppResult<ImageMetadataInfo> 
     let exif_info = extract_exif_info(&data, &mime_type, path);
 
     Ok(ImageMetadataInfo {
-        width: basic_info.width,
-        height: basic_info.height,
-        file_size: basic_info.file_size,
-        mime_type: basic_info.mime_type,
+        width,
+        height,
+        file_size,
+        mime_type,
         sd_parameters,
         exif_info,
     })

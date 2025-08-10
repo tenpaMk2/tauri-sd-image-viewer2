@@ -2,6 +2,8 @@ use crate::exif_info::ExifInfo;
 use crate::sd_parameters::SdParameters;
 use serde::{Deserialize, Serialize};
 
+use super::ImageFileInfo;
+
 /// サムネイル生成設定
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ThumbnailConfig {
@@ -10,15 +12,6 @@ pub struct ThumbnailConfig {
     pub format: String, // "webp"
 }
 
-/// 元画像のファイル情報
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct OriginalFileInfo {
-    pub path: String,
-    pub file_size: u64,
-    pub modified_time: u64, // UNIXタイムスタンプ
-    pub width: u32,
-    pub height: u32,
-}
 
 /// 包括的キャッシュ情報（JSONファイルで保存）
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -26,7 +19,7 @@ pub struct ThumbnailCacheInfo {
     /// キャッシュ作成時の設定
     pub thumbnail_config: ThumbnailConfig,
     /// 元画像のファイル情報
-    pub original_file_info: OriginalFileInfo,
+    pub original_file_info: ImageFileInfo,
     /// サムネイル画像ファイル名
     pub thumbnail_filename: String,
     /// メタデータ情報

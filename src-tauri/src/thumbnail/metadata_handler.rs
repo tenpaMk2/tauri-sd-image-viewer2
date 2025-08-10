@@ -1,4 +1,4 @@
-use crate::types::{OriginalFileInfo, ThumbnailCacheInfo, ThumbnailConfig};
+use crate::types::{FileSystemInfo, ImageFileInfo, ThumbnailCacheInfo, ThumbnailConfig};
 use std::fs;
 
 /// メタデータ処理を担当
@@ -12,12 +12,16 @@ impl MetadataHandler {
         thumbnail_filename: String,
         comprehensive: &crate::types::ComprehensiveThumbnail,
     ) -> Result<ThumbnailCacheInfo, String> {
-        // ファイル情報を取得（解像度は包括的サムネイルから再利用）
-        let original_file_info = Self::get_basic_file_info(
-            image_path, 
-            comprehensive.original_width, 
-            comprehensive.original_height
-        )?;
+        // ファイル情報を取得
+        let basic_file_info = Self::get_basic_file_info(image_path)?;
+        let original_file_info = ImageFileInfo {
+            path: basic_file_info.path,
+            file_size: basic_file_info.file_size,
+            modified_time: basic_file_info.modified_time,
+            width: comprehensive.original_width,
+            height: comprehensive.original_height,
+            mime_type: comprehensive.mime_type.clone(),
+        };
 
         let current_time = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
@@ -38,12 +42,8 @@ impl MetadataHandler {
         })
     }
 
-    /// ファイル情報を取得（解像度付き）
-    pub fn get_basic_file_info(
-        image_path: &str, 
-        width: u32, 
-        height: u32
-    ) -> Result<OriginalFileInfo, String> {
+    /// 基本ファイル情報を取得（ファイルシステム情報のみ）
+    pub fn get_basic_file_info(image_path: &str) -> Result<FileSystemInfo, String> {
         let metadata = fs::metadata(image_path)
             .map_err(|e| format!("ファイルメタデータの取得に失敗: {}", e))?;
 
@@ -54,15 +54,13 @@ impl MetadataHandler {
             .map_err(|e| format!("UNIX時刻への変換に失敗: {}", e))?
             .as_secs();
         
-        println!("📏 ファイル情報取得完了: path={}, size={}, dimensions={}x{}, modified={}", 
-                 image_path, metadata.len(), width, height, modified_time);
+        println!("📏 基本ファイル情報取得完了: path={}, size={}, modified={}", 
+                 image_path, metadata.len(), modified_time);
 
-        Ok(OriginalFileInfo {
+        Ok(FileSystemInfo {
             path: image_path.to_string(),
             file_size: metadata.len(),
             modified_time,
-            width,
-            height,
         })
     }
 }

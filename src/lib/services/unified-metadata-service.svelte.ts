@@ -1,7 +1,7 @@
 import { invoke } from '@tauri-apps/api/core';
 import type { ImageMetadata } from '../image/types';
 import { createImageMetadata } from '../image/utils';
-import type { BasicImageInfo, ThumbnailCacheInfo } from '../types/shared-types';
+import type { ImageFileInfo, ThumbnailCacheInfo } from '../types/shared-types';
 
 /**
  * 軽量ファイル情報（変更検出用）
@@ -37,9 +37,9 @@ export class UnifiedMetadataService {
 	/**
 	 * 基本情報のみを軽量取得
 	 */
-	async getBasicInfo(imagePath: string): Promise<BasicImageInfo> {
+	async getBasicInfo(imagePath: string): Promise<ImageFileInfo> {
 		try {
-			return await invoke<BasicImageInfo>('read_image_metadata_basic', { path: imagePath });
+			return await invoke<ImageFileInfo>('read_image_metadata_basic', { path: imagePath });
 		} catch (error) {
 			console.error('基本情報の取得に失敗: ' + imagePath + ' ' + error);
 			throw new Error(`Failed to get basic info: ${imagePath}`);

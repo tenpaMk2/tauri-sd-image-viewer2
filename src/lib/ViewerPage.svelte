@@ -85,32 +85,74 @@
 		}
 	};
 
-	// ナビゲーション関数
+	// ナビゲーション状態をパス基準で更新
+	const updateNavigationFromPath = async (currentPath: string): Promise<void> => {
+		try {
+			const updatedNavigation = await navigationService.updateNavigationWithCurrentPath(currentPath);
+			navigationState.files = updatedNavigation.files;
+			navigationState.currentIndex = updatedNavigation.currentIndex;
+		} catch (error) {
+			console.error('Failed to update navigation from path:', error);
+		}
+	};
+
+	// ナビゲーション関数（パス基準で改良）
 	const goToPrevious = async (): Promise<void> => {
-		if (0 < navigationState.currentIndex && !navigationState.isNavigating) {
+		if (!navigationState.isNavigating) {
 			stopAutoNavigation(); // 手動ナビゲーション時は自動ナビゲーション停止
 			showUI(); // ナビゲーション時にUIを表示
+			
 			navigationState.isNavigating = true;
-			navigationState.currentIndex = navigationState.currentIndex - 1;
-			const newPath = navigationState.files[navigationState.currentIndex];
-			await loadCurrentImage(newPath);
-			await onImageChange(newPath);
+			
+			// パス基準でナビゲーション状態を更新
+			const currentPath = navigationState.files[navigationState.currentIndex];
+			await updateNavigationFromPath(currentPath);
+			
+			// 前の画像があるかチェック
+			if (0 < navigationState.currentIndex) {
+				const newIndex = navigationState.currentIndex - 1;
+				const newPath = navigationState.files[newIndex];
+				
+				navigationState.currentIndex = newIndex;
+				await loadCurrentImage(newPath);
+				await onImageChange(newPath);
+				
+				// 隣接画像のプリロード（バックグラウンドで実行）
+				navigationService.preloadAdjacentByPath(newPath).catch((error) => {
+					console.warn('Preload failed:', error);
+				});
+			}
+			
 			navigationState.isNavigating = false;
 		}
 	};
 
 	const goToNext = async (): Promise<void> => {
-		if (
-			navigationState.currentIndex < navigationState.files.length - 1 &&
-			!navigationState.isNavigating
-		) {
+		if (!navigationState.isNavigating) {
 			stopAutoNavigation(); // 手動ナビゲーション時は自動ナビゲーション停止
 			showUI(); // ナビゲーション時にUIを表示
+			
 			navigationState.isNavigating = true;
-			navigationState.currentIndex = navigationState.currentIndex + 1;
-			const newPath = navigationState.files[navigationState.currentIndex];
-			await loadCurrentImage(newPath);
-			await onImageChange(newPath);
+			
+			// パス基準でナビゲーション状態を更新
+			const currentPath = navigationState.files[navigationState.currentIndex];
+			await updateNavigationFromPath(currentPath);
+			
+			// 次の画像があるかチェック
+			if (navigationState.currentIndex < navigationState.files.length - 1) {
+				const newIndex = navigationState.currentIndex + 1;
+				const newPath = navigationState.files[newIndex];
+				
+				navigationState.currentIndex = newIndex;
+				await loadCurrentImage(newPath);
+				await onImageChange(newPath);
+				
+				// 隣接画像のプリロード（バックグラウンドで実行）
+				navigationService.preloadAdjacentByPath(newPath).catch((error) => {
+					console.warn('Preload failed:', error);
+				});
+			}
+			
 			navigationState.isNavigating = false;
 		}
 	};
@@ -271,6 +313,34 @@
 	// 初期化
 	$effect(() => {
 		initializeImages(imagePath);
+	});
+
+	// 画像パス変更時の同期処理
+	$effect(() => {
+		const currentNavigationPath = navigationState.files[navigationState.currentIndex];
+		
+		// imagePath プロパティと navigationState が異なる場合は同期
+		if (imagePath && currentNavigationPath !== imagePath) {
+			const syncNavigation = async () => {
+				try {
+					// パス基準でナビゲーション状態を更新
+					await updateNavigationFromPath(imagePath);
+					
+					// 新しいパスが見つからない場合は再初期化
+					const newIndex = navigationService.findIndexByPath(navigationState.files, imagePath);
+					if (newIndex === 0 && navigationState.files[0] !== imagePath) {
+						await initializeImages(imagePath);
+					} else {
+						navigationState.currentIndex = newIndex;
+						await loadCurrentImage(imagePath);
+					}
+				} catch (error) {
+					console.error('Failed to sync navigation with image path:', error);
+				}
+			};
+			
+			syncNavigation();
+		}
 	});
 
 	// プラットフォーム判定の初期化

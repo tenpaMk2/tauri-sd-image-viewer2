@@ -117,6 +117,19 @@ export class NavigationService {
 		}
 	}
 
+	/**
+	 * パス基準でのプリロード処理
+	 * ナビゲーション状態更新後に隣接画像をプリロード
+	 */
+	async preloadAdjacentByPath(currentPath: string, preloadCount: number = 2): Promise<void> {
+		try {
+			const updatedNavigation = await this.updateNavigationWithCurrentPath(currentPath);
+			await this.preloadAdjacentImages(updatedNavigation.files, updatedNavigation.currentIndex, preloadCount);
+		} catch (error) {
+			console.warn('プリロード処理に失敗:', currentPath, error);
+		}
+	}
+
 	async initializeNavigation(imagePath: string): Promise<NavigationState> {
 		const dirPath = await dirname(imagePath);
 		const files = await getImageFiles(dirPath);
@@ -127,6 +140,30 @@ export class NavigationService {
 			currentIndex: currentIndex === -1 ? 0 : currentIndex,
 			isNavigating: false
 		};
+	}
+
+	/**
+	 * 現在のパスを基準にナビゲーション状態を更新
+	 * 新しい画像が追加された場合でも現在の画像位置を正確に保持
+	 */
+	async updateNavigationWithCurrentPath(currentPath: string): Promise<NavigationState> {
+		const dirPath = await dirname(currentPath);
+		const files = await getImageFiles(dirPath);
+		const currentIndex = files.findIndex((file) => file === currentPath);
+
+		return {
+			files,
+			currentIndex: currentIndex === -1 ? 0 : currentIndex,
+			isNavigating: false
+		};
+	}
+
+	/**
+	 * パス基準でインデックスを検索
+	 */
+	findIndexByPath(files: string[], targetPath: string): number {
+		const index = files.findIndex((file) => file === targetPath);
+		return index === -1 ? 0 : index;
 	}
 
 	async loadImage(path: string): Promise<string> {

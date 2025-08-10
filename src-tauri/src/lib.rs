@@ -34,7 +34,9 @@ pub fn run() {
             clipboard::set_clipboard_files,
             thumbnail::load_thumbnails_batch_path_only,
             thumbnail::clear_thumbnail_cache,
-            image_info::read_image_metadata_info,
+            image_info::read_image_metadata_basic,
+            image_info::read_image_metadata_rating,
+            image_info::read_image_metadata_all,
             exif_info::write_exif_image_rating,
         ])
         .run(tauri::generate_context!())

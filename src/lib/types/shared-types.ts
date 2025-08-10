@@ -65,6 +65,17 @@ export type ExifInfo = {
 // ==========================================
 
 /**
+ * 画像基本情報（軽量版）
+ * 対応: `struct BasicImageInfo`
+ */
+export type BasicImageInfo = {
+	width: number; // Rust: u32
+	height: number; // Rust: u32
+	file_size: number; // Rust: u64
+	mime_type: string; // Rust: String
+};
+
+/**
  * 画像のメタデータのみを効率的に取得
  * 対応: `struct ImageMetadataInfo`
  * 注意: 画像データは含まず、メタデータのみで軽量

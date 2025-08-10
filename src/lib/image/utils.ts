@@ -1,7 +1,44 @@
 import { basename, dirname } from '@tauri-apps/api/path';
 import { stat } from '@tauri-apps/plugin-fs';
-import { loadMetadata } from './image-loader';
+import { unifiedMetadataService } from '../services/unified-metadata-service.svelte';
 import type { ImageMetadata } from './types';
+
+/**
+ * 基本情報のみを軽量作成（サムネイル用）
+ */
+export const createBasicImageInfo = async (imagePath: string): Promise<{
+	filename: string;
+	size: string;
+	dimensions: string;
+	format: string;
+}> => {
+	const filename = await basename(imagePath);
+	const extension = filename.split('.').pop()?.toUpperCase() || '';
+
+	try {
+		const basicInfo = await unifiedMetadataService.getBasicInfo(imagePath);
+		const sizeFormatted = formatFileSize(basicInfo.file_size);
+		const dimensions =
+			basicInfo.width > 0 && basicInfo.height > 0
+				? `${basicInfo.width} × ${basicInfo.height}`
+				: 'Unknown';
+
+		return {
+			filename,
+			size: sizeFormatted,
+			dimensions,
+			format: extension,
+		};
+	} catch (error) {
+		console.warn('基本ファイル情報の取得に失敗:', error);
+		return {
+			filename,
+			size: 'Unknown',
+			dimensions: 'Unknown',
+			format: extension,
+		};
+	}
+};
 
 /**
  * 画像メタデータを効率的に作成
@@ -21,7 +58,7 @@ export const createImageMetadata = async (imagePath: string): Promise<ImageMetad
 			: 'Unknown';
 
 		// メタデータのみを効率取得
-		const imageInfo = await loadMetadata(imagePath);
+		const imageInfo = await unifiedMetadataService.getFullMetadata(imagePath);
 
 		const sizeFormatted = formatFileSize(imageInfo.file_size);
 		const dimensions =

@@ -1,7 +1,5 @@
-import { invoke } from '@tauri-apps/api/core';
 import { join } from '@tauri-apps/api/path';
 import { readDir, readFile } from '@tauri-apps/plugin-fs';
-import type { ImageMetadataInfo } from '../types/shared-types';
 import { detectImageMimeType, SUPPORTED_IMAGE_EXTS } from './mime-type';
 import type { ImageData, MimeType } from './types';
 
@@ -61,14 +59,3 @@ export const loadImage = async (filePath: string): Promise<ImageData> => {
 	}
 };
 
-/**
- * メタデータのみを取得
- */
-export const loadMetadata = async (filePath: string): Promise<ImageMetadataInfo> => {
-	try {
-		return await invoke<ImageMetadataInfo>('read_image_metadata_info', { path: filePath });
-	} catch (error) {
-		console.error('メタデータの取得に失敗:', filePath, error);
-		throw new Error(`Failed to get metadata: ${filePath}`);
-	}
-};

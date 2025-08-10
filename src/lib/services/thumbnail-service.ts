@@ -50,11 +50,11 @@ export class ThumbnailService {
 	}
 
 	async getImageMetadata(imagePath: string): Promise<ThumbnailCacheInfo | undefined> {
-		return await unifiedMetadataService.getThumbnailCacheInfo(imagePath);
+		return await unifiedMetadataService.getThumbnailInfo(imagePath);
 	}
 
 	async getImageRating(imagePath: string): Promise<number | undefined> {
-		return await unifiedMetadataService.getImageRating(imagePath);
+		return await unifiedMetadataService.getRating(imagePath);
 	}
 
 	async updateImageRating(imagePath: string, newRating: number): Promise<boolean> {

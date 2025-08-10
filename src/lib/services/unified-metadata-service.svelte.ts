@@ -2,7 +2,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { stat } from '@tauri-apps/plugin-fs';
 import type { ImageMetadata } from '../image/types';
 import { createImageMetadata } from '../image/utils';
-import type { ThumbnailCacheInfo } from '../types/shared-types';
+import type { BasicImageInfo, ImageMetadataInfo, ThumbnailCacheInfo } from '../types/shared-types';
 
 /**
  * 軽量ファイル情報（変更検出用）
@@ -37,17 +37,41 @@ export class UnifiedMetadataService {
 
 
 	/**
-	 * 画像メタデータを取得（Unsafe版）
+	 * 基本情報のみを軽量取得
 	 */
-	async getImageMetadataUnsafe(imagePath: string): Promise<ImageMetadata> {
+	async getBasicInfo(imagePath: string): Promise<BasicImageInfo> {
+		try {
+			return await invoke<BasicImageInfo>('read_image_metadata_basic', { path: imagePath });
+		} catch (error) {
+			console.error('基本情報の取得に失敗:', imagePath, error);
+			throw new Error(`Failed to get basic info: ${imagePath}`);
+		}
+	}
+
+	/**
+	 * 全メタデータを直接取得
+	 */
+	async getFullMetadata(imagePath: string): Promise<ImageMetadataInfo> {
+		try {
+			return await invoke<ImageMetadataInfo>('read_image_metadata_all', { path: imagePath });
+		} catch (error) {
+			console.error('メタデータの取得に失敗:', imagePath, error);
+			throw new Error(`Failed to get metadata: ${imagePath}`);
+		}
+	}
+
+	/**
+	 * 画像メタデータを取得（キャッシュ対応）
+	 */
+	async getMetadata(imagePath: string): Promise<ImageMetadata> {
 		const entry = await this.getUnifiedEntry(imagePath);
 		return entry.imageMetadata;
 	}
 
 	/**
-	 * サムネイルキャッシュ情報を取得（GridPage用）
+	 * サムネイル情報を取得
 	 */
-	async getThumbnailCacheInfo(imagePath: string): Promise<ThumbnailCacheInfo | undefined> {
+	async getThumbnailInfo(imagePath: string): Promise<ThumbnailCacheInfo | undefined> {
 		try {
 			const entry = await this.getUnifiedEntry(imagePath);
 			return entry.thumbnailCacheInfo;
@@ -57,11 +81,19 @@ export class UnifiedMetadataService {
 	}
 
 	/**
-	 * レーティング情報を取得
+	 * レーティング値を取得
 	 */
-	async getImageRating(imagePath: string): Promise<number | undefined> {
-		const cacheInfo = await this.getThumbnailCacheInfo(imagePath);
-		return cacheInfo?.rating;
+	async getRating(imagePath: string): Promise<number | undefined> {
+		try {
+			// Rust側の軽量APIを直接使用
+			const rating = await invoke<number | null>('read_image_metadata_rating', { path: imagePath });
+			return rating ?? undefined;
+		} catch (error) {
+			console.warn('軽量Rating取得に失敗、キャッシュから取得:', imagePath, error);
+			// フォールバック: キャッシュから取得
+			const cacheInfo = await this.getThumbnailInfo(imagePath);
+			return cacheInfo?.rating;
+		}
 	}
 
 	/**
@@ -219,11 +251,11 @@ export class UnifiedMetadataService {
 
 
 	/**
-	 * メタデータを更新（Unsafe版）
+	 * メタデータを更新
 	 */
-	async refreshMetadataUnsafe(imagePath: string): Promise<ImageMetadata> {
+	async refreshMetadata(imagePath: string): Promise<ImageMetadata> {
 		this.invalidateMetadata(imagePath);
-		return await this.getImageMetadataUnsafe(imagePath);
+		return await this.getMetadata(imagePath);
 	}
 
 	/**

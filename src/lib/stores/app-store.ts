@@ -52,7 +52,7 @@ const openFileDialog = async (): Promise<void> => {
 			// ファイル選択でビューアーモードに移行する時は、サムネイル生成キューを停止
 			globalThumbnailService.stopActiveQueue();
 
-			const imageMetadata = await unifiedMetadataService.getImageMetadataUnsafe(selected);
+			const imageMetadata = await unifiedMetadataService.getMetadata(selected);
 			const selectedDirectory = await getDirectoryFromPath(selected);
 
 			appState.update((state) => ({
@@ -88,7 +88,7 @@ const openDirectoryDialog = async (): Promise<void> => {
 };
 
 const updateSelectedImage = async (imagePath: string): Promise<void> => {
-	const newMetadata = await unifiedMetadataService.getImageMetadataUnsafe(imagePath);
+	const newMetadata = await unifiedMetadataService.getMetadata(imagePath);
 
 	appState.update((state) => ({
 		...state,
@@ -153,7 +153,7 @@ const refreshCurrentImageMetadata = async (): Promise<void> => {
 	})();
 
 	if (currentImagePath) {
-		const refreshedMetadata = await unifiedMetadataService.refreshMetadataUnsafe(currentImagePath);
+		const refreshedMetadata = await unifiedMetadataService.refreshMetadata(currentImagePath);
 		appState.update((state) => ({
 			...state,
 			imageMetadata: refreshedMetadata
@@ -177,7 +177,7 @@ const handleDroppedPaths = async (paths: string[]): Promise<void> => {
 		} else if (isImageFile(firstPath)) {
 			globalThumbnailService.stopActiveQueue();
 
-			const imageMetadata = await unifiedMetadataService.getImageMetadataUnsafe(firstPath);
+			const imageMetadata = await unifiedMetadataService.getMetadata(firstPath);
 			const selectedDirectory = await getDirectoryFromPath(firstPath);
 
 			appState.update((state) => ({

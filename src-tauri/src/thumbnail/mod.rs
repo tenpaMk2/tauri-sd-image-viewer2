@@ -145,25 +145,26 @@ impl ThumbnailHandler {
         Ok((path_only_thumbnail, cache_info))
     }
 
-    /// サムネイルを生成してキャッシュに保存
+    /// サムネイルを生成してキャッシュに保存（包括的統合版、最高効率）
     fn generate_and_cache_thumbnail(
         &self,
         image_path: &str,
         cache_key: &str,
         config: &ThumbnailConfig,
     ) -> Result<(ThumbnailInfo, ThumbnailCacheInfo), String> {
-        // サムネイル画像を生成
-        let thumbnail_info = self.generator.generate_thumbnail(image_path)?;
+        // 包括的サムネイルを生成（1回の読み込みで全て完了：画像・解像度・メタデータ）
+        let comprehensive = self.generator.generate_comprehensive_thumbnail(image_path)?;
 
         // サムネイル画像をファイルに保存
         let thumbnail_filename = format!("{}.{}", cache_key, config.format);
-        self.cache_manager.save_thumbnail_image(cache_key, &thumbnail_info.data)?;
+        self.cache_manager.save_thumbnail_image(cache_key, &comprehensive.data)?;
 
-        // 包括的なキャッシュ情報を生成
-        let cache_info = MetadataHandler::generate_cache_info(
+        // 包括的なキャッシュ情報を生成（全て再利用、追加読み込み一切なし）
+        let cache_info = MetadataHandler::generate_cache_info_from_comprehensive(
             image_path,
             config,
             thumbnail_filename,
+            &comprehensive,
         )?;
 
         // キャッシュ情報をJSONファイルに保存
@@ -171,10 +172,10 @@ impl ThumbnailHandler {
 
         // レスポンス用のサムネイル情報を作成
         let response_thumbnail = ThumbnailInfo {
-            data: thumbnail_info.data,
-            width: thumbnail_info.width,
-            height: thumbnail_info.height,
-            mime_type: thumbnail_info.mime_type,
+            data: comprehensive.data,
+            width: comprehensive.thumbnail_width,
+            height: comprehensive.thumbnail_height,
+            mime_type: comprehensive.mime_type,
             cache_path: Some(self.cache_manager.get_thumbnail_file_path(cache_key).to_string_lossy().to_string()),
         };
 

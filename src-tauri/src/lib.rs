@@ -38,6 +38,7 @@ pub fn run() {
             image_info::read_image_metadata_rating,
             image_info::read_image_metadata_all,
             exif_info::write_exif_image_rating,
+            common::calculate_file_hash_api,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

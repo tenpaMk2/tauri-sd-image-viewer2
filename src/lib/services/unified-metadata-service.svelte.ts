@@ -1,15 +1,13 @@
 import { invoke } from '@tauri-apps/api/core';
-import { stat } from '@tauri-apps/plugin-fs';
 import type { ImageMetadata } from '../image/types';
 import { createImageMetadata } from '../image/utils';
-import type { BasicImageInfo, ImageMetadataInfo, ThumbnailCacheInfo } from '../types/shared-types';
+import type { BasicImageInfo, ThumbnailCacheInfo } from '../types/shared-types';
 
 /**
  * 軽量ファイル情報（変更検出用）
  */
 type LightweightFileInfo = {
-	size: number;
-	mtime: number;
+	fileHash: string;
 };
 
 /**
@@ -48,17 +46,6 @@ export class UnifiedMetadataService {
 		}
 	}
 
-	/**
-	 * 全メタデータを直接取得
-	 */
-	async getFullMetadata(imagePath: string): Promise<ImageMetadataInfo> {
-		try {
-			return await invoke<ImageMetadataInfo>('read_image_metadata_all', { path: imagePath });
-		} catch (error) {
-			console.error('メタデータの取得に失敗:', imagePath, error);
-			throw new Error(`Failed to get metadata: ${imagePath}`);
-		}
-	}
 
 	/**
 	 * 画像メタデータを取得（キャッシュ対応）
@@ -115,8 +102,8 @@ export class UnifiedMetadataService {
 				rating: newRating
 			});
 
-			// キャッシュされたrating情報のみを更新（重い再読み込みを回避）
-			this.updateCachedRating(imagePath, newRating);
+			// ファイル変更によりキャッシュを無効化（次回アクセス時に新しいハッシュで再読み込み）
+			this.invalidateMetadata(imagePath);
 			return true;
 		} catch (error) {
 			console.error('Rating更新に失敗:', imagePath, error);
@@ -200,7 +187,7 @@ export class UnifiedMetadataService {
 	}
 
 	/**
-	 * 軽量なファイル変更検出
+	 * ハッシュベースファイル変更検出
 	 */
 	private async isFileUnchanged(
 		imagePath: string,
@@ -208,10 +195,7 @@ export class UnifiedMetadataService {
 	): Promise<boolean> {
 		try {
 			const currentFileInfo = await this.getCurrentFileInfo(imagePath);
-			return (
-				currentFileInfo.size === cachedFileInfo.size &&
-				currentFileInfo.mtime === cachedFileInfo.mtime
-			);
+			return currentFileInfo.fileHash === cachedFileInfo.fileHash;
 		} catch {
 			return false; // ファイルアクセス不可 = 変更とみなす
 		}
@@ -221,10 +205,9 @@ export class UnifiedMetadataService {
 	 * 現在のファイル情報を取得
 	 */
 	private async getCurrentFileInfo(imagePath: string): Promise<LightweightFileInfo> {
-		const stats = await stat(imagePath);
+		const fileHash = await invoke<string>('calculate_file_hash_api', { path: imagePath });
 		return {
-			size: stats.size,
-			mtime: stats.mtime ? Math.floor(Number(stats.mtime) / 1000) : 0 // ミリ秒を秒に変換
+			fileHash
 		};
 	}
 
@@ -312,21 +295,20 @@ export class UnifiedMetadataService {
 	}
 
 	/**
-	 * キャッシュされたRating情報のみを更新（軽量処理）
+	 * ファイルが変更されているかナビゲーション時にチェック
 	 */
-	private updateCachedRating(imagePath: string, newRating: number): void {
-		const entry = this.cache.get(imagePath);
-		if (entry) {
-			// ImageMetadataのrating更新
-			if (entry.imageMetadata.exifInfo) {
-				entry.imageMetadata.exifInfo.rating = newRating;
-			}
-			// ThumbnailCacheInfoのrating更新
-			if (entry.thumbnailCacheInfo) {
-				entry.thumbnailCacheInfo.rating = newRating;
+	async checkAndRefreshIfChanged(imagePath: string): Promise<ImageMetadata> {
+		const cached = this.cache.get(imagePath);
+		if (cached) {
+			// ハッシュベース変更検出
+			if (!(await this.isFileUnchanged(imagePath, cached.fileInfo))) {
+				// 変更があればキャッシュを無効化して再読み込み
+				this.invalidateMetadata(imagePath);
 			}
 		}
+		return await this.getMetadata(imagePath);
 	}
+
 }
 
 /**

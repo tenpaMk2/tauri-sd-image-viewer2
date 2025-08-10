@@ -1,7 +1,9 @@
 import { basename, dirname } from '@tauri-apps/api/path';
 import { stat } from '@tauri-apps/plugin-fs';
+import { invoke } from '@tauri-apps/api/core';
 import { unifiedMetadataService } from '../services/unified-metadata-service.svelte';
 import type { ImageMetadata } from './types';
+import type { ImageMetadataInfo } from '../types/shared-types';
 
 /**
  * 基本情報のみを軽量作成（サムネイル用）
@@ -57,8 +59,8 @@ export const createImageMetadata = async (imagePath: string): Promise<ImageMetad
 			? new Date(fileStats.mtime).toLocaleString('ja-JP')
 			: 'Unknown';
 
-		// メタデータのみを効率取得
-		const imageInfo = await unifiedMetadataService.getFullMetadata(imagePath);
+		// メタデータを直接取得
+		const imageInfo = await invoke<ImageMetadataInfo>('read_image_metadata_all', { path: imagePath });
 
 		const sizeFormatted = formatFileSize(imageInfo.file_size);
 		const dimensions =

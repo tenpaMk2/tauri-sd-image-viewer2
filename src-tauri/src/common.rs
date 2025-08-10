@@ -1,4 +1,7 @@
 use std::fmt;
+use sha2::{Digest, Sha256};
+use std::fs::File;
+use std::io::{BufReader, Read};
 
 /// アプリケーション共通のエラー型
 #[derive(Debug)]
@@ -83,4 +86,42 @@ pub fn read_file_safe(path: &str) -> AppResult<Vec<u8>> {
     }
 
     std::fs::read(path).map_err(AppError::from)
+}
+
+/// ファイルのSHA256ハッシュ値を計算
+pub fn calculate_file_hash(path: &str) -> AppResult<String> {
+    if path.trim().is_empty() {
+        return Err(AppError::InvalidInput(
+            "空のファイルパスが指定されました".to_string(),
+        ));
+    }
+
+    let path_obj = std::path::Path::new(path);
+    if !path_obj.exists() {
+        return Err(AppError::InvalidInput(format!(
+            "ファイルが存在しません: {}",
+            path
+        )));
+    }
+
+    let file = File::open(path)?;
+    let mut reader = BufReader::new(file);
+    let mut hasher = Sha256::new();
+    let mut buffer = [0; 8192]; // 8KBずつ読み込み
+
+    loop {
+        let bytes_read = reader.read(&mut buffer)?;
+        if bytes_read == 0 {
+            break;
+        }
+        hasher.update(&buffer[..bytes_read]);
+    }
+
+    Ok(hex::encode(hasher.finalize()))
+}
+
+/// ファイルハッシュ計算（Tauri API）
+#[tauri::command]
+pub async fn calculate_file_hash_api(path: String) -> Result<String, String> {
+    calculate_file_hash(&path).map_err(|e| e.to_string())
 }

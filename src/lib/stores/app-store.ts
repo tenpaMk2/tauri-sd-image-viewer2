@@ -88,7 +88,7 @@ const openDirectoryDialog = async (): Promise<void> => {
 };
 
 const updateSelectedImage = async (imagePath: string): Promise<void> => {
-	const newMetadata = await unifiedMetadataService.getMetadata(imagePath);
+	const newMetadata = await unifiedMetadataService.checkAndRefreshIfChanged(imagePath);
 
 	appState.update((state) => ({
 		...state,

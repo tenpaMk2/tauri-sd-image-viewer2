@@ -3,8 +3,6 @@ import { stat } from '@tauri-apps/plugin-fs';
 import type { ImageMetadata } from '../image/types';
 import { createImageMetadata } from '../image/utils';
 import type { ThumbnailCacheInfo } from '../types/shared-types';
-import type { Result } from '../types/result';
-import { Err, Ok, asyncTry } from '../types/result';
 
 /**
  * 軽量ファイル情報（変更検出用）
@@ -37,17 +35,6 @@ export class UnifiedMetadataService {
 	// Setの代わりに配列を使用してより確実なリアクティビティを実現
 	private writingFilesArray = $state<string[]>([]);
 
-	/**
-	 * 画像メタデータを取得（ViewerPage用）
-	 */
-	async getImageMetadata(imagePath: string): Promise<Result<ImageMetadata, string>> {
-		try {
-			const entry = await this.getUnifiedEntry(imagePath);
-			return Ok(entry.imageMetadata);
-		} catch (error) {
-			return Err(error instanceof Error ? error.message : String(error));
-		}
-	}
 
 	/**
 	 * 画像メタデータを取得（Unsafe版）
@@ -230,13 +217,6 @@ export class UnifiedMetadataService {
 		this.loadingPromises.delete(imagePath);
 	}
 
-	/**
-	 * メタデータを更新
-	 */
-	async refreshMetadata(imagePath: string): Promise<Result<ImageMetadata, string>> {
-		this.invalidateMetadata(imagePath);
-		return await this.getImageMetadata(imagePath);
-	}
 
 	/**
 	 * メタデータを更新（Unsafe版）

@@ -1,5 +1,5 @@
 use crate::image_info::read_image_metadata_internal;
-use crate::types::{ComprehensiveThumbnail, ThumbnailInfo, ThumbnailWithDimensions};
+use crate::types::{ComprehensiveThumbnail};
 use image::imageops::FilterType;
 use image::{GenericImageView, ImageFormat};
 use memmap2::MmapOptions;
@@ -31,50 +31,6 @@ impl ThumbnailGenerator {
 
     pub fn get_config(&self) -> &ThumbnailConfig {
         &self.config
-    }
-
-    /// サムネイルを生成（元画像解像度付き、重複読み込み回避版）
-    pub fn generate_thumbnail_with_dimensions(&self, image_path: &str) -> Result<ThumbnailWithDimensions, String> {
-        let start_time = Instant::now();
-
-        // 画像ファイルを最適化された方法で読み込み（1回のみ）
-        let load_start = Instant::now();
-        let img = self.load_image_optimized(image_path)?;
-        let _load_duration = load_start.elapsed();
-
-        // 元画像の解像度を取得
-        let (original_width, original_height) = img.dimensions();
-
-        // 段階的リサイズでサムネイル生成
-        let resize_start = Instant::now();
-        let thumbnail = self.resize_image_optimized(img, self.config.size);
-        let (thumbnail_width, thumbnail_height) = thumbnail.dimensions();
-        let _resize_duration = resize_start.elapsed();
-
-        // RGBAバイト配列に変換
-        let rgba_start = Instant::now();
-        let rgba_image = thumbnail.to_rgba8();
-        let rgba_data = rgba_image.as_raw();
-        let _rgba_duration = rgba_start.elapsed();
-
-        // WebPに変換
-        let webp_start = Instant::now();
-        let encoder = Encoder::from_rgba(rgba_data, thumbnail_width, thumbnail_height);
-        let webp_memory = encoder.encode(self.config.quality as f32);
-        let webp_data = webp_memory.to_vec();
-        let _webp_duration = webp_start.elapsed();
-
-        let _total_duration = start_time.elapsed();
-
-        Ok(ThumbnailWithDimensions {
-            data: webp_data,
-            thumbnail_width,
-            thumbnail_height,
-            mime_type: "image/webp".to_string(),
-            cache_path: None,
-            original_width,
-            original_height,
-        })
     }
 
     /// 包括的サムネイル生成（メタデータ統合版、1回の読み込みで全て処理）
@@ -129,18 +85,6 @@ impl ThumbnailGenerator {
             original_width,
             original_height,
             metadata_info,
-        })
-    }
-
-    /// サムネイルを生成（従来版、互換性維持）
-    pub fn generate_thumbnail(&self, image_path: &str) -> Result<ThumbnailInfo, String> {
-        let result = self.generate_thumbnail_with_dimensions(image_path)?;
-        Ok(ThumbnailInfo {
-            data: result.data,
-            width: result.thumbnail_width,
-            height: result.thumbnail_height,
-            mime_type: result.mime_type,
-            cache_path: result.cache_path,
         })
     }
 

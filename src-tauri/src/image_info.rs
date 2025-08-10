@@ -51,12 +51,14 @@ fn extract_image_file_info_with_reader(path: &str) -> Result<ImageFileInfo, Stri
         .as_secs();
 
     Ok(ImageFileInfo {
-        path: path.to_string(),
+        file_info: crate::types::FileSystemInfo {
+            path: path.to_string(),
+            file_size,
+            modified_time,
+        },
         width,
         height,
-        file_size,
         mime_type,
-        modified_time,
     })
 }
 

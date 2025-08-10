@@ -78,7 +78,7 @@ impl CacheManager {
         let current_file_info = match self.get_original_file_info(original_path) {
             Ok(info) => {
                 println!("✅ 現在ファイル情報取得成功: size={}, modified={}", 
-                         info.file_size, info.modified_time);
+                         info.file_info.file_size, info.file_info.modified_time);
                 info
             },
             Err(e) => {
@@ -93,9 +93,9 @@ impl CacheManager {
 
         println!("🔄 変更検出結果: file_changed={}, config_changed={}", file_changed, config_changed);
         println!("📊 キャッシュファイル情報: size={}, modified={}", 
-                 cache_info.original_file_info.file_size, cache_info.original_file_info.modified_time);
+                 cache_info.original_file_info.file_info.file_size, cache_info.original_file_info.file_info.modified_time);
         println!("📊 現在ファイル情報: size={}, modified={}", 
-                 current_file_info.file_size, current_file_info.modified_time);
+                 current_file_info.file_info.file_size, current_file_info.file_info.modified_time);
 
         if file_changed || config_changed {
             println!("❌ キャッシュ無効（変更検出）");
@@ -121,9 +121,7 @@ impl CacheManager {
         
         // 解像度情報を組み合わせて完全な情報を作成
         Ok(ImageFileInfo {
-            path: basic_file_info.path,
-            file_size: basic_file_info.file_size,
-            modified_time: basic_file_info.modified_time,
+            file_info: basic_file_info,
             width,
             height,
             mime_type,
@@ -146,8 +144,8 @@ impl CacheManager {
         cached_info: &ImageFileInfo,
         current_info: &ImageFileInfo,
     ) -> bool {
-        cached_info.file_size != current_info.file_size
-            || cached_info.modified_time != current_info.modified_time
+        cached_info.file_info.file_size != current_info.file_info.file_size
+            || cached_info.file_info.modified_time != current_info.file_info.modified_time
     }
 
     /// キャッシュ情報を読み込み

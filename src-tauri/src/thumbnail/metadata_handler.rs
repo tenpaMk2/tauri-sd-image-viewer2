@@ -15,9 +15,7 @@ impl MetadataHandler {
         // ファイル情報を取得
         let basic_file_info = Self::get_basic_file_info(image_path)?;
         let original_file_info = ImageFileInfo {
-            path: basic_file_info.path,
-            file_size: basic_file_info.file_size,
-            modified_time: basic_file_info.modified_time,
+            file_info: basic_file_info,
             width: comprehensive.original_width,
             height: comprehensive.original_height,
             mime_type: comprehensive.mime_type.clone(),

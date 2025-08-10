@@ -78,7 +78,7 @@ impl CacheManager {
         let current_file_info = match self.get_original_file_info(original_path) {
             Ok(info) => {
                 println!("✅ 現在ファイル情報取得成功: size={}, modified={}", 
-                         info.file_info.file_size, info.file_info.modified_time);
+                         info.file_size, info.modified_time);
                 info
             },
             Err(e) => {
@@ -93,9 +93,9 @@ impl CacheManager {
 
         println!("🔄 変更検出結果: file_changed={}, config_changed={}", file_changed, config_changed);
         println!("📊 キャッシュファイル情報: size={}, modified={}", 
-                 cache_info.original_file_info.file_info.file_size, cache_info.original_file_info.file_info.modified_time);
+                 cache_info.original_file_info.file_size, cache_info.original_file_info.modified_time);
         println!("📊 現在ファイル情報: size={}, modified={}", 
-                 current_file_info.file_info.file_size, current_file_info.file_info.modified_time);
+                 current_file_info.file_size, current_file_info.modified_time);
 
         if file_changed || config_changed {
             println!("❌ キャッシュ無効（変更検出）");
@@ -109,23 +109,14 @@ impl CacheManager {
     /// 現在のファイル情報を取得（高速解像度付き）
     fn get_original_file_info(&self, image_path: &str) -> Result<ImageFileInfo, String> {
         use crate::image_loader::ImageReader;
-        use crate::thumbnail::metadata_handler::MetadataHandler;
-        
+                
         // ImageReaderで高速解像度とMIMEタイプ取得
         let reader = ImageReader::from_file(image_path)?;
         let (width, height) = reader.get_dimensions()?;
         let mime_type = reader.mime_type().to_string();
         
-        // メタデータハンドラーで基本ファイル情報を取得
-        let basic_file_info = MetadataHandler::get_basic_file_info(image_path)?;
-        
-        // 解像度情報を組み合わせて完全な情報を作成
-        Ok(ImageFileInfo {
-            file_info: basic_file_info,
-            width,
-            height,
-            mime_type,
-        })
+        // ImageFileInfoを直接作成
+        Ok(ImageFileInfo::from_file_with_dimensions(image_path, width, height, mime_type)?)
     }
 
     /// 画像の解像度を取得
@@ -144,8 +135,8 @@ impl CacheManager {
         cached_info: &ImageFileInfo,
         current_info: &ImageFileInfo,
     ) -> bool {
-        cached_info.file_info.file_size != current_info.file_info.file_size
-            || cached_info.file_info.modified_time != current_info.file_info.modified_time
+        cached_info.file_size != current_info.file_size
+            || cached_info.modified_time != current_info.modified_time
     }
 
     /// キャッシュ情報を読み込み

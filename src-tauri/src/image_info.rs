@@ -1,7 +1,6 @@
 use crate::common::{detect_mime_type_from_path, read_file_safe, AppResult};
 use crate::exif_info::ExifInfo;
 use crate::image_handlers::PngProcessor;
-use crate::image_loader::ImageReader;
 use crate::types::{ImageFileInfo, ImageMetadataInfo};
 
 /// 画像基本情報のみを軽量取得
@@ -33,33 +32,7 @@ fn read_file_and_detect_mime(path: &str) -> AppResult<(Vec<u8>, String)> {
 
 /// ImageReaderを使用した画像ファイル情報取得
 fn extract_image_file_info_with_reader(path: &str) -> Result<ImageFileInfo, String> {
-    use std::fs;
-    
-    let reader = ImageReader::from_file(path)?;
-    let (width, height) = reader.get_dimensions()?;
-    let file_size = reader.as_bytes().len() as u64;
-    let mime_type = reader.mime_type().to_string();
-
-    // ファイルシステム情報を取得
-    let metadata = fs::metadata(path)
-        .map_err(|e| format!("ファイルメタデータの取得に失敗: {}", e))?;
-    let modified_time = metadata
-        .modified()
-        .map_err(|e| format!("ファイル更新時刻の取得に失敗: {}", e))?
-        .duration_since(std::time::UNIX_EPOCH)
-        .map_err(|e| format!("UNIX時刻への変換に失敗: {}", e))?
-        .as_secs();
-
-    Ok(ImageFileInfo {
-        file_info: crate::types::FileSystemInfo {
-            path: path.to_string(),
-            file_size,
-            modified_time,
-        },
-        width,
-        height,
-        mime_type,
-    })
+    ImageFileInfo::from_file_with_reader(path)
 }
 
 

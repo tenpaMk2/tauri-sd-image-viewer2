@@ -1,5 +1,4 @@
-use crate::types::{FileSystemInfo, ImageFileInfo, ThumbnailCacheInfo, ThumbnailConfig};
-use std::fs;
+use crate::types::{ImageFileInfo, ThumbnailCacheInfo, ThumbnailConfig};
 
 /// メタデータ処理を担当
 pub struct MetadataHandler;
@@ -13,13 +12,12 @@ impl MetadataHandler {
         comprehensive: &crate::types::ComprehensiveThumbnail,
     ) -> Result<ThumbnailCacheInfo, String> {
         // ファイル情報を取得
-        let basic_file_info = Self::get_basic_file_info(image_path)?;
-        let original_file_info = ImageFileInfo {
-            file_info: basic_file_info,
-            width: comprehensive.original_width,
-            height: comprehensive.original_height,
-            mime_type: comprehensive.mime_type.clone(),
-        };
+        let original_file_info = ImageFileInfo::from_file_with_dimensions(
+            image_path,
+            comprehensive.original_width,
+            comprehensive.original_height,
+            comprehensive.mime_type.clone(),
+        )?;
 
         let current_time = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
@@ -40,25 +38,4 @@ impl MetadataHandler {
         })
     }
 
-    /// 基本ファイル情報を取得（ファイルシステム情報のみ）
-    pub fn get_basic_file_info(image_path: &str) -> Result<FileSystemInfo, String> {
-        let metadata = fs::metadata(image_path)
-            .map_err(|e| format!("ファイルメタデータの取得に失敗: {}", e))?;
-
-        let modified_time = metadata
-            .modified()
-            .map_err(|e| format!("ファイル更新時刻の取得に失敗: {}", e))?
-            .duration_since(std::time::UNIX_EPOCH)
-            .map_err(|e| format!("UNIX時刻への変換に失敗: {}", e))?
-            .as_secs();
-        
-        println!("📏 基本ファイル情報取得完了: path={}, size={}, modified={}", 
-                 image_path, metadata.len(), modified_time);
-
-        Ok(FileSystemInfo {
-            path: image_path.to_string(),
-            file_size: metadata.len(),
-            modified_time,
-        })
-    }
 }

@@ -315,33 +315,6 @@
 		initializeImages(imagePath);
 	});
 
-	// 画像パス変更時の同期処理
-	$effect(() => {
-		const currentNavigationPath = navigationState.files[navigationState.currentIndex];
-		
-		// imagePath プロパティと navigationState が異なる場合は同期
-		if (imagePath && currentNavigationPath !== imagePath) {
-			const syncNavigation = async () => {
-				try {
-					// パス基準でナビゲーション状態を更新
-					await updateNavigationFromPath(imagePath);
-					
-					// 新しいパスが見つからない場合は再初期化
-					const newIndex = navigationService.findIndexByPath(navigationState.files, imagePath);
-					if (newIndex === 0 && navigationState.files[0] !== imagePath) {
-						await initializeImages(imagePath);
-					} else {
-						navigationState.currentIndex = newIndex;
-						await loadCurrentImage(imagePath);
-					}
-				} catch (error) {
-					console.error('Failed to sync navigation with image path:', error);
-				}
-			};
-			
-			syncNavigation();
-		}
-	});
 
 	// プラットフォーム判定の初期化
 	$effect(() => {

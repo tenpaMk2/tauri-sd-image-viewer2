@@ -32,8 +32,15 @@ impl ThumbnailHandler {
 
         // キャッシュディレクトリ作成
         if !cache_dir.exists() {
+            println!("📁 キャッシュディレクトリ作成: {}", cache_dir.display());
             fs::create_dir_all(&cache_dir)
-                .map_err(|e| format!("キャッシュディレクトリの作成に失敗: {}", e))?;
+                .map_err(|e| {
+                    println!("❌ キャッシュディレクトリ作成失敗: {} - {}", cache_dir.display(), e);
+                    format!("キャッシュディレクトリの作成に失敗: {}", e)
+                })?;
+            println!("✅ キャッシュディレクトリ作成成功");
+        } else {
+            println!("📁 キャッシュディレクトリ既存: {}", cache_dir.display());
         }
 
         let generator = ThumbnailGenerator::new(config.clone());

@@ -2,6 +2,7 @@ use sha2::{Digest, Sha256};
 use std::fs;
 use std::path::PathBuf;
 
+use crate::common::calculate_file_hash;
 use crate::image_info::read_image_metadata_internal;
 use crate::types::ThumbnailConfig;
 use crate::types::{OriginalFileInfo, ThumbnailCacheInfo};
@@ -16,11 +17,18 @@ impl CacheManager {
         Self { cache_dir }
     }
 
-    /// ファイルパスからシンプルなキャッシュキーを生成（ファイルパスのハッシュのみ）
+    /// ファイル内容ハッシュを使用してキャッシュキーを生成
     pub fn generate_cache_key(&self, image_path: &str) -> String {
-        let mut hasher = Sha256::new();
-        hasher.update(image_path.as_bytes());
-        hex::encode(hasher.finalize())[..16].to_string() // 16文字に短縮
+        // ファイル内容のハッシュを計算してキャッシュキーとして使用
+        match calculate_file_hash(image_path) {
+            Ok(hash) => hash[..16].to_string(), // 16文字に短縮
+            Err(_) => {
+                // ファイル読み込みに失敗した場合はパスハッシュをフォールバック
+                let mut hasher = Sha256::new();
+                hasher.update(image_path.as_bytes());
+                hex::encode(hasher.finalize())[..16].to_string()
+            }
+        }
     }
 
     /// キャッシュ情報ファイルのパスを取得
@@ -43,30 +51,58 @@ impl CacheManager {
         let cache_info_path = self.get_cache_info_path(cache_key);
         let thumbnail_path = self.get_thumbnail_file_path(cache_key);
 
+        println!("🔍 キャッシュ有効性チェック開始: path={}, cache_key={}", original_path, cache_key);
+
         // キャッシュファイルが存在するかチェック
         if !cache_info_path.exists() || !thumbnail_path.exists() {
+            println!("❌ キャッシュファイル不存在: info_exists={}, thumb_exists={}", 
+                     cache_info_path.exists(), thumbnail_path.exists());
             return None;
         }
 
+        println!("✅ キャッシュファイル存在確認完了");
+
         // キャッシュ情報を読み込み
         let cache_info = match self.load_cache_info(cache_key) {
-            Some(info) => info,
-            None => return None,
+            Some(info) => {
+                println!("✅ キャッシュ情報読み込み成功");
+                info
+            },
+            None => {
+                println!("❌ キャッシュ情報読み込み失敗");
+                return None;
+            }
         };
 
         // 元ファイルの現在の情報を取得
         let current_file_info = match self.get_current_file_info(original_path) {
-            Ok(info) => info,
-            Err(_) => return None,
+            Ok(info) => {
+                println!("✅ 現在ファイル情報取得成功: size={}, modified={}", 
+                         info.file_size, info.modified_time);
+                info
+            },
+            Err(e) => {
+                println!("❌ 現在ファイル情報取得失敗: {}", e);
+                return None;
+            }
         };
 
-        // 厳密な比較を実行
-        if self.is_file_changed(&cache_info.original_file_info, &current_file_info)
-            || cache_info.thumbnail_config != *config
-        {
+        // ファイル変更をチェック
+        let file_changed = self.is_file_changed(&cache_info.original_file_info, &current_file_info);
+        let config_changed = cache_info.thumbnail_config != *config;
+
+        println!("🔄 変更検出結果: file_changed={}, config_changed={}", file_changed, config_changed);
+        println!("📊 キャッシュファイル情報: size={}, modified={}", 
+                 cache_info.original_file_info.file_size, cache_info.original_file_info.modified_time);
+        println!("📊 現在ファイル情報: size={}, modified={}", 
+                 current_file_info.file_size, current_file_info.modified_time);
+
+        if file_changed || config_changed {
+            println!("❌ キャッシュ無効（変更検出）");
             return None;
         }
 
+        println!("✅ キャッシュ有効");
         Some(cache_info)
     }
 
@@ -131,20 +167,34 @@ impl CacheManager {
         cache_info: &ThumbnailCacheInfo,
     ) -> Result<(), String> {
         let cache_info_path = self.get_cache_info_path(cache_key);
+        println!("💾 キャッシュ情報保存開始: cache_key={}, path={}", cache_key, cache_info_path.display());
+
         let json_str = serde_json::to_string_pretty(cache_info)
             .map_err(|e| format!("キャッシュ情報のJSON変換に失敗: {}", e))?;
 
         fs::write(&cache_info_path, json_str)
-            .map_err(|e| format!("キャッシュ情報の保存に失敗: {}", e))?;
+            .map_err(|e| {
+                println!("❌ キャッシュ情報保存失敗: {}", e);
+                format!("キャッシュ情報の保存に失敗: {}", e)
+            })?;
 
+        println!("✅ キャッシュ情報保存成功");
         Ok(())
     }
 
     /// サムネイル画像を保存
     pub fn save_thumbnail_image(&self, cache_key: &str, image_data: &[u8]) -> Result<(), String> {
         let thumbnail_path = self.get_thumbnail_file_path(cache_key);
+        println!("💾 サムネイル画像保存開始: cache_key={}, path={}, size={}bytes", 
+                 cache_key, thumbnail_path.display(), image_data.len());
+
         fs::write(&thumbnail_path, image_data)
-            .map_err(|e| format!("サムネイル画像の保存に失敗: {}", e))?;
+            .map_err(|e| {
+                println!("❌ サムネイル画像保存失敗: {}", e);
+                format!("サムネイル画像の保存に失敗: {}", e)
+            })?;
+
+        println!("✅ サムネイル画像保存成功");
         Ok(())
     }
 

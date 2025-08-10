@@ -50,8 +50,11 @@ impl MetadataHandler {
             .map_err(|e| format!("UNIX時刻への変換に失敗: {}", e))?
             .as_secs();
 
-        // 解像度情報を取得
+        // 解像度情報を取得（新規キャッシュ作成時のみ必要）
         let (width, height) = Self::get_image_dimensions(image_path)?;
+
+        println!("📏 ファイル情報取得完了: path={}, size={}, dimensions={}x{}, modified={}", 
+                 image_path, metadata.len(), width, height, modified_time);
 
         Ok(OriginalFileInfo {
             path: image_path.to_string(),

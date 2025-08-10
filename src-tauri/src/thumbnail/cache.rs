@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use crate::common::calculate_file_hash;
 use crate::image_info::read_image_metadata_internal;
 use crate::types::ThumbnailConfig;
-use crate::types::{OriginalFileInfo, OriginalFileInfoWithDimensions, ThumbnailCacheInfo};
+use crate::types::{OriginalFileInfo, ThumbnailCacheInfo};
 
 /// 新しいキャッシュシステム - ファイルパスベースのキャッシュ管理
 pub struct CacheManager {
@@ -106,10 +106,17 @@ impl CacheManager {
         Some(cache_info)
     }
 
-    /// 現在のファイル情報を取得（軽量版：解像度なし）
+    /// 現在のファイル情報を取得（高速解像度付き）
     fn get_current_file_info(&self, image_path: &str) -> Result<OriginalFileInfo, String> {
+        use crate::image_loader::ImageReader;
         use crate::thumbnail::metadata_handler::MetadataHandler;
-        MetadataHandler::get_basic_file_info(image_path)
+        
+        // ImageReaderで高速解像度取得
+        let reader = ImageReader::from_file(image_path)?;
+        let (width, height) = reader.get_dimensions()?;
+        
+        // メタデータハンドラーでファイル情報を取得
+        MetadataHandler::get_basic_file_info(image_path, width, height)
     }
 
     /// 画像の解像度を取得
@@ -125,7 +132,7 @@ impl CacheManager {
     /// ファイルが変更されたかチェック（軽量版：ファイルサイズ + 更新時刻のみ）
     fn is_file_changed_lightweight(
         &self,
-        cached_info: &OriginalFileInfoWithDimensions,
+        cached_info: &OriginalFileInfo,
         current_info: &OriginalFileInfo,
     ) -> bool {
         cached_info.file_size != current_info.file_size

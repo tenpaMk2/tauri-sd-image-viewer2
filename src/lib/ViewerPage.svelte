@@ -190,12 +190,6 @@
 		}
 	};
 
-	const refreshCurrentImage = async (): Promise<void> => {
-		const currentPath = navigationState.files[navigationState.currentIndex];
-		if (currentPath) {
-			await onImageChange(currentPath);
-		}
-	};
 
 	// リサイザーの制御
 	const MIN_PANEL_WIDTH = 250;

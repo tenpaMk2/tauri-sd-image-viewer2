@@ -62,27 +62,13 @@ export const loadImage = async (filePath: string): Promise<ImageData> => {
 };
 
 /**
- * ハイブリッドアプローチ: 画像とメタデータを並行取得
- * 画像データはフロントエンド、メタデータはRustで効率的に処理
+ * メタデータのみを取得
  */
-export const loadImageWithMetadata = async (
-	filePath: string
-): Promise<{
-	imageData: ImageData;
-	imageInfo: ImageMetadataInfo;
-}> => {
+export const loadMetadata = async (filePath: string): Promise<ImageMetadataInfo> => {
 	try {
-		// 並行実行でパフォーマンス最適化
-		const [imageData, imageInfo] = await Promise.all([
-			// フロントエンド: 画像データの高速読み込み
-			loadImage(filePath),
-			// Rust: メタデータのみの軽量取得
-			invoke<ImageMetadataInfo>('read_image_metadata_info', { path: filePath })
-		]);
-
-		return { imageData, imageInfo };
+		return await invoke<ImageMetadataInfo>('read_image_metadata_info', { path: filePath });
 	} catch (error) {
-		console.error('画像・メタデータの取得に失敗:', filePath, error);
-		throw new Error(`Failed to get image info: ${filePath}`);
+		console.error('メタデータの取得に失敗:', filePath, error);
+		throw new Error(`Failed to get metadata: ${filePath}`);
 	}
 };

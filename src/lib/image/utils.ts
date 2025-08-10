@@ -1,10 +1,10 @@
 import { basename, dirname } from '@tauri-apps/api/path';
 import { stat } from '@tauri-apps/plugin-fs';
-import { loadImageWithMetadata } from './image-loader';
+import { loadMetadata } from './image-loader';
 import type { ImageMetadata } from './types';
 
 /**
- * 画像メタデータを効率的に作成（1回のIO操作で済む統合版）
+ * 画像メタデータを効率的に作成
  */
 export const createImageMetadata = async (imagePath: string): Promise<ImageMetadata> => {
 	const filename = await basename(imagePath);
@@ -20,8 +20,8 @@ export const createImageMetadata = async (imagePath: string): Promise<ImageMetad
 			? new Date(fileStats.mtime).toLocaleString('ja-JP')
 			: 'Unknown';
 
-		// ハイブリッドアプローチで画像とメタデータを効率取得
-		const { imageInfo } = await loadImageWithMetadata(imagePath);
+		// メタデータのみを効率取得
+		const imageInfo = await loadMetadata(imagePath);
 
 		const sizeFormatted = formatFileSize(imageInfo.file_size);
 		const dimensions =

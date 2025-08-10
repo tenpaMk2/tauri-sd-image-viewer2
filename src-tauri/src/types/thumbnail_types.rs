@@ -10,14 +10,22 @@ pub struct ThumbnailConfig {
     pub format: String, // "webp"
 }
 
-/// 元画像のファイル情報
+/// 元画像のファイル情報（解像度は別途管理）
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct OriginalFileInfo {
     pub path: String,
     pub file_size: u64,
+    pub modified_time: u64, // UNIXタイムスタンプ
+}
+
+/// 解像度付き画像ファイル情報（キャッシュ保存用）
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct OriginalFileInfoWithDimensions {
+    pub path: String,
+    pub file_size: u64,
+    pub modified_time: u64, // UNIXタイムスタンプ
     pub width: u32,
     pub height: u32,
-    pub modified_time: u64, // UNIXタイムスタンプ
 }
 
 /// 包括的キャッシュ情報（JSONファイルで保存）
@@ -25,8 +33,8 @@ pub struct OriginalFileInfo {
 pub struct ThumbnailCacheInfo {
     /// キャッシュ作成時の設定
     pub thumbnail_config: ThumbnailConfig,
-    /// 元画像のファイル情報
-    pub original_file_info: OriginalFileInfo,
+    /// 元画像のファイル情報（解像度付き）
+    pub original_file_info: OriginalFileInfoWithDimensions,
     /// サムネイル画像ファイル名
     pub thumbnail_filename: String,
     /// メタデータ情報

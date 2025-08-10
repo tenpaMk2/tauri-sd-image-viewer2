@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use crate::common::calculate_file_hash;
 use crate::image_info::read_image_metadata_internal;
 use crate::types::ThumbnailConfig;
-use crate::types::{OriginalFileInfo, ThumbnailCacheInfo};
+use crate::types::{OriginalFileInfo, OriginalFileInfoWithDimensions, ThumbnailCacheInfo};
 
 /// 新しいキャッシュシステム - ファイルパスベースのキャッシュ管理
 pub struct CacheManager {
@@ -87,8 +87,8 @@ impl CacheManager {
             }
         };
 
-        // ファイル変更をチェック
-        let file_changed = self.is_file_changed(&cache_info.original_file_info, &current_file_info);
+        // ファイル変更をチェック（軽量版：解像度なしの比較）
+        let file_changed = self.is_file_changed_lightweight(&cache_info.original_file_info, &current_file_info);
         let config_changed = cache_info.thumbnail_config != *config;
 
         println!("🔄 変更検出結果: file_changed={}, config_changed={}", file_changed, config_changed);
@@ -106,25 +106,10 @@ impl CacheManager {
         Some(cache_info)
     }
 
-    /// 現在のファイル情報を取得（軽量版：解像度取得を除去）
+    /// 現在のファイル情報を取得（軽量版：解像度なし）
     fn get_current_file_info(&self, image_path: &str) -> Result<OriginalFileInfo, String> {
-        let metadata = fs::metadata(image_path)
-            .map_err(|e| format!("ファイルメタデータの取得に失敗: {}", e))?;
-
-        let modified_time = metadata
-            .modified()
-            .map_err(|e| format!("ファイル更新時刻の取得に失敗: {}", e))?
-            .duration_since(std::time::UNIX_EPOCH)
-            .map_err(|e| format!("UNIX時刻への変換に失敗: {}", e))?
-            .as_secs();
-
-        Ok(OriginalFileInfo {
-            path: image_path.to_string(),
-            file_size: metadata.len(),
-            width: 0,  // キャッシュ判定では使用しない
-            height: 0, // キャッシュ判定では使用しない
-            modified_time,
-        })
+        use crate::thumbnail::metadata_handler::MetadataHandler;
+        MetadataHandler::get_basic_file_info(image_path)
     }
 
     /// 画像の解像度を取得
@@ -138,9 +123,9 @@ impl CacheManager {
     }
 
     /// ファイルが変更されたかチェック（軽量版：ファイルサイズ + 更新時刻のみ）
-    fn is_file_changed(
+    fn is_file_changed_lightweight(
         &self,
-        cached_info: &OriginalFileInfo,
+        cached_info: &OriginalFileInfoWithDimensions,
         current_info: &OriginalFileInfo,
     ) -> bool {
         cached_info.file_size != current_info.file_size

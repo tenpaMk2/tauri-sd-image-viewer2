@@ -1,10 +1,10 @@
-use crate::exif_api::ExifInfo; 
+use super::exif_handler::ExifInfo;
+use super::sd_parameters::SdParameters;
 use crate::image_handlers::png_processor;
 use crate::image_loader::ImageReader;
-use crate::sd_parameters::SdParameters;
 use serde::{Deserialize, Serialize};
 
-/// 画像メタデータ情報（統合型）
+/// Comprehensive image metadata information
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ImageMetadataInfo {
     pub width: u32,
@@ -16,13 +16,13 @@ pub struct ImageMetadataInfo {
 }
 
 impl ImageMetadataInfo {
-    /// ImageReaderから全メタデータ情報を構築
+    /// Build comprehensive metadata information from ImageReader
     pub fn from_reader(reader: &ImageReader, path: &str) -> Result<Self, String> {
-        // 基本情報を取得
+        // Get basic information
         let file_size = reader.as_bytes().len() as u64;
-        let (width, height) = reader.get_dimensions().map_err(|e| format!("解像度取得失敗: {}", e))?;
+        let (width, height) = reader.get_dimensions().map_err(|e| format!("Resolution acquisition failed: {}", e))?;
         
-        // SD Parametersを取得（PNGのみ）
+        // Get SD Parameters (PNG only)
         let mime_type = reader.mime_type();
         let sd_parameters = if mime_type == "image/png" {
             match png_processor::extract_sd_parameters(reader.as_bytes()) {
@@ -33,7 +33,7 @@ impl ImageMetadataInfo {
             None
         };
         
-        // EXIF情報を取得
+        // Get EXIF information
         let exif_info = Self::extract_exif_info_from_reader(reader, path);
 
         Ok(ImageMetadataInfo {
@@ -46,7 +46,7 @@ impl ImageMetadataInfo {
         })
     }
 
-    /// EXIF情報の抽出（ImageReaderから）
+    /// Extract EXIF information from ImageReader
     fn extract_exif_info_from_reader(reader: &ImageReader, path: &str) -> Option<ExifInfo> {
         let mime_type = reader.mime_type();
         if matches!(mime_type.as_str(), "image/png" | "image/jpeg" | "image/webp") {
@@ -57,7 +57,7 @@ impl ImageMetadataInfo {
         }
     }
 
-    /// Rating値のみを抽出（ImageReaderから）
+    /// Extract rating value only from ImageReader
     pub fn extract_rating_from_reader(reader: &ImageReader, path: &str) -> Option<u8> {
         Self::extract_exif_info_from_reader(reader, path)?.rating
     }

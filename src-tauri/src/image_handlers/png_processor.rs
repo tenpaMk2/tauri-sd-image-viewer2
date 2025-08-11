@@ -1,5 +1,5 @@
 use crate::common::AppResult;
-use crate::sd_parameters::SdParameters;
+use crate::metadata_api::SdParameters;
 use png::Decoder;
 use std::io::Cursor;
 

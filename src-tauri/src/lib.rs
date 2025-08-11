@@ -1,12 +1,8 @@
 mod clipboard_api;
 mod common;
-mod exif_api;
-mod image_api;
-mod image_file_info;
 mod image_handlers;
 mod image_loader;
-mod image_metadata_info;
-mod sd_parameters;
+mod metadata_api;
 mod thumbnail_api;
 
 use tauri::Manager;
@@ -35,8 +31,8 @@ pub fn run() {
             clipboard_api::set_clipboard_files,
             thumbnail_api::generate_thumbnails_batch,
             thumbnail_api::clear_thumbnail_cache,
-            image_api::read_image_metadata,
-            exif_api::write_exif_image_rating,
+            metadata_api::service::read_image_metadata,
+            metadata_api::service::write_exif_image_rating,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

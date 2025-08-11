@@ -1,4 +1,4 @@
-use crate::types::{ImageFileInfo, ThumbnailCacheInfo, ThumbnailConfig};
+use crate::types::{ThumbnailCacheInfo, ThumbnailConfig};
 
 /// メタデータ処理を担当
 pub struct MetadataHandler;
@@ -12,7 +12,7 @@ impl MetadataHandler {
         comprehensive: &crate::types::ComprehensiveThumbnail,
     ) -> Result<ThumbnailCacheInfo, String> {
         // ファイル情報を取得
-        let original_file_info = ImageFileInfo::from_file_with_dimensions(
+        let original_file_info = crate::types::ImageFileInfo::from_dimensions(
             image_path,
             comprehensive.original_width,
             comprehensive.original_height,

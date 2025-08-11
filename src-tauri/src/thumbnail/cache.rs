@@ -104,11 +104,9 @@ impl CacheManager {
                 
         // ImageReaderで高速解像度とMIMEタイプ取得
         let reader = ImageReader::from_file(image_path)?;
-        let (width, height) = reader.get_dimensions()?;
-        let mime_type = reader.mime_type().to_string();
         
-        // ImageFileInfoを直接作成
-        Ok(ImageFileInfo::from_file_with_dimensions(image_path, width, height, mime_type)?)
+        // ImageFileInfoを構築
+        ImageFileInfo::from_reader(&reader, image_path)
     }
 
     /// 画像の解像度を取得

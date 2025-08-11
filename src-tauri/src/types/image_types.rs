@@ -14,24 +14,22 @@ pub struct ImageFileInfo {
 }
 
 impl ImageFileInfo {
-    /// ImageReaderを使用して画像ファイル情報を取得
-    pub fn from_file_with_reader(path: &str) -> Result<Self, String> {
-        use crate::image_loader::ImageReader;
+    /// ImageReaderから画像ファイル情報を構築
+    pub fn from_reader(reader: &crate::image_loader::ImageReader, path: &str) -> Result<Self, String> {
         use std::fs;
 
-        let reader = ImageReader::from_file(path)?;
         let (width, height) = reader.get_dimensions()?;
         let file_size = reader.as_bytes().len() as u64;
         let mime_type = reader.mime_type().to_string();
 
         // ファイルシステム情報を取得
         let metadata =
-            fs::metadata(path).map_err(|e| format!("ファイルメタデータの取得に失敗: {}", e))?;
+            fs::metadata(path).map_err(|e| format!("Failed to get file metadata: {}", e))?;
         let modified_time = metadata
             .modified()
-            .map_err(|e| format!("ファイル更新時刻の取得に失敗: {}", e))?
+            .map_err(|e| format!("Failed to get file modified time: {}", e))?
             .duration_since(std::time::UNIX_EPOCH)
-            .map_err(|e| format!("UNIX時刻への変換に失敗: {}", e))?
+            .map_err(|e| format!("Failed to convert to UNIX time: {}", e))?
             .as_secs();
 
         Ok(ImageFileInfo {
@@ -44,8 +42,8 @@ impl ImageFileInfo {
         })
     }
 
-    /// 指定された解像度とMIMEタイプで画像ファイル情報を作成
-    pub fn from_file_with_dimensions(
+    /// 指定された解像度とMIMEタイプで画像ファイル情報を構築
+    pub fn from_dimensions(
         path: &str,
         width: u32,
         height: u32,
@@ -54,13 +52,13 @@ impl ImageFileInfo {
         use std::fs;
 
         let metadata =
-            fs::metadata(path).map_err(|e| format!("ファイルメタデータの取得に失敗: {}", e))?;
+            fs::metadata(path).map_err(|e| format!("Failed to get file metadata: {}", e))?;
 
         let modified_time = metadata
             .modified()
-            .map_err(|e| format!("ファイル更新時刻の取得に失敗: {}", e))?
+            .map_err(|e| format!("Failed to get file modified time: {}", e))?
             .duration_since(std::time::UNIX_EPOCH)
-            .map_err(|e| format!("UNIX時刻への変換に失敗: {}", e))?
+            .map_err(|e| format!("Failed to convert to UNIX time: {}", e))?
             .as_secs();
 
         Ok(ImageFileInfo {

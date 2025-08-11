@@ -27,7 +27,8 @@ pub fn read_image_metadata_all(path: String) -> Result<ImageMetadataInfo, String
 
 /// ImageReaderを使用した画像ファイル情報取得
 fn extract_image_file_info_with_reader(path: &str) -> Result<ImageFileInfo, String> {
-    ImageFileInfo::from_file_with_reader(path)
+    let reader = ImageReader::from_file(path)?;
+    ImageFileInfo::from_reader(&reader, path)
 }
 
 

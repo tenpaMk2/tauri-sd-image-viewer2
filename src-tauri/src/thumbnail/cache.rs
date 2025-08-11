@@ -1,8 +1,6 @@
 use sha2::{Digest, Sha256};
 use std::fs;
 use std::path::PathBuf;
-
-use crate::common::calculate_file_hash;
 use crate::image_info::read_image_metadata_internal;
 use crate::types::ThumbnailConfig;
 use crate::types::{ImageFileInfo, ThumbnailCacheInfo};
@@ -17,18 +15,12 @@ impl CacheManager {
         Self { cache_dir }
     }
 
-    /// ファイル内容ハッシュを使用してキャッシュキーを生成
+    /// ファイルパスからキャッシュキーを生成
     pub fn generate_cache_key(&self, image_path: &str) -> String {
-        // ファイル内容のハッシュを計算してキャッシュキーとして使用
-        match calculate_file_hash(image_path) {
-            Ok(hash) => hash[..16].to_string(), // 16文字に短縮
-            Err(_) => {
-                // ファイル読み込みに失敗した場合はパスハッシュをフォールバック
-                let mut hasher = Sha256::new();
-                hasher.update(image_path.as_bytes());
-                hex::encode(hasher.finalize())[..16].to_string()
-            }
-        }
+        // ファイルパスのハッシュを計算してキャッシュキーとして使用
+        let mut hasher = Sha256::new();
+        hasher.update(image_path.as_bytes());
+        hex::encode(hasher.finalize())[..16].to_string()
     }
 
     /// キャッシュ情報ファイルのパスを取得
@@ -129,14 +121,13 @@ impl CacheManager {
         }
     }
 
-    /// ファイルが変更されたかチェック（軽量版：ファイルサイズ + 更新時刻のみ）
+    /// ファイルが変更されたかチェック（軽量版：更新時刻のみ）
     fn is_file_changed_lightweight(
         &self,
         cached_info: &ImageFileInfo,
         current_info: &ImageFileInfo,
     ) -> bool {
-        cached_info.file_size != current_info.file_size
-            || cached_info.modified_time != current_info.modified_time
+        cached_info.modified_time != current_info.modified_time
     }
 
     /// キャッシュ情報を読み込み

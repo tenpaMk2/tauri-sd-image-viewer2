@@ -7,7 +7,7 @@ import type { ImageFileInfo, ThumbnailCacheInfo } from '../types/shared-types';
  * 軽量ファイル情報（変更検出用）
  */
 type LightweightFileInfo = {
-	fileHash: string;
+	modifiedTime: number;
 };
 
 /**
@@ -187,7 +187,7 @@ export class UnifiedMetadataService {
 	}
 
 	/**
-	 * ハッシュベースファイル変更検出
+	 * 軽量ファイル変更検出（更新時刻のみ）
 	 */
 	private async isFileUnchanged(
 		imagePath: string,
@@ -195,7 +195,7 @@ export class UnifiedMetadataService {
 	): Promise<boolean> {
 		try {
 			const currentFileInfo = await this.getCurrentFileInfo(imagePath);
-			return currentFileInfo.fileHash === cachedFileInfo.fileHash;
+			return currentFileInfo.modifiedTime === cachedFileInfo.modifiedTime;
 		} catch {
 			return false; // ファイルアクセス不可 = 変更とみなす
 		}
@@ -205,9 +205,9 @@ export class UnifiedMetadataService {
 	 * 現在のファイル情報を取得
 	 */
 	private async getCurrentFileInfo(imagePath: string): Promise<LightweightFileInfo> {
-		const fileHash = await invoke<string>('calculate_file_hash_api', { path: imagePath });
+		const imageFileInfo = await invoke<ImageFileInfo>('read_image_metadata_basic', { path: imagePath });
 		return {
-			fileHash
+			modifiedTime: imageFileInfo.modified_time
 		};
 	}
 

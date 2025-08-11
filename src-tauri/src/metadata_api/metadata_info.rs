@@ -57,8 +57,4 @@ impl ImageMetadataInfo {
         }
     }
 
-    /// Extract rating value only from ImageReader
-    pub fn extract_rating_from_reader(reader: &ImageReader, path: &str) -> Option<u8> {
-        Self::extract_exif_info_from_reader(reader, path)?.rating
-    }
 }

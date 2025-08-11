@@ -1,7 +1,7 @@
+use super::ThumbnailConfig;
 use crate::exif_api::ExifInfo;
 use crate::image_file_info::ImageFileInfo;
 use crate::sd_parameters::SdParameters;
-use super::ThumbnailConfig;
 use serde::{Deserialize, Serialize};
 
 /// Comprehensive image metadata cache (saved as JSON file)
@@ -68,5 +68,4 @@ impl ImageMetadataCache {
             cached_at: current_time,
         })
     }
-
 }

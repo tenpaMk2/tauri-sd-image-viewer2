@@ -1,8 +1,8 @@
+use super::ThumbnailConfig;
 use crate::image_loader::ImageReader;
 use crate::image_metadata_info::ImageMetadataInfo;
-use super::ThumbnailConfig;
+use image::GenericImageView;
 use image::imageops::FilterType;
-use image::{GenericImageView};
 use std::time::Instant;
 use webp::Encoder;
 
@@ -35,7 +35,11 @@ impl ThumbnailGenerator {
     }
 
     /// Generate comprehensive thumbnail (metadata integrated version, processed from ImageReader)
-    pub fn generate_comprehensive_thumbnail(&self, reader: &ImageReader, image_path: &str) -> Result<ThumbnailBundle, String> {
+    pub fn generate_comprehensive_thumbnail(
+        &self,
+        reader: &ImageReader,
+        image_path: &str,
+    ) -> Result<ThumbnailBundle, String> {
         let start_time = Instant::now();
 
         // Get lightweight dimensions
@@ -70,9 +74,16 @@ impl ThumbnailGenerator {
 
         let _total_duration = start_time.elapsed();
 
-        println!("🚀 Comprehensive thumbnail generation complete: path={}, thumbnail={}x{}, original={}x{}, has_exif={}, has_sd={}", 
-                 image_path, thumbnail_width, thumbnail_height, original_width, original_height,
-                 metadata_info.exif_info.is_some(), metadata_info.sd_parameters.is_some());
+        println!(
+            "🚀 Comprehensive thumbnail generation complete: path={}, thumbnail={}x{}, original={}x{}, has_exif={}, has_sd={}",
+            image_path,
+            thumbnail_width,
+            thumbnail_height,
+            original_width,
+            original_height,
+            metadata_info.exif_info.is_some(),
+            metadata_info.sd_parameters.is_some()
+        );
 
         Ok(ThumbnailBundle {
             data: webp_data,

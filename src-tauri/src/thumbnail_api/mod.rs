@@ -1,4 +1,4 @@
-mod cache;
+mod cache_manager;
 mod config;
 mod generator;
 mod handler;
@@ -27,16 +27,14 @@ pub async fn load_thumbnail_paths_batch<R: Runtime>(
     app: AppHandle<R>,
     state: tauri::State<'_, ThumbnailState>,
 ) -> Result<Vec<BatchThumbnailResult>, String> {
-    println!(
-        "Batch processing (paths only): {} files",
-        image_paths.len()
-    );
+    println!("Batch processing (paths only): {} files", image_paths.len());
 
-    let results = state
-        .handler
-        .process_thumbnails_batch(&image_paths, &app);
+    let results = state.handler.process_thumbnails_batch(&image_paths, &app);
 
-    let success_count = results.iter().filter(|r| r.metadata_cache.is_some()).count();
+    let success_count = results
+        .iter()
+        .filter(|r| r.metadata_cache.is_some())
+        .count();
     let error_count = results.iter().filter(|r| r.error.is_some()).count();
     println!(
         "Batch complete (paths only): success={}, errors={}",
@@ -52,5 +50,5 @@ pub async fn clear_thumbnail_cache<R: Runtime>(
     app: AppHandle<R>,
     state: tauri::State<'_, ThumbnailState>,
 ) -> Result<(), String> {
-    state.handler.clear_cache(&app)
+    state.handler.clear_thumbnail_cache(&app)
 }

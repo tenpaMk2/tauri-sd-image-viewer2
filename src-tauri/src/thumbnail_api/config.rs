@@ -14,7 +14,7 @@ impl Default for ThumbnailConfig {
     fn default() -> Self {
         Self {
             size: 256,
-            quality: 85,
+            quality: 70,
             format: "webp".to_string(),
         }
     }

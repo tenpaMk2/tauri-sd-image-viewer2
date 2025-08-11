@@ -1,4 +1,3 @@
-use crate::common::{detect_mime_type_from_path};
 use image::{DynamicImage, GenericImageView};
 use memmap2::{Mmap, MmapOptions};
 use std::fs::File;
@@ -6,7 +5,7 @@ use std::fs::File;
 /// 統一画像読み込みハンドラー
 pub struct ImageReader {
     mmap: Mmap,
-    mime_type: String,
+    path: String,
 }
 
 impl ImageReader {
@@ -21,12 +20,13 @@ impl ImageReader {
                 .map_err(|e| format!("メモリマップに失敗: {} - {}", path, e))?
         };
 
-        let mime_type = detect_mime_type_from_path(path);
+        println!("📖 画像ファイル読み込み: path={}, size={}bytes", 
+                 path, mmap.len());
 
-        println!("📖 画像ファイル読み込み: path={}, mime_type={}, size={}bytes", 
-                 path, mime_type, mmap.len());
-
-        Ok(Self { mmap, mime_type })
+        Ok(Self { 
+            mmap, 
+            path: path.to_string() 
+        })
     }
 
     /// バイト配列としてアクセス（メタデータ処理用）
@@ -34,21 +34,21 @@ impl ImageReader {
         &self.mmap
     }
 
-    /// MIME型を取得
-    pub fn mime_type(&self) -> &str {
-        &self.mime_type
+    /// MIME型を取得（パスから判定）
+    pub fn mime_type(&self) -> String {
+        crate::common::detect_mime_type_from_path(&self.path)
     }
 
     /// 軽量解像度取得（ヘッダーパース最適化）
     pub fn get_dimensions(&self) -> Result<(u32, u32), String> {
         // 各形式のヘッダーから高速取得を試行
-        match self.mime_type.as_str() {
+        match self.mime_type().as_str() {
             "image/png" => self.parse_png_dimensions(),
             "image/jpeg" => self.parse_jpeg_dimensions(),
             "image/webp" => self.parse_webp_dimensions(),
             _ => {
                 // フォールバック: 従来の方法
-                println!("⚠️ 未対応形式、フォールバック実行: {}", self.mime_type);
+                println!("⚠️ 未対応形式、フォールバック実行: {}", self.mime_type());
                 let img = image::load_from_memory(self.as_bytes())
                     .map_err(|e| format!("画像デコードに失敗: {}", e))?;
                 Ok(img.dimensions())
@@ -58,7 +58,7 @@ impl ImageReader {
 
     /// サムネイル処理用DynamicImage生成（必要時のみ）
     pub fn to_dynamic_image(&self) -> Result<DynamicImage, String> {
-        println!("🔄 DynamicImage変換開始: mime_type={}", self.mime_type);
+        println!("🔄 DynamicImage変換開始: mime_type={}", self.mime_type());
         
         let img = image::load_from_memory(self.as_bytes())
             .map_err(|e| format!("画像のDynamicImage変換に失敗: {}", e))?;

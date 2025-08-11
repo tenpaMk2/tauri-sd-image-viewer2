@@ -107,54 +107,28 @@ export type ThumbnailConfig = {
 	format: string; // Rust: String
 };
 
-/**
- * 元画像のファイル情報
- * 対応: `struct OriginalFileInfo`
- */
-export type OriginalFileInfo = {
-	path: string; // Rust: String
-	file_size: number; // Rust: u64
-	width: number; // Rust: u32
-	height: number; // Rust: u32
-	modified_time: number; // Rust: u64 (UNIXタイムスタンプ)
-};
+// OriginalFileInfo は削除されました - ImageFileInfo を直接使用
 
 /**
- * 包括的キャッシュ情報（JSONファイルで保存）
- * 対応: `struct ThumbnailCacheInfo`
+ * 画像メタデータキャッシュ（JSONファイルで保存）
+ * 対応: `struct ImageMetadataCache`
  */
-export type ThumbnailCacheInfo = {
+export type ImageMetadataCache = {
 	thumbnail_config: ThumbnailConfig; // Rust: ThumbnailConfig
-	original_file_info: OriginalFileInfo; // Rust: OriginalFileInfo
+	original_file_info: ImageFileInfo; // Rust: ImageFileInfo
 	thumbnail_filename: string; // Rust: String
+	thumbnail_width: number; // Rust: u32
+	thumbnail_height: number; // Rust: u32
+	thumbnail_mime_type: string; // Rust: String
 	rating?: number; // Rust: Option<u8>
 	exif_info?: ExifInfo; // Rust: Option<ExifInfo>
 	sd_parameters?: SdParameters; // Rust: Option<SdParameters>
 	cached_at: number; // Rust: u64 (UNIXタイムスタンプ)
 };
 
-/**
- * サムネイル情報（レスポンス用）
- * 対応: `struct ThumbnailInfo`
- */
-export type ThumbnailInfo = {
-	data: number[]; // Rust: Vec<u8>
-	width: number; // Rust: u32
-	height: number; // Rust: u32
-	mime_type: string; // Rust: String
-	cache_path?: string; // Rust: Option<String> - キャッシュファイルのパス
-};
+// ThumbnailInfo は削除されました - ImageMetadataCache に統合
 
-/**
- * サムネイルパス情報（最適化版レスポンス用）
- * 対応: `struct ThumbnailPathInfo`
- */
-export type ThumbnailPathInfo = {
-	width: number; // Rust: u32
-	height: number; // Rust: u32
-	mime_type: string; // Rust: String
-	cache_path: string; // Rust: String - キャッシュファイルのパス
-};
+// ThumbnailPathInfo は削除されました - ImageMetadataCache に統合
 
 /**
  * バッチサムネイル結果
@@ -162,21 +136,11 @@ export type ThumbnailPathInfo = {
  */
 export type BatchThumbnailResult = {
 	path: string; // Rust: String
-	thumbnail?: ThumbnailInfo; // Rust: Option<ThumbnailInfo>
-	cache_info?: ThumbnailCacheInfo; // Rust: Option<ThumbnailCacheInfo>
+	metadata_cache?: ImageMetadataCache; // Rust: Option<ImageMetadataCache>
 	error?: string; // Rust: Option<String>
 };
 
-/**
- * バッチサムネイルパス結果（最適化版）
- * 対応: `struct BatchThumbnailPathResult`
- */
-export type BatchThumbnailPathResult = {
-	path: string; // Rust: String
-	thumbnail?: ThumbnailPathInfo; // Rust: Option<ThumbnailPathInfo>
-	cache_info?: ThumbnailCacheInfo; // Rust: Option<ThumbnailCacheInfo>
-	error?: string; // Rust: Option<String>
-};
+// BatchThumbnailPathResult は削除されました - BatchThumbnailResult に統合
 
 // ==========================================
 // Rust型とTypeScript型の対応表（参考）

@@ -16,7 +16,7 @@ pub struct ExifInfo {
 impl ExifInfo {
     /// バイト配列からExif情報を抽出
     pub fn from_bytes(data: &[u8], file_extension: &str) -> Option<Self> {
-        let file_ext = determine_file_extension_from_str(file_extension);
+        let file_ext = determine_file_extension(file_extension);
         read_exif_from_bytes(data, file_ext)
     }
 }
@@ -27,7 +27,7 @@ impl ExifInfo {
 /// - PNG: フル機能（EXIF、XMP Rating書き込み、SD Parameters）
 /// - JPEG: 限定機能（EXIF、XMP Rating書き込み）
 /// - WebP: 基本機能（EXIF読み取りのみ）
-pub fn determine_file_extension_from_str(extension: &str) -> FileExtension {
+pub fn determine_file_extension(extension: &str) -> FileExtension {
     let ext = extension.to_lowercase();
     match ext.as_str() {
         "jpg" | "jpeg" => FileExtension::JPEG,

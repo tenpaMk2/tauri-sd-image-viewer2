@@ -1,24 +1,26 @@
-use crate::image_info::extract_metadata_from_reader;
 use crate::image_loader::ImageReader;
-use crate::types::{ComprehensiveThumbnail};
+use crate::image_metadata_info::ImageMetadataInfo;
+use super::ThumbnailConfig;
 use image::imageops::FilterType;
 use image::{GenericImageView};
 use std::time::Instant;
 use webp::Encoder;
 
-use crate::types::ThumbnailConfig;
-
-impl Default for ThumbnailConfig {
-    fn default() -> Self {
-        Self {
-            size: 240,
-            quality: 80,
-            format: "webp".to_string(),
-        }
-    }
+/// Thumbnail bundle (temporary comprehensive information)
+#[derive(Debug, Clone)]
+pub struct ThumbnailBundle {
+    pub data: Vec<u8>,
+    pub thumbnail_width: u32,
+    pub thumbnail_height: u32,
+    pub mime_type: String,
+    pub original_width: u32,
+    pub original_height: u32,
+    pub metadata_info: ImageMetadataInfo,
 }
 
-/// サムネイル生成を担当
+// Default implementation moved to thumbnail_config.rs
+
+/// Handles thumbnail generation
 pub struct ThumbnailGenerator {
     config: ThumbnailConfig,
 }
@@ -32,59 +34,58 @@ impl ThumbnailGenerator {
         &self.config
     }
 
-    /// 包括的サムネイル生成（メタデータ統合版、ImageReaderから処理）
-    pub fn generate_comprehensive_thumbnail(&self, reader: &ImageReader, image_path: &str) -> Result<ComprehensiveThumbnail, String> {
+    /// Generate comprehensive thumbnail (metadata integrated version, processed from ImageReader)
+    pub fn generate_comprehensive_thumbnail(&self, reader: &ImageReader, image_path: &str) -> Result<ThumbnailBundle, String> {
         let start_time = Instant::now();
 
-        // 軽量解像度取得
+        // Get lightweight dimensions
         let (original_width, original_height) = reader.get_dimensions()?;
 
-        // DynamicImageに変換（サムネイル処理用）
+        // Convert to DynamicImage (for thumbnail processing)
         let img = reader.to_dynamic_image()?;
 
-        // 段階的リサイズでサムネイル生成
+        // Generate thumbnail with progressive resize
         let resize_start = Instant::now();
         let thumbnail = self.resize_image_optimized(img, self.config.size);
         let (thumbnail_width, thumbnail_height) = thumbnail.dimensions();
         let _resize_duration = resize_start.elapsed();
 
-        // RGBAバイト配列に変換
+        // Convert to RGBA byte array
         let rgba_start = Instant::now();
         let rgba_image = thumbnail.to_rgba8();
         let rgba_data = rgba_image.as_raw();
         let _rgba_duration = rgba_start.elapsed();
 
-        // WebPに変換
+        // Convert to WebP
         let webp_start = Instant::now();
         let encoder = Encoder::from_rgba(rgba_data, thumbnail_width, thumbnail_height);
         let webp_memory = encoder.encode(self.config.quality as f32);
         let webp_data = webp_memory.to_vec();
         let _webp_duration = webp_start.elapsed();
 
-        // メタデータを取得（既存ImageReaderから、重複読み込みなし）
+        // Get metadata (from existing ImageReader, no duplicate reads)
         let metadata_start = Instant::now();
-        let metadata_info = extract_metadata_from_reader(reader, image_path)?;
+        let metadata_info = ImageMetadataInfo::from_reader(reader, image_path)?;
         let _metadata_duration = metadata_start.elapsed();
 
         let _total_duration = start_time.elapsed();
 
-        println!("🚀 包括的サムネイル生成完了: path={}, thumbnail={}x{}, original={}x{}, has_exif={}, has_sd={}", 
+        println!("🚀 Comprehensive thumbnail generation complete: path={}, thumbnail={}x{}, original={}x{}, has_exif={}, has_sd={}", 
                  image_path, thumbnail_width, thumbnail_height, original_width, original_height,
                  metadata_info.exif_info.is_some(), metadata_info.sd_parameters.is_some());
 
-        Ok(ComprehensiveThumbnail {
+        Ok(ThumbnailBundle {
             data: webp_data,
             thumbnail_width,
             thumbnail_height,
             mime_type: "image/webp".to_string(),
-            cache_path: None,
             original_width,
             original_height,
             metadata_info,
         })
     }
 
-    /// 最適化された段階的リサイズ
+    /// Optimized progressive resize
     fn resize_image_optimized(
         &self,
         img: image::DynamicImage,
@@ -94,13 +95,13 @@ impl ThumbnailGenerator {
         let max_dimension = width.max(height);
 
         if max_dimension > 512 {
-            // 大きな画像：段階的リサイズ
+            // Large image: progressive resize
             let intermediate_size = (target_size * 4).min(512);
             let intermediate =
                 img.resize(intermediate_size, intermediate_size, FilterType::Triangle);
             intermediate.thumbnail(target_size, target_size)
         } else {
-            // 小さな画像：直接リサイズ
+            // Small image: direct resize
             img.thumbnail(target_size, target_size)
         }
     }

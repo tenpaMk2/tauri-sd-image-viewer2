@@ -10,7 +10,7 @@ export class ThumbnailService {
 
 	async loadSingleThumbnail(imagePath: string): Promise<string | null> {
 		try {
-			const results: BatchThumbnailPathResult[] = await invoke('load_thumbnails_batch_path_only', {
+			const results: BatchThumbnailPathResult[] = await invoke('load_thumbnail_paths_batch', {
 				imagePaths: [imagePath]
 			});
 
@@ -118,7 +118,7 @@ export class ThumbnailService {
 
 			try {
 				const results: BatchThumbnailPathResult[] = await invoke(
-					'load_thumbnails_batch_path_only',
+					'load_thumbnail_paths_batch',
 					{
 						imagePaths: chunk
 					}

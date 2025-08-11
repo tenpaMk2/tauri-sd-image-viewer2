@@ -1,15 +1,15 @@
-mod clipboard;
+mod clipboard_api;
 mod common;
-mod exif_info;
+mod exif_api;
+mod image_api;
+mod image_file_info;
 mod image_handlers;
-mod image_info;
 mod image_loader;
+mod image_metadata_info;
 mod sd_parameters;
-mod thumbnail;
-mod types;
+mod thumbnail_api;
 
 use tauri::Manager;
-use thumbnail::ThumbnailState;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -20,8 +20,8 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .setup(|app| {
             // サムネイル状態を初期化
-            let thumbnail_config = types::ThumbnailConfig::default();
-            let thumbnail_state = match ThumbnailState::new(thumbnail_config, app.handle()) {
+            let thumbnail_config = thumbnail_api::ThumbnailConfig::default();
+            let thumbnail_state = match thumbnail_api::ThumbnailState::new(thumbnail_config, app.handle()) {
                 Ok(state) => state,
                 Err(e) => {
                     eprintln!("ThumbnailStateの初期化に失敗: {}", e);
@@ -32,13 +32,13 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
-            clipboard::set_clipboard_files,
-            thumbnail::load_thumbnails_batch_path_only,
-            thumbnail::clear_thumbnail_cache,
-            image_info::read_image_metadata_basic,
-            image_info::read_image_metadata_rating,
-            image_info::read_image_metadata_all,
-            exif_info::write_exif_image_rating,
+            clipboard_api::set_clipboard_files,
+            thumbnail_api::load_thumbnail_paths_batch,
+            thumbnail_api::clear_thumbnail_cache,
+            image_api::read_image_metadata_basic,
+            image_api::read_image_metadata_rating,
+            image_api::read_image_metadata_all,
+            exif_api::write_exif_image_rating,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

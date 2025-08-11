@@ -103,7 +103,7 @@ export class ThumbnailQueueManager {
 		const { invoke } = await import('@tauri-apps/api/core');
 
 		try {
-			const results: BatchThumbnailPathResult[] = await invoke('load_thumbnails_batch_path_only', {
+			const results: BatchThumbnailPathResult[] = await invoke('load_thumbnail_paths_batch', {
 				imagePaths: chunk
 			});
 

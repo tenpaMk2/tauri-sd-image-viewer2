@@ -283,3 +283,4 @@ src-tauri/src/
 ### その他ルール
 
 - `console` はRustにForwardingされる関係上、第１引数までしか使えない。
+- Rust側の型チェックは `bun run cargo-check` でやる。

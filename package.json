@@ -19,6 +19,7 @@
 		"preview": "vite preview",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+		"cargo-check": "cd src-tauri && cargo check",
 		"format": "prettier --write .",
 		"format:check": "prettier --check .",
 		"tauri": "tauri",

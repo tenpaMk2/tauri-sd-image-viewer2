@@ -3,6 +3,7 @@ use super::png_handler;
 use super::sd_parameters::SdParameters;
 use crate::image_loader::ImageReader;
 use serde::{Deserialize, Serialize};
+use std::fs;
 
 /// Comprehensive image metadata information
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -18,8 +19,12 @@ pub struct ImageMetadataInfo {
 impl ImageMetadataInfo {
     /// Build comprehensive metadata information from ImageReader
     pub fn from_reader(reader: &ImageReader, path: &str) -> Result<Self, String> {
-        // Get basic information
-        let file_size = reader.as_bytes().len() as u64;
+        // Get file size from filesystem metadata
+        let file_size = fs::metadata(path)
+            .map_err(|e| format!("Failed to get file metadata: {}", e))?
+            .len();
+        
+        // Get image dimensions
         let (width, height) = reader.get_dimensions().map_err(|e| format!("Resolution acquisition failed: {}", e))?;
         
         // Get SD Parameters (PNG only)

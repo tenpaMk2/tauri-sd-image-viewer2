@@ -1,6 +1,5 @@
 mod clipboard_api;
 mod common;
-mod image_handlers;
 mod image_loader;
 mod metadata_api;
 mod thumbnail_api;

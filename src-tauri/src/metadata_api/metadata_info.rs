@@ -1,6 +1,6 @@
 use super::exif_handler::ExifInfo;
+use super::png_handler;
 use super::sd_parameters::SdParameters;
-use crate::image_handlers::png_processor;
 use crate::image_loader::ImageReader;
 use serde::{Deserialize, Serialize};
 
@@ -25,7 +25,7 @@ impl ImageMetadataInfo {
         // Get SD Parameters (PNG only)
         let mime_type = reader.mime_type();
         let sd_parameters = if mime_type == "image/png" {
-            match png_processor::extract_sd_parameters(reader.as_bytes()) {
+            match png_handler::extract_sd_parameters(reader.as_bytes()) {
                 Ok(sd) => sd,
                 Err(_) => None,
             }

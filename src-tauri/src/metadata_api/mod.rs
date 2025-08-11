@@ -1,5 +1,6 @@
 mod exif_handler;
 mod metadata_info;
+mod png_handler;
 pub mod sd_parameters;
 pub mod service;
 mod xmp_handler;

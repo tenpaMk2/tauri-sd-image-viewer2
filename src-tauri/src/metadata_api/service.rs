@@ -13,20 +13,42 @@ pub fn read_image_metadata(path: String) -> Result<ImageMetadataInfo, String> {
 
 /// Write image rating to EXIF metadata (Tauri command)
 #[tauri::command]
-pub async fn write_exif_image_rating(path: String, rating: u32) -> Result<(), String> {
+pub async fn write_exif_image_rating(src_path: String, rating: u32) -> Result<(), String> {
     if rating > 5 {
         return Err("Rating must be in the range 0-5".to_string());
     }
 
-    // Write to EXIF
-    exif_handler::write_exif_rating(&path, rating)?;
+    // Create ImageReader once for unified vec pipeline
+    let reader = ImageReader::from_file(&src_path)?;
+    let src_image_path = Path::new(&src_path);
 
-    // Write to XMP (safe version - ignore errors)
-    let image_path = Path::new(&path);
-    if let Err(e) = xmp_handler::write_xmp_rating_to_file(image_path, rating) {
-        // XMP writing failures are treated as warnings since EXIF was successful
-        eprintln!("XMP writing warning: {}", e);
-    }
+    // Get file extension
+    let file_extension = src_image_path
+        .extension()
+        .and_then(|ext| ext.to_str())
+        .unwrap_or("")
+        .to_lowercase();
+
+    // Unified vec pipeline: ImageReader -> EXIF -> XMP -> File
+    let mut current_data = reader.as_bytes().to_vec();
+
+    // Step 1: Apply EXIF rating
+    current_data = exif_handler::embed_exif_rating_in_vec(&current_data, &file_extension, rating)?;
+
+    // Step 2: Apply XMP rating (safe version - continue on error)
+    current_data =
+        match xmp_handler::embed_xmp_rating_in_vec(&current_data, &file_extension, rating) {
+            Ok(data) => data,
+            Err(e) => {
+                // XMP processing failures are treated as warnings since EXIF was successful
+                eprintln!("XMP processing warning: {}", e);
+                current_data // Continue with EXIF-only data
+            }
+        };
+
+    // Step 3: Single file write operation
+    std::fs::write(src_image_path, current_data)
+        .map_err(|e| format!("Final file write error: {}", e))?;
 
     Ok(())
 }

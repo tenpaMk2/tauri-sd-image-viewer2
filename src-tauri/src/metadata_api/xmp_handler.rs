@@ -1,5 +1,3 @@
-use std::path::Path;
-
 /// Extract existing XMP metadata from file
 pub fn extract_existing_xmp(file_data: &[u8], file_extension: &str) -> Option<String> {
     match file_extension {
@@ -228,39 +226,8 @@ fn update_rating_in_xmp(xmp_content: &str, rating: u32) -> String {
     updated_content
 }
 
-/// Write XMP metadata with Rating to file
-pub fn write_xmp_rating_to_file(path: &Path, rating: u32) -> Result<(), String> {
-    // Get file extension
-    let extension = path
-        .extension()
-        .and_then(|ext| ext.to_str())
-        .unwrap_or("")
-        .to_lowercase();
-
-    // Only PNG and JPEG support XMP Rating writing
-    if !matches!(extension.as_str(), "jpg" | "jpeg" | "png") {
-        return Ok(()); // Ignore unsupported formats like WebP
-    }
-
-    // Read existing file
-    let file_data = std::fs::read(path).map_err(|e| format!("File read error: {}", e))?;
-
-    // Extract existing XMP metadata
-    let existing_xmp = extract_existing_xmp(&file_data, &extension);
-
-    // Add/update Rating in existing XMP
-    let xmp_data = merge_rating_to_xmp(existing_xmp, rating);
-
-    // Embed XMP according to file format
-    match extension.as_str() {
-        "jpg" | "jpeg" => write_xmp_to_jpeg(path, &file_data, &xmp_data),
-        "png" => write_xmp_to_png(path, &file_data, &xmp_data),
-        _ => Ok(()),
-    }
-}
-
-/// Embed XMP in JPEG file
-fn write_xmp_to_jpeg(path: &Path, file_data: &[u8], xmp_data: &str) -> Result<(), String> {
+/// Embed XMP in JPEG vec (returns modified vec)
+fn embed_xmp_in_jpeg_vec(file_data: &[u8], xmp_data: &str) -> Result<Vec<u8>, String> {
     // Insert XMP as APP1 segment in JPEG file
     let mut output = Vec::new();
 
@@ -283,12 +250,11 @@ fn write_xmp_to_jpeg(path: &Path, file_data: &[u8], xmp_data: &str) -> Result<()
     // Add remaining JPEG data (after SOI)
     output.extend_from_slice(&file_data[2..]);
 
-    // Write back to file
-    std::fs::write(path, output).map_err(|e| format!("JPEG XMP write error: {}", e))
+    Ok(output)
 }
 
-/// Embed XMP in PNG file (safe version using png crate)
-fn write_xmp_to_png(path: &Path, file_data: &[u8], xmp_data: &str) -> Result<(), String> {
+/// Embed XMP in PNG vec (returns modified vec)
+fn embed_xmp_in_png_vec(file_data: &[u8], xmp_data: &str) -> Result<Vec<u8>, String> {
     use png::{Decoder, Encoder};
     use std::io::Cursor;
 
@@ -317,12 +283,9 @@ fn write_xmp_to_png(path: &Path, file_data: &[u8], xmp_data: &str) -> Result<(),
     let existing_compressed_latin1_text = info.compressed_latin1_text.clone();
     let existing_utf8_text = info.utf8_text.clone();
 
-    // 2. Write new PNG file
-    let output_file =
-        std::fs::File::create(path).map_err(|e| format!("File creation error: {}", e))?;
-    let ref mut w = std::io::BufWriter::new(output_file);
-
-    let mut encoder = Encoder::new(w, width, height);
+    // 2. Write new PNG to vec
+    let mut output = Vec::new();
+    let mut encoder = Encoder::new(&mut output, width, height);
     encoder.set_color(color_type);
     encoder.set_depth(bit_depth);
 
@@ -375,5 +338,30 @@ fn write_xmp_to_png(path: &Path, file_data: &[u8], xmp_data: &str) -> Result<(),
         .finish()
         .map_err(|e| format!("PNG write completion error: {}", e))?;
 
-    Ok(())
+    Ok(output)
+}
+
+/// Write XMP Rating to vec (optimized version for pipeline)
+pub fn embed_xmp_rating_in_vec(
+    file_data: &[u8],
+    file_extension: &str,
+    rating: u32,
+) -> Result<Vec<u8>, String> {
+    // Only PNG and JPEG support XMP Rating writing
+    if !matches!(file_extension, "jpg" | "jpeg" | "png") {
+        return Ok(file_data.to_vec()); // Return original data for unsupported formats
+    }
+
+    // Extract existing XMP metadata
+    let existing_xmp = extract_existing_xmp(file_data, file_extension);
+
+    // Add/update Rating in existing XMP
+    let xmp_data = merge_rating_to_xmp(existing_xmp, rating);
+
+    // Embed XMP according to file format
+    match file_extension {
+        "jpg" | "jpeg" => embed_xmp_in_jpeg_vec(file_data, &xmp_data),
+        "png" => embed_xmp_in_png_vec(file_data, &xmp_data),
+        _ => Ok(file_data.to_vec()),
+    }
 }

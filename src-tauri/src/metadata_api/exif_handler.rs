@@ -3,7 +3,6 @@ use little_exif::filetype::FileExtension;
 use little_exif::ifd::ExifTagGroup;
 use little_exif::metadata::Metadata;
 use serde::{Deserialize, Serialize};
-use std::path::Path;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ExifInfo {
@@ -143,20 +142,28 @@ fn extract_exif_info_from_metadata(metadata: &Metadata) -> Option<ExifInfo> {
     }
 }
 
-/// Write rating to EXIF metadata
-pub fn write_exif_rating(path: &str, rating: u32) -> Result<(), String> {
+/// Write EXIF rating to vec (optimized version for pipeline)
+pub fn embed_exif_rating_in_vec(
+    file_data: &[u8],
+    file_extension: &str,
+    rating: u32,
+) -> Result<Vec<u8>, String> {
     if rating > 5 {
         return Err("Rating must be in the range 0-5".to_string());
     }
 
-    let image_path = Path::new(path);
+    let file_ext = determine_file_extension(file_extension);
 
     // Handle potential panics with error handling
-    let mut metadata = match std::panic::catch_unwind(|| Metadata::new_from_path(image_path)) {
-        Ok(Ok(metadata)) => metadata,
-        Ok(Err(e)) => return Err(format!("Metadata loading error: {}", e)),
-        Err(_) => return Err("Panic occurred during metadata loading (possible file format compatibility issue)".to_string()),
-    };
+    let mut metadata =
+        match std::panic::catch_unwind(|| Metadata::new_from_vec(&file_data.to_vec(), file_ext)) {
+            Ok(Ok(metadata)) => metadata,
+            Ok(Err(e)) => return Err(format!("Metadata loading error: {}", e)),
+            Err(_) => return Err(
+                "Panic occurred during metadata loading (possible file format compatibility issue)"
+                    .to_string(),
+            ),
+        };
 
     // Rating tag (18246)
     metadata.set_tag(ExifTag::UnknownINT16U(
@@ -182,9 +189,11 @@ pub fn write_exif_rating(path: &str, rating: u32) -> Result<(), String> {
         ExifTagGroup::GENERIC,
     ));
 
+    // Write to vec
+    let mut output_data = Vec::new();
     metadata
-        .write_to_file(image_path)
-        .map_err(|e| format!("EXIF write error: {}", e))?;
+        .write_to_vec(&mut output_data, file_ext)
+        .map_err(|e| format!("EXIF metadata serialization error: {}", e))?;
 
-    Ok(())
+    Ok(output_data)
 }

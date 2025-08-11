@@ -1,4 +1,4 @@
-use crate::image_info::read_image_metadata_internal;
+use crate::image_info::extract_metadata_from_reader;
 use crate::image_loader::ImageReader;
 use crate::types::{ComprehensiveThumbnail};
 use image::imageops::FilterType;
@@ -32,14 +32,9 @@ impl ThumbnailGenerator {
         &self.config
     }
 
-    /// 包括的サムネイル生成（メタデータ統合版、1回の読み込みで全て処理）
-    pub fn generate_comprehensive_thumbnail(&self, image_path: &str) -> Result<ComprehensiveThumbnail, String> {
+    /// 包括的サムネイル生成（メタデータ統合版、ImageReaderから処理）
+    pub fn generate_comprehensive_thumbnail(&self, reader: &ImageReader, image_path: &str) -> Result<ComprehensiveThumbnail, String> {
         let start_time = Instant::now();
-
-        // 統一画像リーダーで読み込み（1回のみ、全形式mmap対応）
-        let load_start = Instant::now();
-        let reader = ImageReader::from_file(image_path)?;
-        let _load_duration = load_start.elapsed();
 
         // 軽量解像度取得
         let (original_width, original_height) = reader.get_dimensions()?;
@@ -66,10 +61,9 @@ impl ThumbnailGenerator {
         let webp_data = webp_memory.to_vec();
         let _webp_duration = webp_start.elapsed();
 
-        // メタデータを取得（重複読み込みなし）
+        // メタデータを取得（既存ImageReaderから、重複読み込みなし）
         let metadata_start = Instant::now();
-        let metadata_info = read_image_metadata_internal(image_path)
-            .map_err(|e| format!("メタデータ読み込みに失敗: {}", e))?;
+        let metadata_info = extract_metadata_from_reader(reader, image_path)?;
         let _metadata_duration = metadata_start.elapsed();
 
         let _total_duration = start_time.elapsed();
@@ -89,7 +83,6 @@ impl ThumbnailGenerator {
             metadata_info,
         })
     }
-
 
     /// 最適化された段階的リサイズ
     fn resize_image_optimized(

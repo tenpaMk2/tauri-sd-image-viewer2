@@ -51,6 +51,12 @@ impl From<png::DecodingError> for AppError {
     }
 }
 
+impl From<String> for AppError {
+    fn from(error: String) -> Self {
+        AppError::ParseError(error)
+    }
+}
+
 impl From<AppError> for String {
     fn from(error: AppError) -> Self {
         error.to_string()

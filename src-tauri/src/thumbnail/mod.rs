@@ -5,6 +5,7 @@ mod metadata_handler;
 use cache::CacheManager;
 use generator::ThumbnailGenerator;
 use metadata_handler::MetadataHandler;
+use crate::image_loader::ImageReader;
 
 use crate::types::{
     BatchThumbnailPathResult, ThumbnailCacheInfo, ThumbnailConfig,
@@ -152,8 +153,11 @@ impl ThumbnailHandler {
         cache_key: &str,
         config: &ThumbnailConfig,
     ) -> Result<(ThumbnailInfo, ThumbnailCacheInfo), String> {
-        // 包括的サムネイルを生成（1回の読み込みで全て完了：画像・解像度・メタデータ）
-        let comprehensive = self.generator.generate_comprehensive_thumbnail(image_path)?;
+        // 統一画像リーダーで読み込み（1回のみ、全形式mmap対応）
+        let reader = ImageReader::from_file(image_path)?;
+        
+        // 包括的サムネイルを生成（全て既存readerから処理：画像・解像度・メタデータ）
+        let comprehensive = self.generator.generate_comprehensive_thumbnail(&reader, image_path)?;
 
         // サムネイル画像をファイルに保存
         let thumbnail_filename = format!("{}.{}", cache_key, config.format);

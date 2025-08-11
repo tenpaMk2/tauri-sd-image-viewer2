@@ -1,6 +1,7 @@
-use crate::common::{detect_mime_type_from_path, read_file_safe, AppResult};
+use crate::common::AppResult;
 use crate::exif_info::ExifInfo;
 use crate::image_handlers::PngProcessor;
+use crate::image_loader::ImageReader;
 use crate::types::{ImageFileInfo, ImageMetadataInfo};
 
 /// 画像基本情報のみを軽量取得
@@ -12,8 +13,8 @@ pub fn read_image_metadata_basic(path: String) -> Result<ImageFileInfo, String> 
 /// 画像Rating値のみを軽量取得
 #[tauri::command]
 pub fn read_image_metadata_rating(path: String) -> Result<Option<u8>, String> {
-    let (data, mime_type) = read_file_and_detect_mime(&path).map_err(|e| e.to_string())?;
-    let rating = extract_rating_only(&data, &mime_type, &path);
+    let reader = ImageReader::from_file(&path)?;
+    let rating = extract_rating_only_from_reader(&reader, &path);
     Ok(rating)
 }
 
@@ -23,12 +24,6 @@ pub fn read_image_metadata_all(path: String) -> Result<ImageMetadataInfo, String
     read_image_metadata_internal(&path).map_err(|e| e.to_string())
 }
 
-/// 共通: ファイル読み込み + MIME型検出
-fn read_file_and_detect_mime(path: &str) -> AppResult<(Vec<u8>, String)> {
-    let data = read_file_safe(path)?;
-    let mime_type = detect_mime_type_from_path(path);
-    Ok((data, mime_type))
-}
 
 /// ImageReaderを使用した画像ファイル情報取得
 fn extract_image_file_info_with_reader(path: &str) -> Result<ImageFileInfo, String> {
@@ -36,34 +31,30 @@ fn extract_image_file_info_with_reader(path: &str) -> Result<ImageFileInfo, Stri
 }
 
 
-/// 共通: EXIF情報の抽出
-fn extract_exif_info(data: &[u8], mime_type: &str, path: &str) -> Option<ExifInfo> {
-    if matches!(mime_type, "image/png" | "image/jpeg" | "image/webp") {
+/// 共通: EXIF情報の抽出（ImageReaderから）
+fn extract_exif_info_from_reader(reader: &ImageReader, path: &str) -> Option<ExifInfo> {
+    if matches!(reader.mime_type(), "image/png" | "image/jpeg" | "image/webp") {
         let extension = path.split('.').last().unwrap_or("");
-        ExifInfo::from_bytes(data, extension)
+        ExifInfo::from_bytes(reader.as_bytes(), extension)
     } else {
         None
     }
 }
 
-/// 共通: Rating値のみを抽出
-fn extract_rating_only(data: &[u8], mime_type: &str, path: &str) -> Option<u8> {
-    extract_exif_info(data, mime_type, path)?.rating
+/// 共通: Rating値のみを抽出（ImageReaderから）
+fn extract_rating_only_from_reader(reader: &ImageReader, path: &str) -> Option<u8> {
+    extract_exif_info_from_reader(reader, path)?.rating
 }
 
-pub fn read_image_metadata_internal(path: &str) -> AppResult<ImageMetadataInfo> {
-    let (data, mime_type) = read_file_and_detect_mime(path)?;
-    
-    // 基本情報を取得（直接構築）
-    let file_size = data.len() as u64;
-    let (width, height) = match image::load_from_memory(&data) {
-        Ok(img) => (img.width(), img.height()),
-        Err(_) => (0, 0), // エラー時は0を設定
-    };
+/// ImageReaderからImageMetadataInfoを抽出（共通関数）
+pub fn extract_metadata_from_reader(reader: &ImageReader, path: &str) -> Result<ImageMetadataInfo, String> {
+    // 基本情報を取得
+    let file_size = reader.as_bytes().len() as u64;
+    let (width, height) = reader.get_dimensions().map_err(|e| format!("解像度取得失敗: {}", e))?;
     
     // SD Parametersを取得（PNGのみ）
-    let sd_parameters = if mime_type == "image/png" {
-        match PngProcessor::extract_sd_parameters(&data) {
+    let sd_parameters = if reader.mime_type() == "image/png" {
+        match PngProcessor::extract_sd_parameters(reader.as_bytes()) {
             Ok(sd) => sd,
             Err(_) => None,
         }
@@ -72,14 +63,19 @@ pub fn read_image_metadata_internal(path: &str) -> AppResult<ImageMetadataInfo> 
     };
     
     // EXIF情報を取得
-    let exif_info = extract_exif_info(&data, &mime_type, path);
+    let exif_info = extract_exif_info_from_reader(reader, path);
 
     Ok(ImageMetadataInfo {
         width,
         height,
         file_size,
-        mime_type,
+        mime_type: reader.mime_type().to_string(),
         sd_parameters,
         exif_info,
     })
+}
+
+pub fn read_image_metadata_internal(path: &str) -> AppResult<ImageMetadataInfo> {
+    let reader = ImageReader::from_file(path).map_err(|e| format!("ImageReader作成失敗: {}", e))?;
+    extract_metadata_from_reader(&reader, path).map_err(|e| e.into())
 }

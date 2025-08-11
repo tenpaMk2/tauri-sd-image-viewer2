@@ -1,43 +1,42 @@
-mod cache_manager;
 mod config;
 mod generator;
-mod handler;
-mod metadata_cache;
+mod thumbnail_service;
 
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Runtime};
 
 // Public exports from submodules
 pub use config::*;
-pub use handler::*;
-pub use metadata_cache::*;
+pub use thumbnail_service::*;
 
-/// Batch thumbnail result
+/// Thumbnail generation result
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct BatchThumbnailResult {
-    pub path: String,
-    pub metadata_cache: Option<ImageMetadataCache>,
+pub struct ThumbnailResult {
+    pub original_path: String,
+    pub thumbnail_path: Option<String>,
     pub error: Option<String>,
 }
 
-/// Generate or load thumbnails in batch (Tauri command)
+/// Generate thumbnails in batch (Tauri command)
 #[tauri::command]
-pub async fn load_thumbnail_paths_batch<R: Runtime>(
+pub async fn generate_thumbnails_batch<R: Runtime>(
     image_paths: Vec<String>,
-    app: AppHandle<R>,
+    config: Option<ThumbnailConfig>,
+    _app: AppHandle<R>,
     state: tauri::State<'_, ThumbnailState>,
-) -> Result<Vec<BatchThumbnailResult>, String> {
-    println!("Batch processing (paths only): {} files", image_paths.len());
+) -> Result<Vec<ThumbnailResult>, String> {
+    let _thumbnail_config = config.unwrap_or_default();
+    println!("Generating thumbnails for {} files", image_paths.len());
 
-    let results = state.handler.process_thumbnails_batch(&image_paths, &app);
+    let results = state.service.generate_batch(&image_paths);
 
     let success_count = results
         .iter()
-        .filter(|r| r.metadata_cache.is_some())
+        .filter(|r| r.thumbnail_path.is_some())
         .count();
     let error_count = results.iter().filter(|r| r.error.is_some()).count();
     println!(
-        "Batch complete (paths only): success={}, errors={}",
+        "Thumbnail generation complete: success={}, errors={}",
         success_count, error_count
     );
 
@@ -47,8 +46,8 @@ pub async fn load_thumbnail_paths_batch<R: Runtime>(
 /// Clear thumbnail cache (Tauri command)
 #[tauri::command]
 pub async fn clear_thumbnail_cache<R: Runtime>(
-    app: AppHandle<R>,
+    _app: AppHandle<R>,
     state: tauri::State<'_, ThumbnailState>,
 ) -> Result<(), String> {
-    state.handler.clear_thumbnail_cache(&app)
+    state.service.clear_all()
 }

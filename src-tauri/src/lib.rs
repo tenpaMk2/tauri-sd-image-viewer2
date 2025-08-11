@@ -33,11 +33,9 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             clipboard_api::set_clipboard_files,
-            thumbnail_api::load_thumbnail_paths_batch,
+            thumbnail_api::generate_thumbnails_batch,
             thumbnail_api::clear_thumbnail_cache,
-            image_api::read_image_metadata_basic,
-            image_api::read_image_metadata_rating,
-            image_api::read_image_metadata_all,
+            image_api::read_image_metadata,
             exif_api::write_exif_image_rating,
         ])
         .run(tauri::generate_context!())

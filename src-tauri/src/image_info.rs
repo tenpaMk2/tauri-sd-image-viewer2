@@ -1,6 +1,6 @@
 use crate::common::AppResult;
 use crate::exif_info::ExifInfo;
-use crate::image_handlers::PngProcessor;
+use crate::image_handlers::png_processor;
 use crate::image_loader::ImageReader;
 use crate::types::{ImageFileInfo, ImageMetadataInfo};
 
@@ -54,7 +54,7 @@ pub fn extract_metadata_from_reader(reader: &ImageReader, path: &str) -> Result<
     
     // SD Parametersを取得（PNGのみ）
     let sd_parameters = if reader.mime_type() == "image/png" {
-        match PngProcessor::extract_sd_parameters(reader.as_bytes()) {
+        match png_processor::extract_sd_parameters(reader.as_bytes()) {
             Ok(sd) => sd,
             Err(_) => None,
         }

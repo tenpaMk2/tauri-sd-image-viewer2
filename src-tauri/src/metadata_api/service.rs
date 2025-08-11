@@ -6,9 +6,24 @@ use std::path::Path;
 
 /// Read comprehensive image metadata (Tauri command)
 #[tauri::command]
-pub fn read_image_metadata(path: String) -> Result<ImageMetadataInfo, String> {
+pub fn read_image_metadata(
+    path: String,
+    cache: tauri::State<super::cache::MetadataCache>,
+) -> Result<ImageMetadataInfo, String> {
+    // Tauri Stateからキャッシュを取得し、キャッシュヒットを確認
+    if let Some(cached_metadata) = cache.get_metadata(&path) {
+        return Ok(cached_metadata);
+    }
+
+    // キャッシュミス → ファイルから読み込み
     let reader = ImageReader::from_file(&path)?;
-    ImageMetadataInfo::from_reader(&reader, &path).map_err(|e| format!("{:?}", e))
+    let metadata =
+        ImageMetadataInfo::from_reader(&reader, &path).map_err(|e| format!("{:?}", e))?;
+
+    // キャッシュに保存
+    cache.store_metadata(path, metadata.clone());
+
+    Ok(metadata)
 }
 
 /// Write image rating to EXIF metadata (Tauri command)

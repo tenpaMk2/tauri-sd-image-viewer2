@@ -8,7 +8,7 @@ use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
+    let app = tauri::Builder::default()
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_log::Builder::new().build())
         .plugin(tauri_plugin_dialog::init())
@@ -16,14 +16,26 @@ pub fn run() {
         .setup(|app| {
             // サムネイル状態を初期化
             let thumbnail_config = thumbnail_api::ThumbnailConfig::default();
-            let thumbnail_state = match thumbnail_api::ThumbnailState::new(thumbnail_config, app.handle()) {
-                Ok(state) => state,
+            let thumbnail_state =
+                match thumbnail_api::ThumbnailState::new(thumbnail_config, app.handle()) {
+                    Ok(state) => state,
+                    Err(e) => {
+                        eprintln!("ThumbnailStateの初期化に失敗: {}", e);
+                        return Err(e.into());
+                    }
+                };
+            app.manage(thumbnail_state);
+
+            // メタデータキャッシュを初期化
+            let metadata_cache = match metadata_api::cache::MetadataCache::new(app.handle()) {
+                Ok(cache) => cache,
                 Err(e) => {
-                    eprintln!("ThumbnailStateの初期化に失敗: {}", e);
+                    eprintln!("MetadataCacheの初期化に失敗: {}", e);
                     return Err(e.into());
                 }
             };
-            app.manage(thumbnail_state);
+            app.manage(metadata_cache);
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -33,6 +45,21 @@ pub fn run() {
             metadata_api::service::read_image_metadata,
             metadata_api::service::write_exif_image_rating,
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application");
+
+    // アプリ終了時処理でキャッシュを保存
+    app.run(move |app_handle, event| {
+        if let tauri::RunEvent::ExitRequested { .. } = event {
+            println!("🔄 アプリケーション終了処理開始");
+
+            // Tauri Stateからメタデータキャッシュを取得
+            let cache = app_handle.state::<metadata_api::cache::MetadataCache>();
+
+            // キャッシュをディスクに保存
+            if let Err(e) = cache.save_on_shutdown() {
+                eprintln!("❌ 終了時キャッシュ保存エラー: {}", e);
+            }
+        }
+    });
 }

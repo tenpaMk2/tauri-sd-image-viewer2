@@ -80,8 +80,6 @@ src/
 │   │   └── metadata/       # メタデータ表示コンポーネント
 │   │       ├── BasicInfoSection.svelte
 │   │       ├── CameraInfoSection.svelte
-│   │       ├── DateTimeSection.svelte
-│   │       ├── ExifInfoSection.svelte
 │   │       └── SdParamsSection.svelte
 │   ├── hooks/              # カスタムフック
 │   │   ├── use-cleanup.svelte
@@ -114,7 +112,6 @@ src/
 │   │   ├── delete-images.ts
 │   │   ├── glob-utils.ts
 │   │   ├── image-utils.ts
-│   │   ├── rating-utils.ts
 │   │   └── ui-utils.ts
 │   ├── FilterPanel.svelte
 │   ├── GridPage.svelte
@@ -135,26 +132,22 @@ src/
 └── app.html               # HTMLテンプレート
 
 src-tauri/src/
-├── image_handlers/         # 画像形式別処理
+├── metadata_api/           # メタデータ処理API
 │   ├── mod.rs
-│   ├── generic_processor.rs
-│   └── png_processor.rs
-├── thumbnail/              # サムネイル生成
-│   ├── mod.rs
-│   ├── cache.rs
-│   ├── generator.rs
-│   └── metadata_handler.rs
-├── types/                  # Rust型定義
-│   ├── mod.rs
-│   ├── image_types.rs
-│   └── thumbnail_types.rs
-├── clipboard.rs            # クリップボード機能
-├── common.rs               # 共通機能
-├── exif_info.rs            # EXIF情報処理
-├── image_info.rs           # 画像情報統合処理
+│   ├── cache.rs            # メタデータキャッシュ
+│   ├── metadata_info.rs    # 画像メタデータ統合
+│   ├── png_handler.rs      # PNG特有処理
+│   ├── sd_parameters.rs    # SD パラメータ抽出
+│   ├── service.rs          # Tauriコマンド
+│   └── xmp_handler.rs      # XMPメタデータ処理（レーティング）
+├── thumbnail_api/          # サムネイル生成API
+│   └── mod.rs
+├── clipboard_api/          # クリップボード機能
+│   └── mod.rs
+├── image_loader/           # 画像読み込み統合
+│   └── mod.rs
 ├── lib.rs                  # ライブラリエントリーポイント
-├── main.rs                 # メインエントリーポイント
-└── sd_parameters.rs        # Stable Diffusion パラメータ処理
+└── main.rs                 # メインエントリーポイント
 ```
 
 ## アーキテクチャ
@@ -172,7 +165,7 @@ src-tauri/src/
 - `/src/lib/ViewerPage.svelte` - 画像表示・ナビゲーション機能（プリロード/キャッシュ対応）
 - `/src/lib/GridPage.svelte` - ディレクトリ内画像のサムネイル一覧表示
 - `/src/lib/ImageCanvas.svelte` - 画像表示とズーム・パン機能
-- `/src/lib/MetadataPanel.svelte` - Exif/SDメタデータ表示
+- `/src/lib/MetadataPanel.svelte` - SDメタデータ表示（EXIF表示は削除済み）
 - `/src/lib/FilterPanel.svelte` - タグフィルタリング機能
 - `/src/lib/ThumbnailGrid.svelte` - サムネイル表示グリッド
 - `/src/lib/Toast.svelte` - 通知表示システム
@@ -190,9 +183,9 @@ src-tauri/src/
 
 - 選択画像と同ディレクトリ内の画像ファイル自動検出
 - 対応形式: PNG, JPEG, WebP（機能サポートレベル別）
-  - **PNG**: フル機能（SD、EXIF、XMP Rating書き込み）
-  - **JPEG**: 限定機能（EXIF、XMP Rating書き込み、SD非対応）
-  - **WebP**: 基本機能（EXIF読み取りのみ）
+  - **PNG**: フル機能（SD、XMP Rating読み書き）
+  - **JPEG**: 限定機能（XMP Rating読み書き、SD非対応）
+  - **WebP**: 基本機能（表示のみ、メタデータ非対応）
 - キーボードナビゲーション（←→キー）
 - 隣接画像のプリロード機能とキャッシュ
 
@@ -202,13 +195,13 @@ src-tauri/src/
 - Positive/Negative プロンプト、Seed、CFG Scale等の表示
 - 生成設定の詳細情報をサイドパネルで確認可能
 - タグベースフィルタリング機能による画像検索
-- レーティングシステムによる画像評価・管理
+- XMPベースレーティングシステムによる画像評価・管理
 
 ## 重要な設計パターン
 
 ### パフォーマンス最適化
 
-- Rust側で1回のIO操作で全画像情報を取得（`read_comprehensive_image_info`）
+- Rust側で1回のIO操作で全画像情報を取得（`read_image_metadata`）
 - 隣接画像の事前読み込み・キャッシュによる高速ナビゲーション
 - サムネイル生成の効率化
 - **統合メタデータキャッシュシステム**: 重複キャッシュを排除し、効率的なメタデータ管理を実現
@@ -257,13 +250,13 @@ src-tauri/src/
 ### Rust（バックエンド）
 
 - `image`, `png`, `webp` - 画像処理
-- `little_exif` - EXIF メタデータ処理
 - `serde`, `serde_json` - シリアライゼーション
 - `memmap2` - メモリマップファイルアクセス
 - `rayon` - 並列処理
 - `objc2-*` - macOS ネイティブ機能統合（クリップボード）
 - `sha2`, `hex` - ハッシュ機能
-- `regex` - 正規表現
+- `regex` - 正規表現（XMPパーシング用）
+- `crc32fast` - CRC32計算（PNG chunk用）
 - `once_cell` - グローバル変数管理
 
 ## デバッグ・トラブルシューティング
@@ -283,5 +276,27 @@ src-tauri/src/
 ### その他ルール
 
 - `console.debug` , `console.log` , `console.warn` , `console.error` は文字列結合して第１引数のみを使うこと
-- Rust側の型チェックは `bun run cargo-check` でやること
+- Rust側の型チェックは `cargo check` でやること（src-tauriディレクトリで実行）
 - フロントエンドから `invoke` でRustのAPIをコールするときは引数をlowerCamelCaseにすること
+
+## レーティングシステム設計（重要）
+
+### XMPベースレーティングシステム
+
+- **EXIFサポートは完全廃止済み** - 全てXMPベースに統一
+- **対応形式**: PNG、JPEG（XMP埋め込み対応形式のみ）
+- **WebPは非対応**（XMPメタデータ埋め込み制限のため）
+
+### レーティング処理フロー
+
+1. **読み取り**: `xmp_handler::extract_existing_xmp` → regex でrating抽出
+2. **書き込み**: `write_xmp_image_rating` Tauriコマンド経由
+3. **XMPフォーマット**: `xmp:Rating` + `xmp:RatingPercent` を同時設定
+4. **ファイル埋め込み**: PNG（iTXtチャンク）、JPEG（APP1セグメント）
+
+### 重要な実装ポイント
+
+- **統一API**: `read_image_metadata` でXMP rating取得
+- **キャッシュ無効化**: rating更新後は`invalidateMetadata`で強制リフレッシュ
+- **排他制御**: `writingFilesArray`で同時書き込み防止
+- **エラー処理**: XMP処理失敗時も適切なフォールバック

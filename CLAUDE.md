@@ -282,5 +282,6 @@ src-tauri/src/
 
 ### その他ルール
 
-- `console` はRustにForwardingされる関係上、第１引数までしか使えない。
-- Rust側の型チェックは `bun run cargo-check` でやる。
+- `console.debug` , `console.log` , `console.warn` , `console.error` は文字列結合して第１引数のみを使うこと
+- Rust側の型チェックは `bun run cargo-check` でやること
+- フロントエンドから `invoke` でRustのAPIをコールするときは引数をlowerCamelCaseにすること

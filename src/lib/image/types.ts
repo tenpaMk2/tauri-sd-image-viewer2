@@ -2,8 +2,7 @@ import type {
 	BatchThumbnailResult,
 	ThumbnailCacheInfo,
 	ExifInfo,
-	SdParameters,
-	ThumbnailInfo
+	SdParameters
 } from '../types/shared-types';
 
 export type MimeType =
@@ -35,4 +34,4 @@ export type ImageMetadata = {
 };
 
 // Re-export shared types for backwards compatibility
-export type { BatchThumbnailResult, ThumbnailCacheInfo, ExifInfo, SdParameters, ThumbnailInfo };
+export type { BatchThumbnailResult, ThumbnailCacheInfo, ExifInfo, SdParameters };

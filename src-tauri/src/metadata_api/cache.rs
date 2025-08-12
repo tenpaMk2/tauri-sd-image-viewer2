@@ -5,14 +5,13 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 use std::time::{Duration, SystemTime};
-use tauri::{AppHandle, Manager, Runtime};
 
 #[derive(Serialize, Deserialize, Clone)]
 struct CacheEntry {
     file_size: u64,
-    modified_time: SystemTime,
+    modified_time: u64,  // UNIXタイムスタンプ
     metadata: ImageMetadataInfo,
-    cached_at: SystemTime,
+    cached_at: u64,      // UNIXタイムスタンプ
 }
 
 pub struct MetadataCache {
@@ -21,12 +20,17 @@ pub struct MetadataCache {
 }
 
 impl MetadataCache {
-    pub fn new<R: Runtime>(app: &AppHandle<R>) -> Result<Self, String> {
-        let cache_path = Self::get_cache_file_path(app)?;
+    /// SystemTimeをUNIXタイムスタンプに変換
+    fn system_time_to_unix_timestamp(time: SystemTime) -> u64 {
+        time.duration_since(SystemTime::UNIX_EPOCH)
+            .unwrap_or(Duration::from_secs(0))
+            .as_secs()
+    }
 
+    pub fn new(cache_file_path: PathBuf) -> Result<Self, String> {
         // ディスクキャッシュが存在する場合は読み込み
-        let memory_cache = if cache_path.exists() {
-            Self::load_from_disk(&cache_path)?
+        let memory_cache = if cache_file_path.exists() {
+            Self::load_from_disk(&cache_file_path)?
         } else {
             HashMap::new()
         };
@@ -38,7 +42,7 @@ impl MetadataCache {
 
         Ok(Self {
             memory_cache: Mutex::new(memory_cache),
-            cache_file_path: cache_path,
+            cache_file_path: cache_file_path,
         })
     }
 
@@ -67,9 +71,11 @@ impl MetadataCache {
 
         let entry = CacheEntry {
             file_size: file_metadata.len(),
-            modified_time: file_metadata.modified().unwrap_or(SystemTime::UNIX_EPOCH),
+            modified_time: Self::system_time_to_unix_timestamp(
+                file_metadata.modified().unwrap_or(SystemTime::UNIX_EPOCH)
+            ),
             metadata,
-            cached_at: SystemTime::now(),
+            cached_at: Self::system_time_to_unix_timestamp(SystemTime::now()),
         };
 
         let mut cache = self.memory_cache.lock().unwrap();
@@ -121,15 +127,39 @@ impl MetadataCache {
             serde_json::from_str(&content).map_err(|e| format!("Cache JSON parse error: {}", e))?;
 
         // 古いエントリを削除（30日以上）
-        let cutoff = SystemTime::now() - Duration::from_secs(30 * 24 * 3600);
+        let now = SystemTime::now();
+        let cutoff_timestamp = Self::system_time_to_unix_timestamp(
+            now - Duration::from_secs(30 * 24 * 3600)
+        );
+        let current_timestamp = Self::system_time_to_unix_timestamp(now);
+        
+        let original_count = cache_data.len();
+        
         let filtered: HashMap<_, _> = cache_data
             .into_iter()
-            .filter(|(_, entry)| entry.cached_at > cutoff)
+            .filter(|(file_path, entry)| {
+                let age_days = (current_timestamp - entry.cached_at) / (24 * 3600);
+                let keep = entry.cached_at > cutoff_timestamp;
+                
+                if !keep {
+                    println!(
+                        "🗑️ Removed cache entry: {} (age: {} days, cached_at: {}, cutoff: {})",
+                        file_path.split('/').last().unwrap_or(""),
+                        age_days,
+                        entry.cached_at,
+                        cutoff_timestamp
+                    );
+                }
+                
+                keep
+            })
             .collect();
 
+        let removed_count = original_count - filtered.len();
         println!(
-            "📂 ディスクキャッシュ読み込み完了: {} entries (古いエントリを除去)",
-            filtered.len()
+            "📂 Disk cache loaded: {} entries (removed {} old entries)",
+            filtered.len(),
+            removed_count
         );
         Ok(filtered)
     }
@@ -146,18 +176,12 @@ impl MetadataCache {
         let current_modified = current_metadata
             .modified()
             .map_err(|e| format!("Failed to get modification time: {}", e))?;
+        let current_modified_timestamp = Self::system_time_to_unix_timestamp(current_modified);
 
         // ファイルサイズと更新時刻で軽量変更検出
         Ok(
             current_size == cached_entry.file_size
-                && current_modified == cached_entry.modified_time,
+                && current_modified_timestamp == cached_entry.modified_time,
         )
-    }
-
-    fn get_cache_file_path<R: Runtime>(app: &AppHandle<R>) -> Result<PathBuf, String> {
-        app.path()
-            .app_cache_dir()
-            .map(|cache_dir| cache_dir.join("metadata_cache.json"))
-            .map_err(|e| format!("Failed to get metadata cache file path: {}", e))
     }
 }

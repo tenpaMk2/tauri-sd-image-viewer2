@@ -131,6 +131,22 @@ export type ImageMetadataCache = {
 // ThumbnailPathInfo は削除されました - ImageMetadataCache に統合
 
 /**
+ * サムネイルキャッシュ情報 (フロントエンド用エイリアス)
+ * ImageMetadataCache のサブセット
+ */
+export type ThumbnailCacheInfo = ImageMetadataCache;
+
+/**
+ * サムネイル生成結果
+ * 対応: `struct ThumbnailResult`
+ */
+export type ThumbnailResult = {
+	original_path: string; // Rust: String
+	thumbnail_path?: string; // Rust: Option<String>
+	error?: string; // Rust: Option<String>
+};
+
+/**
  * バッチサムネイル結果
  * 対応: `struct BatchThumbnailResult`
  */

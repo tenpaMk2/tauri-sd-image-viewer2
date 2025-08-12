@@ -3,7 +3,6 @@ mod generator;
 mod thumbnail_service;
 
 use serde::{Deserialize, Serialize};
-use tauri::{AppHandle, Runtime};
 
 // Public exports from submodules
 pub use config::*;
@@ -19,10 +18,9 @@ pub struct ThumbnailResult {
 
 /// Generate thumbnails in batch (Tauri command)
 #[tauri::command]
-pub async fn generate_thumbnails_batch<R: Runtime>(
+pub async fn generate_thumbnails_batch(
     image_paths: Vec<String>,
     config: Option<ThumbnailConfig>,
-    _app: AppHandle<R>,
     state: tauri::State<'_, ThumbnailState>,
 ) -> Result<Vec<ThumbnailResult>, String> {
     let _thumbnail_config = config.unwrap_or_default();
@@ -45,9 +43,6 @@ pub async fn generate_thumbnails_batch<R: Runtime>(
 
 /// Clear thumbnail cache (Tauri command)
 #[tauri::command]
-pub async fn clear_thumbnail_cache<R: Runtime>(
-    _app: AppHandle<R>,
-    state: tauri::State<'_, ThumbnailState>,
-) -> Result<(), String> {
+pub async fn clear_thumbnail_cache(state: tauri::State<'_, ThumbnailState>) -> Result<(), String> {
     state.service.clear_all()
 }

@@ -14,10 +14,17 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .setup(|app| {
+            let cach_dir_path = app
+                .path()
+                .app_cache_dir()
+                .map(|cache_dir| cache_dir.join("thumbnails"))
+                .map_err(|e| format!("Failed to get thumbnail cache directory: {}", e))?;
+
             // サムネイル状態を初期化
             let thumbnail_config = thumbnail_api::ThumbnailConfig::default();
+
             let thumbnail_state =
-                match thumbnail_api::ThumbnailState::new(thumbnail_config, app.handle()) {
+                match thumbnail_api::ThumbnailState::new(thumbnail_config, cach_dir_path) {
                     Ok(state) => state,
                     Err(e) => {
                         eprintln!("ThumbnailStateの初期化に失敗: {}", e);
@@ -26,8 +33,13 @@ pub fn run() {
                 };
             app.manage(thumbnail_state);
 
+            
             // メタデータキャッシュを初期化
-            let metadata_cache = match metadata_api::cache::MetadataCache::new(app.handle()) {
+            let metadata_disk_cache_file_path = app.path()
+                .app_cache_dir()
+                .map(|cache_dir| cache_dir.join("metadata_cache.json"))
+                .map_err(|e| format!("Failed to get metadata cache file path: {}", e))?;
+            let metadata_cache = match metadata_api::cache::MetadataCache::new(metadata_disk_cache_file_path) {
                 Ok(cache) => cache,
                 Err(e) => {
                     eprintln!("MetadataCacheの初期化に失敗: {}", e);

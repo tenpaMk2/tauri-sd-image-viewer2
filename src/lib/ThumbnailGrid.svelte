@@ -4,6 +4,7 @@
 	import type { TagAggregationResult } from './services/tag-aggregation-service';
 	import { TagAggregationService } from './services/tag-aggregation-service';
 	import { ThumbnailService } from './services/thumbnail-service';
+	import { ThumbnailQueueManager } from './services/thumbnail-queue-manager';
 	import { unifiedMetadataService } from './services/unified-metadata-service.svelte';
 	import { filterStore } from './stores/filter-store.svelte';
 
@@ -73,10 +74,10 @@
 	$effect(() => {
 		console.log('=== サムネイル総数変化 === ' + thumbnails.size + ' / ' + imageFiles.length);
 		console.log(
-			'表示可能なサムネイル:',
-			Array.from(thumbnails.keys())
-				.slice(0, 5)
-				.map((path) => path.split('/').pop())
+			'表示可能なサムネイル:' +
+				Array.from(thumbnails.keys())
+					.slice(0, 5)
+					.map((path) => path.split('/').pop())
 		);
 	});
 
@@ -146,8 +147,8 @@
 
 			console.log('画像ファイル一覧取得完了: ' + imageFiles.length + '個のファイル');
 
-			// 第2段階：シンプルキューをテスト
-			loadThumbnailsWithSimpleQueue();
+			// 第2段階：ThumbnailQueueManagerを使用
+			loadThumbnailsWithQueue();
 
 			// 第3段階：SDタグデータを集計
 			loadTagData();
@@ -159,58 +160,65 @@
 		}
 	};
 
-	// シンプルなキューベースのサムネイル生成（キュー停止機能付き）
-	const loadThumbnailsWithSimpleQueue = async () => {
-		console.log('=== loadThumbnailsWithSimpleQueue 開始 ===');
+	// ThumbnailQueueManagerを使用したサムネイル生成
+	const loadThumbnailsWithQueue = async () => {
+		console.log('=== loadThumbnailsWithQueue 開始 ===');
 		console.log('imageFiles: ' + imageFiles.length + '個のファイル');
 
 		try {
 			console.log(
-				'シンプルキューベースのサムネイル生成開始: ' + imageFiles.length + '個のファイル'
+				'ThumbnailQueueManagerでのサムネイル生成開始: ' + imageFiles.length + '個のファイル'
 			);
 
-			const resultThumbnails = await thumbnailService.loadThumbnailsWithSimpleQueue(
-				imageFiles,
-				(chunkResults) => {
-					console.log('=== シンプルチャンク完了 ===');
-					console.log('チャンク結果受信: ' + chunkResults.size + '個のサムネイル');
+			const queueManager = new ThumbnailQueueManager(
+				{ chunkSize: 16, delayBetweenChunks: 10 },
+				{
+					onChunkComplete: (chunkResults) => {
+						console.log('=== チャンク完了 ===');
+						console.log('チャンク結果受信: ' + chunkResults.size + '個のサムネイル');
 
-					// 既存のthumbnailsに新しいチャンク結果をマージ
-					const newThumbnails = new Map(thumbnails);
-					for (const [imagePath, thumbnailUrl] of chunkResults) {
-						console.log(
-							'サムネイル追加:' + imagePath.split('/').pop() + thumbnailUrl.substring(0, 50) + '...'
-						);
-						newThumbnails.set(imagePath, thumbnailUrl);
+						// 既存のthumbnailsに新しいチャンク結果をマージ
+						const newThumbnails = new Map(thumbnails);
+						for (const [imagePath, thumbnailUrl] of chunkResults) {
+							console.log(
+								'サムネイル追加:' + imagePath.split('/').pop() + thumbnailUrl.substring(0, 50) + '...'
+							);
+							newThumbnails.set(imagePath, thumbnailUrl);
+						}
+
+						thumbnails = newThumbnails;
+
+						// リアルタイム更新時にレーティングも読み込み
+						const chunkPaths = Array.from(chunkResults.keys());
+						loadRatings(chunkPaths);
+						ratingUpdateTrigger = Date.now();
+						console.log('🔄 リアルタイム更新、Rating表示更新トリガー: ' + ratingUpdateTrigger);
+						console.log('thumbnails更新 (リアルタイム):', thumbnails.size, '個のサムネイル');
+					},
+					onProgress: (loadedCount, totalCount) => {
+						console.log('プロセス通知: ' + loadedCount + ' / ' + totalCount);
+						loadingState.loadedCount = loadedCount;
+						loadingState.totalCount = totalCount;
+					},
+					onComplete: async () => {
+						// 全レーティングを読み込み
+						await loadRatings(imageFiles);
+						ratingUpdateTrigger = Date.now();
+
+						console.log('ThumbnailQueueManagerでのサムネイル生成完了');
+						loadingState.isProcessing = false;
+					},
+					onError: (error) => {
+						console.error('ThumbnailQueueManager処理エラー: ' + error);
+						loadingState.isProcessing = false;
 					}
-
-					thumbnails = newThumbnails;
-
-					// リアルタイム更新時にレーティングも読み込み
-					const chunkPaths = Array.from(chunkResults.keys());
-					loadRatings(chunkPaths);
-					ratingUpdateTrigger = Date.now();
-					console.log('🔄 リアルタイム更新、Rating表示更新トリガー: ' + ratingUpdateTrigger);
-					console.log('thumbnails更新 (リアルタイム):', thumbnails.size, '個のサムネイル');
-				},
-				(loadedCount, totalCount) => {
-					console.log('プロセス通知: ' + loadedCount + ' / ' + totalCount);
-					loadingState.loadedCount = loadedCount;
-					loadingState.totalCount = totalCount;
 				}
 			);
 
-			// 最終結果をセット
-			thumbnails = resultThumbnails;
+			await queueManager.startProcessing(imageFiles);
 
-			// 全レーティングを読み込み
-			await loadRatings(imageFiles);
-			ratingUpdateTrigger = Date.now();
-
-			console.log('シンプルキューベースのサムネイル生成完了');
-			loadingState.isProcessing = false;
 		} catch (err) {
-			console.error('シンプルキューベース処理エラー: ' + err);
+			console.error('ThumbnailQueueManager処理エラー: ' + err);
 			loadingState.isProcessing = false;
 		}
 	};

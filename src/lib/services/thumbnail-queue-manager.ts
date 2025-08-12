@@ -1,4 +1,4 @@
-import type { BatchThumbnailPathResult } from '../types/shared-types';
+import { ThumbnailService } from './thumbnail-service';
 
 export type ThumbnailQueueConfig = {
 	chunkSize: number;
@@ -25,6 +25,7 @@ export class ThumbnailQueueManager {
 	private callbacks: ThumbnailQueueCallbacks;
 	private processingPromise: Promise<void> | null = null;
 	private shouldStop = false;
+	private thumbnailService: ThumbnailService;
 
 	constructor(
 		config: ThumbnailQueueConfig = { chunkSize: 16, delayBetweenChunks: 10 },
@@ -32,6 +33,7 @@ export class ThumbnailQueueManager {
 	) {
 		this.config = config;
 		this.callbacks = callbacks;
+		this.thumbnailService = new ThumbnailService();
 	}
 
 	async startProcessing(imagePaths: string[]): Promise<void> {
@@ -100,78 +102,18 @@ export class ThumbnailQueueManager {
 	}
 
 	private async processChunk(chunk: string[]): Promise<void> {
-		const { invoke } = await import('@tauri-apps/api/core');
-
 		try {
-			const results: BatchThumbnailPathResult[] = await invoke('load_thumbnail_paths_batch', {
-				imagePaths: chunk
-			});
+			if (this.shouldStop) return;
 
-			// デバッグ：Rustからの全体的なレスポンス構造確認
-			console.log('🔧 CRITICAL DEBUG - Rust全レスポンス: ' + JSON.stringify({
-				resultsType: typeof results,
-				isArray: Array.isArray(results),
-				length: results?.length,
-				firstResultKeys: results?.[0] ? Object.keys(results[0]) : null,
-				firstResultValue: results?.[0]
-			}));
+			// ThumbnailServiceを使用してバッチ処理
+			const chunkThumbnails = await this.thumbnailService.processThumbnailBatch(chunk);
+			
+			// 読み込み完了数を更新
+			this.loadedCount += chunkThumbnails.size;
 
-			const chunkThumbnails = new Map<string, string>();
-			const chunkMetadata = new Map<string, any>();
-
-			for (const result of results) {
-				if (this.shouldStop) return;
-
-				// デバッグ：Rustから返された結果の詳細確認
-				console.log('📦 Rust結果詳細: ' + JSON.stringify({
-					path: result.path.split('/').pop(),
-					hasThumbnail: !!result.thumbnail,
-					thumbnailKeys: result.thumbnail ? Object.keys(result.thumbnail) : null,
-					cachePathExists: result.thumbnail?.cache_path !== undefined,
-					cachePathValue: result.thumbnail?.cache_path,
-					hasError: !!result.error,
-					errorMsg: result.error
-				}));
-
-				if (result.thumbnail?.cache_path) {
-					try {
-						// tauri-fsでファイルを読み込んでBlobURL生成
-						const { readFile } = await import('@tauri-apps/plugin-fs');
-						const fileData = await readFile(result.thumbnail.cache_path);
-						const blob = new Blob([new Uint8Array(fileData)], { type: result.thumbnail.mime_type });
-						const thumbnailUrl = URL.createObjectURL(blob);
-
-						// デバッグ：ファイル読み込みの詳細確認
-						console.log('🔄 QueueManager ファイル読み込み詳細: ' + JSON.stringify({
-							originalPath: result.thumbnail.cache_path,
-							fileSize: fileData.length,
-							blobUrl: thumbnailUrl.substring(0, 50) + '...',
-							imagePath: result.path.split('/').pop()
-						}));
-
-						chunkThumbnails.set(result.path, thumbnailUrl);
-					} catch (error) {
-						console.error('🚨 QueueManager ファイル読み込みエラー: ' + JSON.stringify({
-							path: result.thumbnail.cache_path,
-							error: error
-						}));
-						continue;
-					}
-
-					// メタデータが存在する場合はキャッシュに保存
-					if (result.cache_info) {
-						chunkMetadata.set(result.path, result.cache_info);
-					}
-
-					this.loadedCount++;
-				} else if (result.error) {
-					console.warn(`Thumbnail generation failed: ${result.path} - ${result.error}`);
-				}
-			}
-
-			// チャンク完了のコールバック（メタデータも含める）
+			// チャンク完了のコールバック
 			if (chunkThumbnails.size > 0) {
-				this.callbacks.onChunkComplete?.(chunkThumbnails, chunkMetadata);
+				this.callbacks.onChunkComplete?.(chunkThumbnails, new Map());
 			}
 
 			// プログレス報告

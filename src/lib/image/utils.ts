@@ -1,9 +1,9 @@
+import { invoke } from '@tauri-apps/api/core';
 import { basename, dirname } from '@tauri-apps/api/path';
 import { stat } from '@tauri-apps/plugin-fs';
-import { invoke } from '@tauri-apps/api/core';
 import { unifiedMetadataService } from '../services/unified-metadata-service.svelte';
-import type { ImageMetadata } from './types';
 import type { ImageMetadataInfo } from '../types/shared-types';
+import type { ImageMetadata } from './types';
 
 /**
  * 基本情報のみを軽量作成（サムネイル用）
@@ -32,7 +32,7 @@ export const createBasicImageInfo = async (imagePath: string): Promise<{
 			format: extension,
 		};
 	} catch (error) {
-		console.warn('基本ファイル情報の取得に失敗:', error);
+		console.warn('基本ファイル情報の取得に失敗:' + error);
 		return {
 			filename,
 			size: 'Unknown',
@@ -60,7 +60,7 @@ export const createImageMetadata = async (imagePath: string): Promise<ImageMetad
 			: 'Unknown';
 
 		// メタデータを直接取得
-		const imageInfo = await invoke<ImageMetadataInfo>('read_image_metadata_all', { path: imagePath });
+		const imageInfo = await invoke<ImageMetadataInfo>('read_image_metadata', { path: imagePath });
 
 		const sizeFormatted = formatFileSize(imageInfo.file_size);
 		const dimensions =
@@ -79,7 +79,7 @@ export const createImageMetadata = async (imagePath: string): Promise<ImageMetad
 			exifInfo: imageInfo.exif_info
 		};
 	} catch (error) {
-		console.warn('ファイル情報の取得に失敗:', error);
+		console.warn('ファイル情報の取得に失敗:' + error);
 		return {
 			filename,
 			size: 'Unknown',

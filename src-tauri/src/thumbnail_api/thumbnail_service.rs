@@ -5,7 +5,6 @@ use rayon::prelude::*;
 use sha2::{Digest, Sha256};
 use std::fs;
 use std::path::PathBuf;
-use tauri::{AppHandle, Manager, Runtime};
 
 /// Unified thumbnail service (generation + caching)
 pub struct ThumbnailService {
@@ -15,9 +14,7 @@ pub struct ThumbnailService {
 
 impl ThumbnailService {
     /// Create new thumbnail service
-    pub fn new<R: Runtime>(config: ThumbnailConfig, app: &AppHandle<R>) -> Result<Self, String> {
-        let cache_dir = Self::get_cache_directory(app)?;
-
+    pub fn new(config: ThumbnailConfig, cache_dir: PathBuf) -> Result<Self, String> {
         // Create cache directory if needed
         if !cache_dir.exists() {
             println!(
@@ -57,14 +54,6 @@ impl ThumbnailService {
             self.clear_directory(&self.cache_dir)?;
         }
         Ok(())
-    }
-
-    /// Get thumbnail cache directory path
-    fn get_cache_directory<R: Runtime>(app: &AppHandle<R>) -> Result<PathBuf, String> {
-        app.path()
-            .app_cache_dir()
-            .map(|cache_dir| cache_dir.join("thumbnails"))
-            .map_err(|e| format!("Failed to get thumbnail cache directory: {}", e))
     }
 
     /// Generate single thumbnail
@@ -181,8 +170,8 @@ pub struct ThumbnailState {
 }
 
 impl ThumbnailState {
-    pub fn new<R: Runtime>(config: ThumbnailConfig, app: &AppHandle<R>) -> Result<Self, String> {
-        let service = ThumbnailService::new(config, app)?;
+    pub fn new(config: ThumbnailConfig, cache_dir: PathBuf) -> Result<Self, String> {
+        let service = ThumbnailService::new(config, cache_dir)?;
         Ok(Self { service })
     }
 }

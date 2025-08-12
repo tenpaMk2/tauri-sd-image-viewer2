@@ -8,7 +8,9 @@ import type { ImageMetadata } from './types';
 /**
  * 基本情報のみを軽量作成（サムネイル用）
  */
-export const createBasicImageInfo = async (imagePath: string): Promise<{
+export const createBasicImageInfo = async (
+	imagePath: string
+): Promise<{
 	filename: string;
 	size: string;
 	dimensions: string;
@@ -29,7 +31,7 @@ export const createBasicImageInfo = async (imagePath: string): Promise<{
 			filename,
 			size: sizeFormatted,
 			dimensions,
-			format: extension,
+			format: extension
 		};
 	} catch (error) {
 		console.warn('基本ファイル情報の取得に失敗:' + error);
@@ -37,7 +39,7 @@ export const createBasicImageInfo = async (imagePath: string): Promise<{
 			filename,
 			size: 'Unknown',
 			dimensions: 'Unknown',
-			format: extension,
+			format: extension
 		};
 	}
 };
@@ -62,6 +64,8 @@ export const createImageMetadata = async (imagePath: string): Promise<ImageMetad
 		// メタデータを直接取得
 		const imageInfo = await invoke<ImageMetadataInfo>('read_image_metadata', { path: imagePath });
 
+		console.log('💩💩💩imageInfo: ' + JSON.stringify(imageInfo));
+
 		const sizeFormatted = formatFileSize(imageInfo.file_size);
 		const dimensions =
 			imageInfo.width > 0 && imageInfo.height > 0
@@ -76,7 +80,7 @@ export const createImageMetadata = async (imagePath: string): Promise<ImageMetad
 			created,
 			modified,
 			sdParameters: imageInfo.sd_parameters,
-			exifInfo: imageInfo.exif_info
+			rating: imageInfo.rating
 		};
 	} catch (error) {
 		console.warn('ファイル情報の取得に失敗:' + error);

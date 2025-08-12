@@ -161,11 +161,11 @@
 	{/if}
 
 	<!-- Rating オーバーレイバー（ズーム時・UI非表示時は非表示） -->
-	{#if imageUrl && metadata.exifInfo?.rating !== undefined && viewState.zoomLevel === 1 && isUIVisible && imagePath}
+	{#if imageUrl && metadata.rating !== undefined && viewState.zoomLevel === 1 && isUIVisible && imagePath}
 		<div class="absolute bottom-4 left-1/2 -translate-x-1/2 transform">
 			<RatingComponent 
 				{imagePath} 
-				rating={metadata.exifInfo.rating} 
+				rating={metadata.rating} 
 				onRatingChange={handleRatingChange}
 			/>
 		</div>

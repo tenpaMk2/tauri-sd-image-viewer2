@@ -48,7 +48,7 @@ export class UnifiedMetadataService {
 				width: metadata.width,
 				height: metadata.height,
 				mime_type: metadata.mime_type,
-				exif_info: metadata.exif_info
+				rating: metadata.rating
 			} as any; // 一時的な型アサーション
 		} catch (error) {
 			console.error('基本情報の取得に失敗: ' + imagePath + ' ' + error);
@@ -84,7 +84,7 @@ export class UnifiedMetadataService {
 		try {
 			// Rust側の統合APIからメタデータを取得してRatingを抽出
 			const metadata = await invoke<ImageMetadataInfo>('read_image_metadata', { path: imagePath });
-			const rating = metadata.exif_info?.rating ?? null;
+			const rating = metadata.rating ?? null;
 			return rating ?? undefined;
 		} catch (error) {
 			console.warn('軽量Rating取得に失敗、キャッシュから取得:', imagePath, error);
@@ -107,11 +107,15 @@ export class UnifiedMetadataService {
 		// ロック取得（配列に追加）
 		this.writingFilesArray.push(imagePath);
 
+		console.log("🐓🐓🐓")
+
 		try {
-			await invoke('write_exif_image_rating', {
-				path: imagePath,
+			await invoke('write_xmp_image_rating', {
+				srcPath: imagePath,
 				rating: newRating
 			});
+
+			console.log("🐓🐓🐓🐓🐓🐓🐓🐓🐓")
 
 			// ファイル変更によりキャッシュを無効化（次回アクセス時に新しいハッシュで再読み込み）
 			this.invalidateMetadata(imagePath);

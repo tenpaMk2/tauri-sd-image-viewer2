@@ -1,6 +1,6 @@
-use super::exif_handler::ExifInfo;
 use super::png_handler;
 use super::sd_parameters::SdParameters;
+use super::xmp_handler;
 use crate::image_loader::ImageReader;
 use serde::{Deserialize, Serialize};
 use std::fs;
@@ -13,7 +13,7 @@ pub struct ImageMetadataInfo {
     pub file_size: u64,
     pub mime_type: String,
     pub sd_parameters: Option<SdParameters>,
-    pub exif_info: Option<ExifInfo>,
+    pub rating: Option<u8>, // XMP Rating from xmp_handler
 }
 
 impl ImageMetadataInfo {
@@ -38,8 +38,8 @@ impl ImageMetadataInfo {
             None
         };
         
-        // Get EXIF information
-        let exif_info = Self::extract_exif_info_from_reader(reader, path);
+        // Get XMP Rating information 
+        let rating = Self::extract_xmp_rating_from_reader(reader, path);
 
         Ok(ImageMetadataInfo {
             width,
@@ -47,16 +47,40 @@ impl ImageMetadataInfo {
             file_size,
             mime_type,
             sd_parameters,
-            exif_info,
+            rating,
         })
     }
 
-    /// Extract EXIF information from ImageReader
-    fn extract_exif_info_from_reader(reader: &ImageReader, path: &str) -> Option<ExifInfo> {
+    /// Extract XMP Rating from ImageReader (PNG and JPEG support)
+    fn extract_xmp_rating_from_reader(reader: &ImageReader, path: &str) -> Option<u8> {
         let mime_type = reader.mime_type();
-        if matches!(mime_type.as_str(), "image/png" | "image/jpeg" | "image/webp") {
-            let extension = path.split('.').last().unwrap_or("");
-            ExifInfo::from_bytes(reader.as_bytes(), extension)
+        let file_extension = path.split('.').last().unwrap_or("").to_lowercase();
+        
+        // Support PNG and JPEG files for XMP rating extraction
+        if matches!(mime_type.as_str(), "image/png" | "image/jpeg") && matches!(file_extension.as_str(), "png" | "jpg" | "jpeg") {
+            // Extract existing XMP and parse rating
+            if let Some(xmp_content) = xmp_handler::extract_existing_xmp(reader.as_bytes(), &file_extension) {
+                Self::parse_xmp_rating(&xmp_content)
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    }
+
+    /// Parse rating from XMP content
+    fn parse_xmp_rating(xmp_content: &str) -> Option<u8> {
+        // Look for xmp:Rating attribute
+        let rating_pattern = r#"xmp:Rating="(\d+)""#;
+        let rating_re = regex::Regex::new(rating_pattern).ok()?;
+        
+        if let Some(captures) = rating_re.captures(xmp_content) {
+            if let Some(rating_match) = captures.get(1) {
+                rating_match.as_str().parse::<u8>().ok()
+            } else {
+                None
+            }
         } else {
             None
         }

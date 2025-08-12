@@ -43,21 +43,6 @@ export type SdParameters = {
 // 対応ファイル: src-tauri/src/png_handler.rs
 // ==========================================
 
-// ==========================================
-// Exif情報
-// 対応ファイル: src-tauri/src/exif_info.rs (予定)
-// ==========================================
-
-/**
- * Exif情報
- * 対応: `struct ExifInfo`
- */
-export type ExifInfo = {
-	date_time_original?: string; // Rust: Option<String>
-	create_date?: string; // Rust: Option<String>
-	modify_date?: string; // Rust: Option<String>
-	rating?: number; // Rust: Option<u8>
-};
 
 // ==========================================
 // 画像メタデータ情報（軽量版）
@@ -88,7 +73,7 @@ export type ImageMetadataInfo = {
 	file_size: number; // Rust: u64
 	mime_type: string; // Rust: String
 	sd_parameters?: SdParameters; // Rust: Option<SdParameters>
-	exif_info?: ExifInfo; // Rust: Option<ExifInfo>
+	rating?: number; // Rust: Option<u8> - XMP Rating from xmp_handler
 	// image_data は除外（パフォーマンス最適化のため）
 };
 
@@ -120,8 +105,7 @@ export type ImageMetadataCache = {
 	thumbnail_width: number; // Rust: u32
 	thumbnail_height: number; // Rust: u32
 	thumbnail_mime_type: string; // Rust: String
-	rating?: number; // Rust: Option<u8>
-	exif_info?: ExifInfo; // Rust: Option<ExifInfo>
+	rating?: number; // Rust: Option<u8> - XMP Rating
 	sd_parameters?: SdParameters; // Rust: Option<SdParameters>
 	cached_at: number; // Rust: u64 (UNIXタイムスタンプ)
 };

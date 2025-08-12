@@ -55,7 +55,7 @@ pub fn run() {
             thumbnail_api::generate_thumbnails_batch,
             thumbnail_api::clear_thumbnail_cache,
             metadata_api::service::read_image_metadata,
-            metadata_api::service::write_exif_image_rating,
+            metadata_api::service::write_xmp_image_rating,
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application");

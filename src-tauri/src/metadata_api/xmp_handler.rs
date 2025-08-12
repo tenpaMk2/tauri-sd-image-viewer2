@@ -255,89 +255,180 @@ fn embed_xmp_in_jpeg_vec(file_data: &[u8], xmp_data: &str) -> Result<Vec<u8>, St
 
 /// Embed XMP in PNG vec (returns modified vec)
 fn embed_xmp_in_png_vec(file_data: &[u8], xmp_data: &str) -> Result<Vec<u8>, String> {
-    use png::{Decoder, Encoder};
-    use std::io::Cursor;
+    // Use chunk-level manipulation to preserve all existing chunks including EXIF zTXt chunks
+    embed_xmp_in_png_chunks(file_data, xmp_data)
+}
 
-    // 1. Read existing PNG
-    let cursor = Cursor::new(file_data);
-    let decoder = Decoder::new(cursor);
-    let mut reader = decoder
-        .read_info()
-        .map_err(|e| format!("PNG read error: {}", e))?;
+/// Embed XMP data in PNG using chunk-level manipulation (preserves EXIF zTXt chunks)
+fn embed_xmp_in_png_chunks(file_data: &[u8], xmp_data: &str) -> Result<Vec<u8>, String> {
+    const ITXT_CHUNK_TYPE: &[u8] = b"iTXt";
+    const IEND_CHUNK_TYPE: &[u8] = b"IEND";
 
-    // Get image information
-    let info = reader.info().clone();
-    let width = info.width;
-    let height = info.height;
-    let color_type = info.color_type;
-    let bit_depth = info.bit_depth;
-
-    // Read image data
-    let mut buf = vec![0; reader.output_buffer_size()];
-    reader
-        .next_frame(&mut buf)
-        .map_err(|e| format!("Image data read error: {}", e))?;
-
-    // Preserve existing text metadata
-    let existing_text_chunks = info.uncompressed_latin1_text.clone();
-    let existing_compressed_latin1_text = info.compressed_latin1_text.clone();
-    let existing_utf8_text = info.utf8_text.clone();
-
-    // 2. Write new PNG to vec
-    let mut output = Vec::new();
-    let mut encoder = Encoder::new(&mut output, width, height);
-    encoder.set_color(color_type);
-    encoder.set_depth(bit_depth);
-
-    // Add existing tEXt chunks (SD parameters etc.)
-    for text_chunk in &existing_text_chunks {
-        encoder
-            .add_text_chunk(text_chunk.keyword.clone(), text_chunk.text.clone())
-            .map_err(|e| format!("tEXt addition error: {}", e))?;
-    }
-
-    // Add existing zTXt chunks
-    for compressed_chunk in &existing_compressed_latin1_text {
-        encoder
-            .add_ztxt_chunk(
-                compressed_chunk.keyword.clone(),
-                compressed_chunk
-                    .get_text()
-                    .map_err(|e| format!("zTXt expansion error: {}", e))?,
-            )
-            .map_err(|e| format!("zTXt addition error: {}", e))?;
-    }
-
-    // Add existing iTXt chunks (except XMP)
-    for utf8_chunk in &existing_utf8_text {
-        if utf8_chunk.keyword != "XML:com.adobe.xmp" {
-            encoder
-                .add_itxt_chunk(
-                    utf8_chunk.keyword.clone(),
-                    utf8_chunk
-                        .get_text()
-                        .map_err(|e| format!("iTXt expansion error: {}", e))?,
-                )
-                .map_err(|e| format!("iTXt addition error: {}", e))?;
+    // Parse PNG chunks
+    let mut chunks = parse_png_chunks_for_xmp(file_data)?;
+    
+    // Create iTXt chunk data for XMP
+    let itxt_chunk_data = create_itxt_xmp_chunk(xmp_data)?;
+    
+    // Find existing XMP iTXt chunk or create new one
+    let mut found_xmp_chunk = false;
+    for chunk in &mut chunks {
+        if &chunk.chunk_type == ITXT_CHUNK_TYPE && is_xmp_itxt_chunk(&chunk.data) {
+            println!("♻️ Updating existing XMP iTXt chunk");
+            chunk.data = itxt_chunk_data.clone();
+            chunk.length = chunk.data.len() as u32;
+            chunk.crc = calculate_crc_for_xmp(&chunk.chunk_type, &chunk.data);
+            found_xmp_chunk = true;
+            break;
         }
     }
+    
+    if !found_xmp_chunk {
+        println!("➕ Creating new XMP iTXt chunk");
+        // Create new iTXt chunk
+        let mut chunk_type_array = [0u8; 4];
+        chunk_type_array.copy_from_slice(ITXT_CHUNK_TYPE);
+        let new_chunk = PngChunkXmp {
+            length: itxt_chunk_data.len() as u32,
+            chunk_type: chunk_type_array,
+            data: itxt_chunk_data,
+            crc: 0, // Will be calculated when rebuilding
+        };
+        
+        // Insert before IEND chunk
+        let iend_index = chunks.iter().position(|chunk| &chunk.chunk_type == IEND_CHUNK_TYPE)
+            .ok_or("IEND chunk not found")?;
+        chunks.insert(iend_index, new_chunk);
+        
+        // Recalculate CRC for new chunk
+        let inserted_index = iend_index;
+        chunks[inserted_index].crc = calculate_crc_for_xmp(&chunks[inserted_index].chunk_type, &chunks[inserted_index].data);
+        println!("✅ New XMP iTXt chunk created and inserted");
+    }
+    
+    rebuild_png_from_chunks_for_xmp(&chunks)
+}
 
-    // Add new XMP iTXt chunk
-    encoder
-        .add_itxt_chunk("XML:com.adobe.xmp".to_string(), xmp_data.to_string())
-        .map_err(|e| format!("XMP iTXt addition error: {}", e))?;
+#[derive(Debug)]
+struct PngChunkXmp {
+    pub length: u32,
+    pub chunk_type: [u8; 4],
+    pub data: Vec<u8>,
+    pub crc: u32,
+}
 
-    // Write image data
-    let mut writer = encoder
-        .write_header()
-        .map_err(|e| format!("PNG header write error: {}", e))?;
-    writer
-        .write_image_data(&buf)
-        .map_err(|e| format!("Image data write error: {}", e))?;
-    writer
-        .finish()
-        .map_err(|e| format!("PNG write completion error: {}", e))?;
+/// Parse PNG chunks from file data (XMP version)
+fn parse_png_chunks_for_xmp(data: &[u8]) -> Result<Vec<PngChunkXmp>, String> {
+    use std::io::{Cursor, Read, Seek, SeekFrom};
+    
+    const PNG_SIGNATURE: &[u8] = b"\x89PNG\r\n\x1a\n";
+    const IEND_CHUNK_TYPE: &[u8] = b"IEND";
+    
+    if data.len() < 8 || &data[0..8] != PNG_SIGNATURE {
+        return Err("Invalid PNG signature".to_string());
+    }
+    
+    let mut chunks = Vec::new();
+    let mut cursor = Cursor::new(data);
+    cursor.seek(SeekFrom::Start(8)).map_err(|e| format!("Seek error: {}", e))?; // Skip PNG signature
+    
+    loop {
+        // Read chunk header
+        let mut length_bytes = [0u8; 4];
+        if cursor.read_exact(&mut length_bytes).is_err() {
+            break; // End of file
+        }
+        let length = u32::from_be_bytes(length_bytes);
+        
+        let mut type_bytes = [0u8; 4];
+        cursor.read_exact(&mut type_bytes).map_err(|e| format!("Chunk type read error: {}", e))?;
+        
+        // Read chunk data
+        let mut chunk_data = vec![0u8; length as usize];
+        cursor.read_exact(&mut chunk_data).map_err(|e| format!("Chunk data read error: {}", e))?;
+        
+        // Read CRC
+        let mut crc_bytes = [0u8; 4];
+        cursor.read_exact(&mut crc_bytes).map_err(|e| format!("CRC read error: {}", e))?;
+        let crc = u32::from_be_bytes(crc_bytes);
 
+        chunks.push(PngChunkXmp {
+            length,
+            chunk_type: type_bytes,
+            data: chunk_data,
+            crc,
+        });
+        
+        // Stop at IEND chunk
+        if &type_bytes == IEND_CHUNK_TYPE {
+            break;
+        }
+    }
+    
+    Ok(chunks)
+}
+
+/// Check if iTXt chunk contains XMP metadata
+fn is_xmp_itxt_chunk(chunk_data: &[u8]) -> bool {
+    if let Some(null_pos) = chunk_data.iter().position(|&b| b == 0) {
+        if let Ok(keyword) = std::str::from_utf8(&chunk_data[0..null_pos]) {
+            return keyword == "XML:com.adobe.xmp";
+        }
+    }
+    false
+}
+
+/// Create iTXt chunk data for XMP metadata
+fn create_itxt_xmp_chunk(xmp_data: &str) -> Result<Vec<u8>, String> {
+    let mut chunk_data = Vec::new();
+    
+    // Add keyword and null terminator
+    chunk_data.extend_from_slice(b"XML:com.adobe.xmp");
+    chunk_data.push(0);
+    
+    // Add compression flag (0 = uncompressed)
+    chunk_data.push(0);
+    
+    // Add compression method (0 = zlib, but not used when uncompressed)
+    chunk_data.push(0);
+    
+    // Add language tag (empty) and null terminator
+    chunk_data.push(0);
+    
+    // Add translated keyword (empty) and null terminator
+    chunk_data.push(0);
+    
+    // Add XMP data (UTF-8)
+    chunk_data.extend_from_slice(xmp_data.as_bytes());
+    
+    Ok(chunk_data)
+}
+
+/// Calculate CRC32 for PNG chunk (XMP version)
+fn calculate_crc_for_xmp(chunk_type: &[u8; 4], data: &[u8]) -> u32 {
+    let mut hasher = crc32fast::Hasher::new();
+    hasher.update(chunk_type);
+    hasher.update(data);
+    hasher.finalize()
+}
+
+/// Rebuild PNG file from chunks (XMP version)
+fn rebuild_png_from_chunks_for_xmp(chunks: &[PngChunkXmp]) -> Result<Vec<u8>, String> {
+    const PNG_SIGNATURE: &[u8] = b"\x89PNG\r\n\x1a\n";
+    
+    let mut output = Vec::new();
+    
+    // PNG signature
+    output.extend_from_slice(PNG_SIGNATURE);
+    
+    // Write all chunks
+    for chunk in chunks {
+        output.extend_from_slice(&chunk.length.to_be_bytes());
+        output.extend_from_slice(&chunk.chunk_type);
+        output.extend_from_slice(&chunk.data);
+        output.extend_from_slice(&chunk.crc.to_be_bytes());
+    }
+    
     Ok(output)
 }
 

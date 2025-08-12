@@ -1,7 +1,6 @@
 import type {
 	BatchThumbnailResult,
 	ThumbnailCacheInfo,
-	ExifInfo,
 	SdParameters
 } from '../types/shared-types';
 
@@ -30,8 +29,8 @@ export type ImageMetadata = {
 	lens?: string;
 	settings?: string;
 	sdParameters?: SdParameters;
-	exifInfo?: ExifInfo;
+	rating?: number; // XMP rating from shared-types
 };
 
 // Re-export shared types for backwards compatibility
-export type { BatchThumbnailResult, ThumbnailCacheInfo, ExifInfo, SdParameters };
+export type { BatchThumbnailResult, ThumbnailCacheInfo, SdParameters };

@@ -69,9 +69,16 @@ impl ImageMetadataInfo {
         }
     }
 
-    /// Parse rating from XMP content
+    /// Parse rating from XMP content using xmp-toolkit
     fn parse_xmp_rating(xmp_content: &str) -> Option<u8> {
-        // Look for xmp:Rating attribute
+        // Use xmp-toolkit for robust parsing (preferred method)
+        if let Some(rating) = xmp_handler::extract_rating_from_xmp_toolkit(xmp_content) {
+            if rating <= 5 {
+                return Some(rating as u8);
+            }
+        }
+        
+        // Fallback to regex parsing for backwards compatibility
         let rating_pattern = r#"xmp:Rating="(\d+)""#;
         let rating_re = regex::Regex::new(rating_pattern).ok()?;
         

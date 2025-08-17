@@ -1,7 +1,6 @@
-import { invoke } from '@tauri-apps/api/core';
-import { readFile } from '@tauri-apps/plugin-fs';
+import { invoke, Channel } from '@tauri-apps/api/core';
 import { getImageFiles } from '../image/image-loader';
-import type { ThumbnailCacheInfo, ThumbnailResult } from '../types/shared-types';
+import type { ThumbnailCacheInfo } from '../types/shared-types';
 import { unifiedMetadataService } from './unified-metadata-service.svelte';
 
 // サムネイル処理のサービス（統合メタデータサービス対応版）
@@ -9,41 +8,38 @@ export class ThumbnailService {
 	// 注意: メタデータキャッシュは統合サービスに移行済み
 
 	async loadSingleThumbnail(imagePath: string): Promise<string | null> {
-		try {
-			const results: ThumbnailResult[] = await invoke('generate_thumbnails_batch', {
-				imagePaths: [imagePath]
-			});
+		return new Promise((resolve, reject) => {
+			try {
+				const channel = new Channel<Uint8Array>();
+				
+				// Set up channel listener
+				channel.onmessage = (data) => {
+					try {
+						// Convert Uint8Array to Blob and create URL
+						const blob = new Blob([new Uint8Array(data)], { type: 'image/webp' });
+						const url = URL.createObjectURL(blob);
+						resolve(url);
+					} catch (error) {
+						console.error('Failed to process thumbnail data for ' + imagePath + ':', error);
+						resolve(null);
+					}
+				};
 
-			const result = results[0];
-			if (result?.thumbnail_path) {
-				try {
-					// tauri-fsでファイルを読み込んでBlobURL生成
-					const fileData = await readFile(result.thumbnail_path);
-					const blob = new Blob([new Uint8Array(fileData)], { type: 'image/webp' });
-					const url = URL.createObjectURL(blob);
+				// Generate thumbnail asynchronously
+				invoke('generate_thumbnail_async', {
+					imagePath,
+					config: null,
+					channel
+				}).catch((error) => {
+					console.error('Failed to generate thumbnail for ' + imagePath + ':', error);
+					resolve(null);
+				});
 
-					// サムネイルファイル読み込み完了
-
-					// サムネイルキャッシュ情報は新しいAPIでは直接提供されない
-
-					return url;
-				} catch (readError) {
-					console.error(
-						'🚨 単一サムネイルファイル読み込みエラー: ' +
-							JSON.stringify({
-								path: result.thumbnail_path,
-								error: readError
-							})
-					);
-					return null;
-				}
-			} else if (result?.error) {
-				console.warn(`サムネイル生成失敗: ${result.original_path} - ${result.error}`);
+			} catch (error) {
+				console.error('Thumbnail generation error for ' + imagePath + ':', error);
+				resolve(null);
 			}
-		} catch (error) {
-			console.error('サムネイル生成エラー: ' + imagePath + ' ' + error);
-		}
-		return null;
+		});
 	}
 
 	async getImageFiles(directoryPath: string): Promise<string[]> {
@@ -88,35 +84,35 @@ export class ThumbnailService {
 	}
 
 	/**
-	 * バッチサムネイル処理（統一エントリーポイント）
+	 * Async thumbnail processing with callback-based approach
 	 */
-	async processThumbnailBatch(imagePaths: string[]): Promise<Map<string, string>> {
-		const results = new Map<string, string>();
-		
-		try {
-			const thumbnailResults: ThumbnailResult[] = await invoke('generate_thumbnails_batch', {
-				imagePaths: imagePaths
-			});
+	async processThumbnailsAsync(
+		imagePaths: string[], 
+		onThumbnailReady: (imagePath: string, thumbnailUrl: string) => void,
+		onProgress?: (completed: number, total: number) => void,
+		onError?: (imagePath: string, error: string) => void
+	): Promise<void> {
+		const total = imagePaths.length;
+		let completed = 0;
 
-			for (const result of thumbnailResults) {
-				if (result.thumbnail_path) {
-					try {
-						const fileData = await readFile(result.thumbnail_path);
-						const blob = new Blob([new Uint8Array(fileData)], { type: 'image/webp' });
-						const url = URL.createObjectURL(blob);
-						results.set(result.original_path, url);
-					} catch (readError) {
-						console.error('Thumbnail file read error: ' + result.original_path + ' ' + readError);
-					}
-				} else if (result.error) {
-					console.warn('Thumbnail generation failed: ' + result.original_path + ' - ' + result.error);
+		const promises = imagePaths.map(async (imagePath) => {
+			try {
+				const thumbnailUrl = await this.loadSingleThumbnail(imagePath);
+				if (thumbnailUrl) {
+					onThumbnailReady(imagePath, thumbnailUrl);
+				} else {
+					onError?.(imagePath, 'Failed to generate thumbnail');
 				}
+			} catch (error) {
+				const errorMessage = error instanceof Error ? error.message : String(error);
+				onError?.(imagePath, errorMessage);
+			} finally {
+				completed++;
+				onProgress?.(completed, total);
 			}
-		} catch (error) {
-			console.error('Batch thumbnail processing error: ' + error);
-		}
+		});
 
-		return results;
+		await Promise.all(promises);
 	}
 
 	/**

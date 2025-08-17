@@ -1,10 +1,12 @@
 mod clipboard_api;
 mod common;
+mod image_file_lock_service;
 mod image_loader;
 mod metadata_api;
 mod thumbnail_api;
 
 use tauri::Manager;
+use tokio::sync::Mutex as AsyncMutex;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -14,25 +16,14 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .setup(|app| {
-            let cach_dir_path = app
-                .path()
-                .app_cache_dir()
-                .map(|cache_dir| cache_dir.join("thumbnails"))
-                .map_err(|e| format!("Failed to get thumbnail cache directory: {}", e))?;
+            // ImageFileLockServiceを初期化
+            let image_file_lock_service = image_file_lock_service::ImageFileLockService::new();
+            app.manage(AsyncMutex::new(image_file_lock_service));
 
-            // サムネイル状態を初期化
+            // 非同期サムネイルサービスを初期化
             let thumbnail_config = thumbnail_api::ThumbnailConfig::default();
-
-            let thumbnail_state =
-                match thumbnail_api::ThumbnailState::new(thumbnail_config, cach_dir_path) {
-                    Ok(state) => state,
-                    Err(e) => {
-                        eprintln!("ThumbnailStateの初期化に失敗: {}", e);
-                        return Err(e.into());
-                    }
-                };
-            app.manage(thumbnail_state);
-
+            let async_thumbnail_service = thumbnail_api::AsyncThumbnailService::new(thumbnail_config);
+            app.manage(async_thumbnail_service);
             
             // メタデータキャッシュを初期化
             let metadata_disk_cache_file_path = app.path()
@@ -52,8 +43,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             clipboard_api::set_clipboard_files,
-            thumbnail_api::generate_thumbnails_batch,
-            thumbnail_api::clear_thumbnail_cache,
+            thumbnail_api::generate_thumbnail_async,
             metadata_api::service::read_image_metadata,
             metadata_api::service::write_xmp_image_rating,
         ])

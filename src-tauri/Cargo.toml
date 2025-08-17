@@ -24,6 +24,7 @@ tauri-plugin-fs = "2"
 tauri-plugin-log = "2"
 serde = { version = "1.0", features = ["derive"] }
 image = "0.25.6"
+tokio = { version = "1", features = ["full"] }
 webp = "0.3.0"
 sha2 = "0.10"
 hex = "0.4"

@@ -1,10 +1,10 @@
 use super::ThumbnailConfig;
-use crate::image_loader::ImageReader;
 use image::{GenericImageView, imageops::FilterType};
-use std::time::Instant;
+use tokio::fs::File;
+use tokio::io::AsyncReadExt;
 use webp::Encoder;
 
-/// Handles thumbnail generation
+/// Handles asynchronous thumbnail generation
 pub struct ThumbnailGenerator {
     config: ThumbnailConfig,
 }
@@ -14,15 +14,38 @@ impl ThumbnailGenerator {
         Self { config }
     }
 
-    /// Generate thumbnail only (no metadata processing)
-    pub fn generate(&self, reader: &ImageReader) -> Result<Vec<u8>, String> {
-        let start_time = Instant::now();
+    /// Generate thumbnail from file path asynchronously
+    pub async fn generate_from_path(&self, image_path: &str) -> Result<Vec<u8>, String> {
+        // Read file asynchronously
+        let mut file = File::open(image_path)
+            .await
+            .map_err(|e| format!("Failed to open file {}: {}", image_path, e))?;
+        
+        let mut buffer = Vec::new();
+        file.read_to_end(&mut buffer)
+            .await
+            .map_err(|e| format!("Failed to read file {}: {}", image_path, e))?;
 
-        // Convert to DynamicImage (for thumbnail processing)
-        let img = reader.to_dynamic_image()?;
+        // Process image in blocking task
+        let config = self.config.clone();
+        let thumbnail_data = tokio::task::spawn_blocking(move || {
+            Self::process_image_buffer(buffer, config)
+        })
+        .await
+        .map_err(|e| format!("Task join error: {}", e))?
+        .map_err(|e| format!("Image processing error: {}", e))?;
+
+        Ok(thumbnail_data)
+    }
+
+    /// Process image buffer and generate thumbnail
+    fn process_image_buffer(buffer: Vec<u8>, config: ThumbnailConfig) -> Result<Vec<u8>, String> {
+        // Load image from memory
+        let img = image::load_from_memory(&buffer)
+            .map_err(|e| format!("Failed to load image from memory: {}", e))?;
 
         // Generate thumbnail with progressive resize
-        let thumbnail = self.resize_image_optimized(img, self.config.size);
+        let thumbnail = Self::resize_image_optimized(img, config.size);
         let (thumbnail_width, thumbnail_height) = thumbnail.dimensions();
 
         // Convert to RGBA byte array
@@ -31,24 +54,14 @@ impl ThumbnailGenerator {
 
         // Convert to WebP
         let encoder = Encoder::from_rgba(rgba_data, thumbnail_width, thumbnail_height);
-        let webp_memory = encoder.encode(self.config.quality as f32);
+        let webp_memory = encoder.encode(config.quality as f32);
         let webp_data = webp_memory.to_vec();
-
-        let _total_duration = start_time.elapsed();
-
-        println!(
-            "🚀 Thumbnail generation complete: thumbnail={}x{}, size={}bytes",
-            thumbnail_width,
-            thumbnail_height,
-            webp_data.len()
-        );
 
         Ok(webp_data)
     }
 
     /// Optimized progressive resize
     fn resize_image_optimized(
-        &self,
         img: image::DynamicImage,
         target_size: u32,
     ) -> image::DynamicImage {

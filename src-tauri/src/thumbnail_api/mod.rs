@@ -2,47 +2,28 @@ mod config;
 mod generator;
 mod thumbnail_service;
 
-use serde::{Deserialize, Serialize};
+use tauri::State;
 
 // Public exports from submodules
 pub use config::*;
 pub use thumbnail_service::*;
 
-/// Thumbnail generation result
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ThumbnailResult {
-    pub original_path: String,
-    pub thumbnail_path: Option<String>,
-    pub error: Option<String>,
-}
-
-/// Generate thumbnails in batch (Tauri command)
+/// Generate thumbnail asynchronously with channel transfer
 #[tauri::command]
-pub async fn generate_thumbnails_batch(
-    image_paths: Vec<String>,
-    config: Option<ThumbnailConfig>,
-    state: tauri::State<'_, ThumbnailState>,
-) -> Result<Vec<ThumbnailResult>, String> {
-    let _thumbnail_config = config.unwrap_or_default();
-    println!("Generating thumbnails for {} files", image_paths.len());
-
-    let results = state.service.generate_batch(&image_paths);
-
-    let success_count = results
-        .iter()
-        .filter(|r| r.thumbnail_path.is_some())
-        .count();
-    let error_count = results.iter().filter(|r| r.error.is_some()).count();
-    println!(
-        "Thumbnail generation complete: success={}, errors={}",
-        success_count, error_count
-    );
-
-    Ok(results)
-}
-
-/// Clear thumbnail cache (Tauri command)
-#[tauri::command]
-pub async fn clear_thumbnail_cache(state: tauri::State<'_, ThumbnailState>) -> Result<(), String> {
-    state.service.clear_all()
+pub async fn generate_thumbnail_async(
+    image_path: String,
+    _config: Option<ThumbnailConfig>,
+    app_handle: tauri::AppHandle,
+    thumbnail_service: State<'_, AsyncThumbnailService>,
+    channel: tauri::ipc::Channel<Vec<u8>>,
+) -> Result<(), String> {
+    // Generate thumbnail
+    let result = thumbnail_service.generate(image_path, app_handle).await?;
+    
+    // Send thumbnail data through channel
+    channel
+        .send(result.thumbnail_data)
+        .map_err(|e| format!("Failed to send thumbnail data: {}", e))?;
+    
+    Ok(())
 }

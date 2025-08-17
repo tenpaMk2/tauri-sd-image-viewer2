@@ -20,9 +20,16 @@ pub fn run() {
             let image_file_lock_service = image_file_lock_service::ImageFileLockService::new();
             app.manage(AsyncMutex::new(image_file_lock_service));
 
+            // サムネイルキャッシュディレクトリの取得
+            let thumbnail_cache_dir = app.path()
+                .app_cache_dir()
+                .map(|cache_dir| cache_dir.join("thumbnails"))
+                .map_err(|e| format!("Failed to get thumbnail cache dir: {}", e))?;
+
             // 非同期サムネイルサービスを初期化
             let thumbnail_config = thumbnail_api::ThumbnailConfig::default();
-            let async_thumbnail_service = thumbnail_api::AsyncThumbnailService::new(thumbnail_config);
+            let async_thumbnail_service = thumbnail_api::AsyncThumbnailService::new(thumbnail_config, thumbnail_cache_dir)
+                .map_err(|e| format!("Failed to initialize AsyncThumbnailService: {}", e))?;
             app.manage(async_thumbnail_service);
             
             // メタデータキャッシュを初期化

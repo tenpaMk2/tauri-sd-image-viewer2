@@ -1,5 +1,6 @@
 use super::ThumbnailGeneratorConfig;
 use super::generator::ThumbnailGenerator;
+use crate::common::log_with_timestamp;
 use crate::image_file_lock_service::ImageFileLockService;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -60,22 +61,30 @@ impl AsyncThumbnailService {
     ) -> Result<AsyncThumbnailResult, String> {
         let cache_filename = self.generate_cache_filename(&image_path);
 
+        log_with_timestamp(&image_path, "Judge thumbnail regeneration 🟢");
         // Check if thumbnail should be regenerated
         if !self
             .should_regenerate_thumbnail(&cache_filename, &image_path, &app_handle)
             .await
         {
+            log_with_timestamp(&image_path, "Judge thumbnail regeneration 🟥");
+
+            log_with_timestamp(&image_path, "Loading thumbnail from cache 🟢");
             // Load from cache
             if let Ok(thumbnail_data) = self
                 .load_thumbnail_from_cache(&cache_filename, &app_handle)
                 .await
             {
+                log_with_timestamp(&image_path, "Loading thumbnail from cache 🟥");
                 return Ok(AsyncThumbnailResult {
                     original_path: image_path,
                     thumbnail_data,
                 });
             }
         }
+        log_with_timestamp(&image_path, "Judge thumbnail regeneration 🟥");
+
+        log_with_timestamp(&image_path, "Lock 🟢");
 
         // Get file lock service from app state
         let mutex = app_handle.state::<AsyncMutex<ImageFileLockService>>();
@@ -85,6 +94,9 @@ impl AsyncThumbnailService {
         let path_mutex = image_file_lock_service.get_or_create_path_mutex(&image_path);
         drop(image_file_lock_service); // Release service lock immediately
 
+        log_with_timestamp(&image_path, "Lock 🟥");
+
+        log_with_timestamp(&image_path, "File processing 🟢");
         // Execute file operation with exclusive access
         let thumbnail_data = ImageFileLockService::with_exclusive_file_access(
             path_mutex,
@@ -95,6 +107,8 @@ impl AsyncThumbnailService {
             },
         )
         .await?;
+
+        log_with_timestamp(&image_path, "File processing 🟥");
 
         // Save to cache asynchronously (don't await to speed up response)
         let cache_dir_clone = self.cache_dir.clone();

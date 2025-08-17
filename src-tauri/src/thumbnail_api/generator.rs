@@ -1,3 +1,5 @@
+use crate::common::log_with_timestamp;
+
 use super::ThumbnailGeneratorConfig;
 use image::{GenericImageView, imageops::FilterType};
 use tokio::fs::File;
@@ -16,6 +18,8 @@ impl ThumbnailGenerator {
 
     /// Generate thumbnail from file path asynchronously
     pub async fn generate_from_path(&self, image_path: &str) -> Result<Vec<u8>, String> {
+        log_with_timestamp(&image_path, "Reading 🟢");
+
         // Read file asynchronously
         let mut file = File::open(image_path)
             .await
@@ -26,10 +30,13 @@ impl ThumbnailGenerator {
             .await
             .map_err(|e| format!("Failed to read file {}: {}", image_path, e))?;
 
+        log_with_timestamp(&image_path, "Reading 🟥");
+
         // Process image in blocking task
         let config = self.config.clone();
+        let p = image_path.to_string();
         let thumbnail_data =
-            tokio::task::spawn_blocking(move || Self::process_image_buffer(buffer, config))
+            tokio::task::spawn_blocking(move || Self::process_image_buffer(buffer, config, p))
                 .await
                 .map_err(|e| format!("Task join error: {}", e))?
                 .map_err(|e| format!("Image processing error: {}", e))?;
@@ -41,10 +48,17 @@ impl ThumbnailGenerator {
     fn process_image_buffer(
         buffer: Vec<u8>,
         config: ThumbnailGeneratorConfig,
+        image_path: String,
     ) -> Result<Vec<u8>, String> {
+        log_with_timestamp(&image_path, "Load from memory 🟢");
+
         // Load image from memory
         let img = image::load_from_memory(&buffer)
             .map_err(|e| format!("Failed to load image from memory: {}", e))?;
+
+        log_with_timestamp(&image_path, "Load from memory 🟥");
+
+        log_with_timestamp(&image_path, "Processing 🟢");
 
         // Generate thumbnail with progressive resize
         let thumbnail = Self::resize_image_optimized(img, config.size);
@@ -58,6 +72,8 @@ impl ThumbnailGenerator {
         let encoder = Encoder::from_rgba(rgba_data, thumbnail_width, thumbnail_height);
         let webp_memory = encoder.encode(config.quality as f32);
         let webp_data = webp_memory.to_vec();
+
+        log_with_timestamp(&image_path, "Processing 🟥");
 
         Ok(webp_data)
     }

@@ -64,7 +64,7 @@ export const createImageMetadata = async (imagePath: string): Promise<ImageMetad
 		// メタデータを直接取得
 		const imageInfo = await invoke<ImageMetadataInfo>('read_image_metadata', { path: imagePath });
 
-		console.log('💩💩💩imageInfo: ' + JSON.stringify(imageInfo));
+		// console.log('💩💩💩imageInfo: ' + JSON.stringify(imageInfo));
 
 		const sizeFormatted = formatFileSize(imageInfo.file_size);
 		const dimensions =

@@ -1,4 +1,4 @@
-use super::metadata_info::ImageMetadataInfo;
+use super::image_metadata::ImageMetadata;
 use crate::image_file_lock_service::ImageFileLockService;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -13,9 +13,9 @@ use tokio::sync::Mutex as AsyncMutex;
 #[derive(Serialize, Deserialize, Clone)]
 struct CacheEntry {
     file_size: u64,
-    modified_time: u64,  // UNIXタイムスタンプ
-    metadata: ImageMetadataInfo,
-    cached_at: u64,      // UNIXタイムスタンプ
+    modified_time: u64, // UNIXタイムスタンプ
+    image_metadata: ImageMetadata,
+    cached_at: u64, // UNIXタイムスタンプ
 }
 
 pub struct MetadataCache {
@@ -50,7 +50,11 @@ impl MetadataCache {
         })
     }
 
-    pub async fn get_metadata(&self, file_path: &str, app_handle: &AppHandle) -> Option<ImageMetadataInfo> {
+    pub async fn get_metadata(
+        &self,
+        file_path: &str,
+        app_handle: &AppHandle,
+    ) -> Option<ImageMetadata> {
         // First, get entry from cache without holding the lock across await
         let cached_entry = {
             let cache = self.memory_cache.lock().unwrap();
@@ -59,8 +63,12 @@ impl MetadataCache {
 
         if let Some(entry) = cached_entry {
             // ファイル変更チェック
-            if self.is_file_unchanged(file_path, &entry, app_handle).await.unwrap_or(false) {
-                return Some(entry.metadata.clone());
+            if self
+                .is_file_unchanged(file_path, &entry, app_handle)
+                .await
+                .unwrap_or(false)
+            {
+                return Some(entry.image_metadata.clone());
             }
             // 変更されていたらキャッシュから削除
             let mut cache = self.memory_cache.lock().unwrap();
@@ -69,7 +77,12 @@ impl MetadataCache {
         None
     }
 
-    pub async fn store_metadata(&self, file_path: String, metadata: ImageMetadataInfo, app_handle: &AppHandle) {
+    pub async fn store_metadata(
+        &self,
+        file_path: String,
+        image_metadata: ImageMetadata,
+        app_handle: &AppHandle,
+    ) {
         // Get file lock service from app state
         let mutex = app_handle.state::<AsyncMutex<ImageFileLockService>>();
         let mut image_file_lock_service = mutex.lock().await;
@@ -101,9 +114,9 @@ impl MetadataCache {
         let entry = CacheEntry {
             file_size: file_metadata.len(),
             modified_time: Self::system_time_to_unix_timestamp(
-                file_metadata.modified().unwrap_or(SystemTime::UNIX_EPOCH)
+                file_metadata.modified().unwrap_or(SystemTime::UNIX_EPOCH),
             ),
-            metadata,
+            image_metadata,
             cached_at: Self::system_time_to_unix_timestamp(SystemTime::now()),
         };
 
@@ -157,19 +170,18 @@ impl MetadataCache {
 
         // 古いエントリを削除（30日以上）
         let now = SystemTime::now();
-        let cutoff_timestamp = Self::system_time_to_unix_timestamp(
-            now - Duration::from_secs(30 * 24 * 3600)
-        );
+        let cutoff_timestamp =
+            Self::system_time_to_unix_timestamp(now - Duration::from_secs(30 * 24 * 3600));
         let current_timestamp = Self::system_time_to_unix_timestamp(now);
-        
+
         let original_count = cache_data.len();
-        
+
         let filtered: HashMap<_, _> = cache_data
             .into_iter()
             .filter(|(file_path, entry)| {
                 let age_days = (current_timestamp - entry.cached_at) / (24 * 3600);
                 let keep = entry.cached_at > cutoff_timestamp;
-                
+
                 if !keep {
                     println!(
                         "🗑️ Removed cache entry: {} (age: {} days, cached_at: {}, cutoff: {})",
@@ -179,7 +191,7 @@ impl MetadataCache {
                         cutoff_timestamp
                     );
                 }
-                
+
                 keep
             })
             .collect();
@@ -226,9 +238,7 @@ impl MetadataCache {
         let current_modified_timestamp = Self::system_time_to_unix_timestamp(current_modified);
 
         // ファイルサイズと更新時刻で軽量変更検出
-        Ok(
-            current_size == cached_entry.file_size
-                && current_modified_timestamp == cached_entry.modified_time,
-        )
+        Ok(current_size == cached_entry.file_size
+            && current_modified_timestamp == cached_entry.modified_time)
     }
 }

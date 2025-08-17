@@ -4,7 +4,7 @@ use png::Decoder;
 use std::io::Cursor;
 
 /// PNG画像からSDパラメーターのみを抽出
-pub fn extract_sd_parameters(data: &[u8]) -> AppResult<Option<SdParameters>> {
+pub fn extract_sd_parameters_from_png(data: &[u8]) -> AppResult<Option<SdParameters>> {
     let cursor = Cursor::new(data);
     let decoder = Decoder::new(cursor);
     let reader = decoder.read_info()?;

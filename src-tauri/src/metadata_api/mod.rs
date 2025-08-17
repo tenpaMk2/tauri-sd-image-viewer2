@@ -1,5 +1,5 @@
 pub mod cache;
-mod metadata_info;
+mod image_metadata;
 mod png_handler;
 pub mod sd_parameters;
 pub mod service;

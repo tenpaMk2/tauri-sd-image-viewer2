@@ -1,59 +1,97 @@
 use super::metadata_info::ImageMetadataInfo;
 use super::xmp_handler;
+use crate::image_file_lock_service::ImageFileLockService;
 use crate::image_loader::ImageReader;
 use std::path::Path;
+use tauri::{AppHandle, Manager};
+use tokio::sync::Mutex as AsyncMutex;
 
 /// Read comprehensive image metadata (Tauri command)
 #[tauri::command]
-pub fn read_image_metadata(
+pub async fn read_image_metadata(
     path: String,
-    cache: tauri::State<super::cache::MetadataCache>,
+    cache: tauri::State<'_, super::cache::MetadataCache>,
+    app_handle: AppHandle,
 ) -> Result<ImageMetadataInfo, String> {
     // Tauri Stateからキャッシュを取得し、キャッシュヒットを確認
-    if let Some(cached_metadata) = cache.get_metadata(&path) {
+    if let Some(cached_metadata) = cache.get_metadata(&path, &app_handle).await {
         return Ok(cached_metadata);
     }
 
-    // キャッシュミス → ファイルから読み込み
-    let reader = ImageReader::from_file(&path)?;
-    let metadata =
-        ImageMetadataInfo::from_reader(&reader, &path).map_err(|e| format!("{:?}", e))?;
+    // Get file lock service from app state
+    let mutex = app_handle.state::<AsyncMutex<ImageFileLockService>>();
+    let mut image_file_lock_service = mutex.lock().await;
+
+    // Get path-specific mutex
+    let path_mutex = image_file_lock_service.get_or_create_path_mutex(&path);
+    drop(image_file_lock_service); // Release service lock immediately
+
+    // Execute file operation with exclusive access
+    let metadata = ImageFileLockService::with_exclusive_file_access(
+        path_mutex,
+        path.clone(),
+        |path| async move {
+            // キャッシュミス → ファイルから読み込み
+            let reader = ImageReader::from_file(&path)?;
+            let metadata =
+                ImageMetadataInfo::from_reader(&reader, &path).map_err(|e| format!("{:?}", e))?;
+            
+            Ok(metadata)
+        },
+    )
+    .await?;
 
     // キャッシュに保存
-    cache.store_metadata(path, metadata.clone());
+    cache.store_metadata(path, metadata.clone(), &app_handle).await;
 
     Ok(metadata)
 }
 
 /// Write image rating to XMP metadata (Tauri command)
 #[tauri::command]
-pub async fn write_xmp_image_rating(src_path: String, rating: u32) -> Result<(), String> {
+pub async fn write_xmp_image_rating(src_path: String, rating: u32, app_handle: AppHandle) -> Result<(), String> {
     if rating > 5 {
         return Err("Rating must be in the range 0-5".to_string());
     }
 
-    // Create ImageReader for unified vec pipeline
-    let reader = ImageReader::from_file(&src_path)?;
-    let src_image_path = Path::new(&src_path);
+    // Get file lock service from app state
+    let mutex = app_handle.state::<AsyncMutex<ImageFileLockService>>();
+    let mut image_file_lock_service = mutex.lock().await;
 
-    // Get file extension
-    let file_extension = src_image_path
-        .extension()
-        .and_then(|ext| ext.to_str())
-        .unwrap_or("")
-        .to_lowercase();
+    // Get path-specific mutex
+    let path_mutex = image_file_lock_service.get_or_create_path_mutex(&src_path);
+    drop(image_file_lock_service); // Release service lock immediately
 
-    // XMP-only pipeline: ImageReader -> XMP -> File
-    let current_data = reader.as_bytes().to_vec();
+    // Execute file operation with exclusive access
+    ImageFileLockService::with_exclusive_file_access(
+        path_mutex,
+        src_path,
+        |src_path| async move {
+            // Create ImageReader for unified vec pipeline
+            let reader = ImageReader::from_file(&src_path)?;
+            let src_image_path = Path::new(&src_path);
 
-    // Apply XMP rating
-    let processed_data = xmp_handler::embed_xmp_rating_in_vec(&current_data, &file_extension, rating)?;
+            // Get file extension
+            let file_extension = src_image_path
+                .extension()
+                .and_then(|ext| ext.to_str())
+                .unwrap_or("")
+                .to_lowercase();
 
-    // Single file write operation
-    std::fs::write(src_image_path, processed_data)
-        .map_err(|e| format!("File write error: {}", e))?;
+            // XMP-only pipeline: ImageReader -> XMP -> File
+            let current_data = reader.as_bytes().to_vec();
 
-    Ok(())
+            // Apply XMP rating
+            let processed_data = xmp_handler::embed_xmp_rating_in_vec(&current_data, &file_extension, rating)?;
+
+            // Single file write operation
+            std::fs::write(src_image_path, processed_data)
+                .map_err(|e| format!("File write error: {}", e))?;
+
+            Ok(())
+        },
+    )
+    .await
 }
 
 #[cfg(test)]

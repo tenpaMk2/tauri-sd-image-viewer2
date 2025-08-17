@@ -1,10 +1,14 @@
 use super::metadata_info::ImageMetadataInfo;
+use crate::image_file_lock_service::ImageFileLockService;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 use std::time::{Duration, SystemTime};
+use tauri::{AppHandle, Manager};
+use tokio::fs as async_fs;
+use tokio::sync::Mutex as AsyncMutex;
 
 #[derive(Serialize, Deserialize, Clone)]
 struct CacheEntry {
@@ -46,25 +50,50 @@ impl MetadataCache {
         })
     }
 
-    pub fn get_metadata(&self, file_path: &str) -> Option<ImageMetadataInfo> {
-        let mut cache = self.memory_cache.lock().unwrap();
+    pub async fn get_metadata(&self, file_path: &str, app_handle: &AppHandle) -> Option<ImageMetadataInfo> {
+        // First, get entry from cache without holding the lock across await
+        let cached_entry = {
+            let cache = self.memory_cache.lock().unwrap();
+            cache.get(file_path).cloned()
+        };
 
-        if let Some(entry) = cache.get(file_path) {
+        if let Some(entry) = cached_entry {
             // ファイル変更チェック
-            if self.is_file_unchanged(file_path, entry).unwrap_or(false) {
+            if self.is_file_unchanged(file_path, &entry, app_handle).await.unwrap_or(false) {
                 return Some(entry.metadata.clone());
             }
             // 変更されていたらキャッシュから削除
+            let mut cache = self.memory_cache.lock().unwrap();
             cache.remove(file_path);
         }
         None
     }
 
-    pub fn store_metadata(&self, file_path: String, metadata: ImageMetadataInfo) {
-        let file_metadata = match fs::metadata(&file_path) {
+    pub async fn store_metadata(&self, file_path: String, metadata: ImageMetadataInfo, app_handle: &AppHandle) {
+        // Get file lock service from app state
+        let mutex = app_handle.state::<AsyncMutex<ImageFileLockService>>();
+        let mut image_file_lock_service = mutex.lock().await;
+
+        // Get path-specific mutex
+        let path_mutex = image_file_lock_service.get_or_create_path_mutex(&file_path);
+        drop(image_file_lock_service); // Release service lock immediately
+
+        // Execute file metadata operation with exclusive access
+        let file_metadata_result = ImageFileLockService::with_exclusive_file_access(
+            path_mutex,
+            file_path.clone(),
+            |path| async move {
+                async_fs::metadata(&path)
+                    .await
+                    .map_err(|e| format!("Failed to get file metadata for {}: {}", path, e))
+            },
+        )
+        .await;
+
+        let file_metadata = match file_metadata_result {
             Ok(metadata) => metadata,
             Err(e) => {
-                eprintln!("Failed to get file metadata for {}: {}", file_path, e);
+                eprintln!("{}", e);
                 return;
             }
         };
@@ -164,13 +193,31 @@ impl MetadataCache {
         Ok(filtered)
     }
 
-    fn is_file_unchanged(
+    async fn is_file_unchanged(
         &self,
         file_path: &str,
         cached_entry: &CacheEntry,
+        app_handle: &AppHandle,
     ) -> Result<bool, String> {
-        let current_metadata = fs::metadata(file_path)
-            .map_err(|e| format!("Failed to get current file metadata: {}", e))?;
+        // Get file lock service from app state
+        let mutex = app_handle.state::<AsyncMutex<ImageFileLockService>>();
+        let mut image_file_lock_service = mutex.lock().await;
+
+        // Get path-specific mutex
+        let path_mutex = image_file_lock_service.get_or_create_path_mutex(file_path);
+        drop(image_file_lock_service); // Release service lock immediately
+
+        // Execute file metadata operation with exclusive access
+        let current_metadata = ImageFileLockService::with_exclusive_file_access(
+            path_mutex,
+            file_path.to_string(),
+            |path| async move {
+                async_fs::metadata(&path)
+                    .await
+                    .map_err(|e| format!("Failed to get current file metadata: {}", e))
+            },
+        )
+        .await?;
 
         let current_size = current_metadata.len();
         let current_modified = current_metadata

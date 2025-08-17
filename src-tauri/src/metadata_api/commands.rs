@@ -2,7 +2,6 @@ use super::image_metadata::ImageMetadata;
 use super::xmp_handler;
 use crate::image_file_lock_service::ImageFileLockService;
 use crate::image_loader::ImageReader;
-use std::path::Path;
 use tauri::{AppHandle, Manager};
 use tokio::sync::Mutex as AsyncMutex;
 
@@ -68,30 +67,11 @@ pub async fn write_xmp_image_rating(
     let path_mutex = image_file_lock_service.get_or_create_path_mutex(&src_path);
     drop(image_file_lock_service); // Release service lock immediately
 
+    // TODO: `tokio::task::spawn_blocking` で別スレッドへ
     // Execute file operation with exclusive access
     ImageFileLockService::with_exclusive_file_access(path_mutex, src_path, |src_path| async move {
-        // Create ImageReader for unified vec pipeline
-        let reader = ImageReader::from_file(&src_path)?;
-        let src_image_path = Path::new(&src_path);
-
-        // Get file extension
-        let file_extension = src_image_path
-            .extension()
-            .and_then(|ext| ext.to_str())
-            .unwrap_or("")
-            .to_lowercase();
-
-        // XMP-only pipeline: ImageReader -> XMP -> File
-        let current_data = reader.as_bytes().to_vec();
-
-        // Apply XMP rating
-        let processed_data =
-            xmp_handler::embed_xmp_rating_in_vec(&current_data, &file_extension, rating)?;
-
-        // Single file write operation
-        std::fs::write(src_image_path, processed_data)
-            .map_err(|e| format!("File write error: {}", e))?;
-
+        // Use unified XMP API for direct file processing
+        xmp_handler::embed_xmp_rating_unified(&src_path, rating)?;
         Ok(())
     })
     .await
@@ -116,9 +96,16 @@ mod tests {
             .expect("Failed to create ImageReader");
         let current_data = reader.as_bytes().to_vec();
 
-        // Apply XMP rating only
-        let processed_data = super::xmp_handler::embed_xmp_rating_in_vec(&current_data, "png", 3)
+        // Apply XMP rating using unified API
+        // First write to a temporary file for testing
+        let temp_file = format!("{}.test", test_file);
+        std::fs::write(&temp_file, &current_data).expect("Failed to write temp file");
+
+        super::xmp_handler::embed_xmp_rating_unified(&temp_file, 3)
             .expect("XMP rating write should succeed");
+
+        let processed_data = std::fs::read(&temp_file).expect("Failed to read processed file");
+        std::fs::remove_file(&temp_file).ok(); // Clean up
 
         println!("📁 Processed PNG size: {} bytes", processed_data.len());
         assert_ne!(
@@ -150,111 +137,69 @@ mod tests {
         for rating in 1..=5 {
             println!("🎯 Testing rating: {}", rating);
 
-            // Write rating using xmp-toolkit
-            let processed_data =
-                super::xmp_handler::embed_xmp_rating_in_vec(&original_data, "png", rating)
-                    .expect("XMP rating write should succeed");
+            // Write rating using unified API
+            let temp_file = format!("{}.test_rating_{}", test_file, rating);
+            std::fs::write(&temp_file, &original_data).expect("Failed to write temp file");
 
+            super::xmp_handler::embed_xmp_rating_unified(&temp_file, rating)
+                .expect("XMP rating write should succeed");
+
+            let processed_data = std::fs::read(&temp_file).expect("Failed to read processed file");
             println!("📁 Processed PNG size: {} bytes", processed_data.len());
 
-            // Extract XMP metadata
-            if let Some(xmp_content) =
-                super::xmp_handler::extract_existing_xmp(&processed_data, "png")
-            {
-                println!("📋 XMP content extracted, length: {}", xmp_content.len());
-
-                // Test xmp-toolkit reading
-                if let Some(read_rating) =
-                    super::xmp_handler::extract_rating_from_xmp_toolkit(&xmp_content)
-                {
-                    println!("⭐ XMP Toolkit read rating: {}", read_rating);
-                    assert_eq!(
-                        read_rating, rating,
-                        "Rating roundtrip failed for rating {}",
-                        rating
-                    );
-                } else {
-                    if rating == 0 {
-                        println!(
-                            "🔍 Debug rating 0 - XMP content sample:\n{}",
-                            &xmp_content[..std::cmp::min(500, xmp_content.len())]
-                        );
-                    }
-                    panic!("Failed to read rating {} using xmp-toolkit", rating);
-                }
+            // Verify rating using direct file reading
+            if let Some(read_rating) = super::xmp_handler::extract_rating_from_file(&temp_file) {
+                println!("⭐ Direct file read rating: {}", read_rating);
+                assert_eq!(
+                    read_rating, rating,
+                    "Rating roundtrip failed for rating {}",
+                    rating
+                );
             } else {
-                panic!("Failed to extract XMP content for rating {}", rating);
+                if rating == 0 {
+                    println!("🔍 Debug rating 0 - no XMP found (expected)");
+                } else {
+                    panic!("Failed to read rating {} using direct file method", rating);
+                }
             }
+
+            // Clean up temp file
+            std::fs::remove_file(&temp_file).ok();
         }
 
         println!("✅ XMP Toolkit roundtrip test passed for all ratings 0-5");
     }
 
     #[test]
-    fn test_xmp_toolkit_create_new_metadata() {
-        println!("🧪 Testing XMP Toolkit new metadata creation");
+    fn test_unified_api_integration() {
+        println!("🧪 Testing Unified API integration");
 
-        // Test creating XMP from scratch
+        let test_file = "../1dot-red-vanilla.png";
+        let original_data = fs::read(test_file).expect("Failed to read test PNG file");
+
+        // Test with rating 4
         let test_rating = 4;
-        let xmp_result = super::xmp_handler::create_xmp_with_rating_toolkit(None, test_rating);
+        let temp_file = format!("{}.test_unified", test_file);
 
-        match xmp_result {
-            Ok(xmp_content) => {
-                println!("📋 Created XMP content length: {}", xmp_content.len());
-                println!("📄 Full XMP content:\n{}", xmp_content);
+        // Copy original to temp file
+        std::fs::write(&temp_file, &original_data).expect("Failed to write temp file");
 
-                // Verify the rating can be read back
-                if let Some(read_rating) =
-                    super::xmp_handler::extract_rating_from_xmp_toolkit(&xmp_content)
-                {
-                    println!("⭐ Read back rating: {}", read_rating);
-                    assert_eq!(read_rating, test_rating, "New XMP rating mismatch");
-                } else {
-                    // Also try regex fallback for debugging
-                    println!("🔍 Trying regex fallback...");
-                    let rating_pattern = r#"xmp:Rating="(\d+)""#;
-                    if let Ok(rating_re) = regex::Regex::new(rating_pattern) {
-                        if let Some(captures) = rating_re.captures(&xmp_content) {
-                            if let Some(rating_match) = captures.get(1) {
-                                println!("📍 Regex found rating: {}", rating_match.as_str());
-                            }
-                        } else {
-                            println!("❌ Regex found no Rating attribute");
-                        }
-                    }
-                    panic!("Failed to read rating from newly created XMP");
-                }
-            }
-            Err(e) => {
-                panic!("Failed to create new XMP metadata: {}", e);
-            }
-        }
+        // Apply rating using unified API
+        super::xmp_handler::embed_xmp_rating_unified(&temp_file, test_rating)
+            .expect("Unified XMP rating write should succeed");
 
-        println!("✅ XMP Toolkit new metadata creation test passed");
-    }
-
-    #[test]
-    fn test_xmp_toolkit_update_existing() {
-        println!("🧪 Testing XMP Toolkit existing metadata update");
-
-        // Create initial XMP with rating 2
-        let initial_xmp = super::xmp_handler::create_xmp_with_rating_toolkit(None, 2)
-            .expect("Failed to create initial XMP");
-
-        // Update to rating 5
-        let updated_xmp = super::xmp_handler::create_xmp_with_rating_toolkit(Some(initial_xmp), 5)
-            .expect("Failed to update XMP");
-
-        // Verify updated rating
-        if let Some(read_rating) = super::xmp_handler::extract_rating_from_xmp_toolkit(&updated_xmp)
-        {
-            println!("⭐ Updated rating: {}", read_rating);
-            assert_eq!(read_rating, 5, "XMP update failed");
+        // Read back using direct file API
+        if let Some(read_rating) = super::xmp_handler::extract_rating_from_file(&temp_file) {
+            println!("⭐ Read back rating: {}", read_rating);
+            assert_eq!(read_rating, test_rating, "Direct file API rating mismatch");
         } else {
-            panic!("Failed to read updated rating");
+            panic!("Failed to read rating using direct file API");
         }
 
-        println!("✅ XMP Toolkit update existing metadata test passed");
+        // Clean up
+        std::fs::remove_file(&temp_file).ok();
+
+        println!("✅ Unified API integration test passed");
     }
 
     #[derive(Debug)]

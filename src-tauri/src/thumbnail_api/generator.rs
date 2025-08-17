@@ -1,4 +1,4 @@
-use super::ThumbnailConfig;
+use super::ThumbnailGeneratorConfig;
 use image::{GenericImageView, imageops::FilterType};
 use tokio::fs::File;
 use tokio::io::AsyncReadExt;
@@ -6,11 +6,11 @@ use webp::Encoder;
 
 /// Handles asynchronous thumbnail generation
 pub struct ThumbnailGenerator {
-    config: ThumbnailConfig,
+    config: ThumbnailGeneratorConfig,
 }
 
 impl ThumbnailGenerator {
-    pub fn new(config: ThumbnailConfig) -> Self {
+    pub fn new(config: ThumbnailGeneratorConfig) -> Self {
         Self { config }
     }
 
@@ -20,7 +20,7 @@ impl ThumbnailGenerator {
         let mut file = File::open(image_path)
             .await
             .map_err(|e| format!("Failed to open file {}: {}", image_path, e))?;
-        
+
         let mut buffer = Vec::new();
         file.read_to_end(&mut buffer)
             .await
@@ -28,18 +28,20 @@ impl ThumbnailGenerator {
 
         // Process image in blocking task
         let config = self.config.clone();
-        let thumbnail_data = tokio::task::spawn_blocking(move || {
-            Self::process_image_buffer(buffer, config)
-        })
-        .await
-        .map_err(|e| format!("Task join error: {}", e))?
-        .map_err(|e| format!("Image processing error: {}", e))?;
+        let thumbnail_data =
+            tokio::task::spawn_blocking(move || Self::process_image_buffer(buffer, config))
+                .await
+                .map_err(|e| format!("Task join error: {}", e))?
+                .map_err(|e| format!("Image processing error: {}", e))?;
 
         Ok(thumbnail_data)
     }
 
     /// Process image buffer and generate thumbnail
-    fn process_image_buffer(buffer: Vec<u8>, config: ThumbnailConfig) -> Result<Vec<u8>, String> {
+    fn process_image_buffer(
+        buffer: Vec<u8>,
+        config: ThumbnailGeneratorConfig,
+    ) -> Result<Vec<u8>, String> {
         // Load image from memory
         let img = image::load_from_memory(&buffer)
             .map_err(|e| format!("Failed to load image from memory: {}", e))?;
@@ -61,10 +63,7 @@ impl ThumbnailGenerator {
     }
 
     /// Optimized progressive resize
-    fn resize_image_optimized(
-        img: image::DynamicImage,
-        target_size: u32,
-    ) -> image::DynamicImage {
+    fn resize_image_optimized(img: image::DynamicImage, target_size: u32) -> image::DynamicImage {
         let (width, height) = img.dimensions();
         let max_dimension = width.max(height);
 

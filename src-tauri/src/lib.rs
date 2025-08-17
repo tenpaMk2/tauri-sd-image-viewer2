@@ -27,7 +27,7 @@ pub fn run() {
                 .map_err(|e| format!("Failed to get thumbnail cache dir: {}", e))?;
 
             // 非同期サムネイルサービスを初期化
-            let thumbnail_config = thumbnail_api::ThumbnailConfig::default();
+            let thumbnail_config = thumbnail_api::ThumbnailGeneratorConfig::default();
             let async_thumbnail_service = thumbnail_api::AsyncThumbnailService::new(thumbnail_config, thumbnail_cache_dir)
                 .map_err(|e| format!("Failed to initialize AsyncThumbnailService: {}", e))?;
             app.manage(async_thumbnail_service);
@@ -50,9 +50,9 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             clipboard_api::set_clipboard_files,
-            thumbnail_api::generate_thumbnail_async,
-            metadata_api::service::read_image_metadata,
-            metadata_api::service::write_xmp_image_rating,
+            thumbnail_api::commands::generate_thumbnail_async,
+            metadata_api::commands::read_image_metadata,
+            metadata_api::commands::write_xmp_image_rating,
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application");

@@ -1,10 +1,10 @@
+use super::ThumbnailGeneratorConfig;
 use super::generator::ThumbnailGenerator;
-use super::ThumbnailConfig;
 use crate::image_file_lock_service::ImageFileLockService;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
-use std::path::PathBuf;
 use std::fs;
+use std::path::PathBuf;
 use tauri::{AppHandle, Manager};
 use tokio::fs as async_fs;
 use tokio::sync::Mutex as AsyncMutex;
@@ -24,20 +24,32 @@ pub struct AsyncThumbnailService {
 
 impl AsyncThumbnailService {
     /// Create new async thumbnail service
-    pub fn new(config: ThumbnailConfig, cache_dir: PathBuf) -> Result<Self, String> {
+    pub fn new(
+        generator_config: ThumbnailGeneratorConfig,
+        cache_dir: PathBuf,
+    ) -> Result<Self, String> {
         // Create cache directory if needed
         if !cache_dir.exists() {
-            println!("📁 Creating thumbnail cache directory: {}", cache_dir.display());
-            fs::create_dir_all(&cache_dir)
-                .map_err(|e| {
-                    println!("❌ Failed to create thumbnail cache directory: {} - {}", cache_dir.display(), e);
-                    format!("Failed to create thumbnail cache directory: {}", e)
-                })?;
+            println!(
+                "📁 Creating thumbnail cache directory: {}",
+                cache_dir.display()
+            );
+            fs::create_dir_all(&cache_dir).map_err(|e| {
+                println!(
+                    "❌ Failed to create thumbnail cache directory: {} - {}",
+                    cache_dir.display(),
+                    e
+                );
+                format!("Failed to create thumbnail cache directory: {}", e)
+            })?;
             println!("✅ Thumbnail cache directory created successfully");
         }
 
-        let generator = ThumbnailGenerator::new(config);
-        Ok(Self { generator, cache_dir })
+        let generator = ThumbnailGenerator::new(generator_config);
+        Ok(Self {
+            generator,
+            cache_dir,
+        })
     }
 
     /// Generate single thumbnail asynchronously
@@ -47,11 +59,17 @@ impl AsyncThumbnailService {
         app_handle: AppHandle,
     ) -> Result<AsyncThumbnailResult, String> {
         let cache_filename = self.generate_cache_filename(&image_path);
-        
+
         // Check if thumbnail should be regenerated
-        if !self.should_regenerate_thumbnail(&cache_filename, &image_path, &app_handle).await {
+        if !self
+            .should_regenerate_thumbnail(&cache_filename, &image_path, &app_handle)
+            .await
+        {
             // Load from cache
-            if let Ok(thumbnail_data) = self.load_thumbnail_from_cache(&cache_filename, &app_handle).await {
+            if let Ok(thumbnail_data) = self
+                .load_thumbnail_from_cache(&cache_filename, &app_handle)
+                .await
+            {
                 return Ok(AsyncThumbnailResult {
                     original_path: image_path,
                     thumbnail_data,
@@ -89,7 +107,9 @@ impl AsyncThumbnailService {
                 &cache_filename_clone,
                 &thumbnail_data_clone,
                 &app_handle_clone,
-            ).await {
+            )
+            .await
+            {
                 println!("⚠️ Failed to save thumbnail to cache: {}", e);
             }
         });
@@ -113,7 +133,12 @@ impl AsyncThumbnailService {
     }
 
     /// Check if thumbnail should be regenerated
-    async fn should_regenerate_thumbnail(&self, cache_filename: &str, original_path: &str, app_handle: &AppHandle) -> bool {
+    async fn should_regenerate_thumbnail(
+        &self,
+        cache_filename: &str,
+        original_path: &str,
+        app_handle: &AppHandle,
+    ) -> bool {
         let cache_path = self.get_thumbnail_cache_path(cache_filename);
 
         // Check if cache file exists
@@ -136,18 +161,24 @@ impl AsyncThumbnailService {
             original_path_mutex,
             original_path.to_string(),
             |path| async move {
-                async_fs::metadata(&path).await.map_err(|e| format!("Failed to get original file metadata: {}", e))
+                async_fs::metadata(&path)
+                    .await
+                    .map_err(|e| format!("Failed to get original file metadata: {}", e))
             },
-        ).await;
+        )
+        .await;
 
         // Get metadata for cache file with exclusive access
         let cache_meta_result = ImageFileLockService::with_exclusive_file_access(
             cache_path_mutex,
             cache_path_str,
             |path| async move {
-                async_fs::metadata(&path).await.map_err(|e| format!("Failed to get cache file metadata: {}", e))
+                async_fs::metadata(&path)
+                    .await
+                    .map_err(|e| format!("Failed to get cache file metadata: {}", e))
             },
-        ).await;
+        )
+        .await;
 
         // Simple change detection: cache is older than original
         match (original_meta_result, cache_meta_result) {
@@ -161,9 +192,13 @@ impl AsyncThumbnailService {
     }
 
     /// Load thumbnail from cache
-    async fn load_thumbnail_from_cache(&self, cache_filename: &str, app_handle: &AppHandle) -> Result<Vec<u8>, String> {
+    async fn load_thumbnail_from_cache(
+        &self,
+        cache_filename: &str,
+        app_handle: &AppHandle,
+    ) -> Result<Vec<u8>, String> {
         let cache_path = self.get_thumbnail_cache_path(cache_filename);
-        
+
         // Get file lock service from app state
         let mutex = app_handle.state::<AsyncMutex<ImageFileLockService>>();
         let mut image_file_lock_service = mutex.lock().await;
@@ -182,7 +217,8 @@ impl AsyncThumbnailService {
                     .await
                     .map_err(|e| format!("Failed to read cache file: {}", e))
             },
-        ).await
+        )
+        .await
     }
 
     /// Save thumbnail to cache (static function for use in tokio::spawn)
@@ -193,7 +229,7 @@ impl AsyncThumbnailService {
         app_handle: &AppHandle,
     ) -> Result<(), String> {
         let cache_path = cache_dir.join(format!("{}.webp", cache_filename));
-        
+
         // Get file lock service from app state
         let mutex = app_handle.state::<AsyncMutex<ImageFileLockService>>();
         let mut image_file_lock_service = mutex.lock().await;
@@ -216,9 +252,14 @@ impl AsyncThumbnailService {
                     .await
                     .map_err(|e| format!("Failed to save thumbnail to cache: {}", e))?;
 
-                println!("✅ Thumbnail saved to cache: {} ({}bytes)", cache_filename_clone, thumbnail_data_clone.len());
+                println!(
+                    "✅ Thumbnail saved to cache: {} ({}bytes)",
+                    cache_filename_clone,
+                    thumbnail_data_clone.len()
+                );
                 Ok(())
             },
-        ).await
+        )
+        .await
     }
 }

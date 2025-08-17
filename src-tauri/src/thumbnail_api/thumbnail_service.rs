@@ -78,10 +78,21 @@ impl AsyncThumbnailService {
         )
         .await?;
 
-        // Save to cache
-        if let Err(e) = self.save_thumbnail_to_cache(&cache_filename, &thumbnail_data, &app_handle).await {
-            println!("⚠️ Failed to save thumbnail to cache: {}", e);
-        }
+        // Save to cache asynchronously (don't await to speed up response)
+        let cache_dir_clone = self.cache_dir.clone();
+        let cache_filename_clone = cache_filename.clone();
+        let thumbnail_data_clone = thumbnail_data.clone();
+        let app_handle_clone = app_handle.clone();
+        tokio::spawn(async move {
+            if let Err(e) = Self::save_thumbnail_to_cache(
+                cache_dir_clone,
+                &cache_filename_clone,
+                &thumbnail_data_clone,
+                &app_handle_clone,
+            ).await {
+                println!("⚠️ Failed to save thumbnail to cache: {}", e);
+            }
+        });
 
         Ok(AsyncThumbnailResult {
             original_path: image_path,
@@ -174,9 +185,14 @@ impl AsyncThumbnailService {
         ).await
     }
 
-    /// Save thumbnail to cache
-    async fn save_thumbnail_to_cache(&self, cache_filename: &str, thumbnail_data: &[u8], app_handle: &AppHandle) -> Result<(), String> {
-        let cache_path = self.get_thumbnail_cache_path(cache_filename);
+    /// Save thumbnail to cache (static function for use in tokio::spawn)
+    async fn save_thumbnail_to_cache(
+        cache_dir: PathBuf,
+        cache_filename: &str,
+        thumbnail_data: &[u8],
+        app_handle: &AppHandle,
+    ) -> Result<(), String> {
+        let cache_path = cache_dir.join(format!("{}.webp", cache_filename));
         
         // Get file lock service from app state
         let mutex = app_handle.state::<AsyncMutex<ImageFileLockService>>();

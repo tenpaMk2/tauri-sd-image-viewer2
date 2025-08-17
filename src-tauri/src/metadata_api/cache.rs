@@ -165,8 +165,31 @@ impl MetadataCache {
         let content =
             fs::read_to_string(path).map_err(|e| format!("Cache file read error: {}", e))?;
 
-        let cache_data: HashMap<String, CacheEntry> =
-            serde_json::from_str(&content).map_err(|e| format!("Cache JSON parse error: {}", e))?;
+        let cache_data: HashMap<String, CacheEntry> = match serde_json::from_str(&content) {
+            Ok(data) => data,
+            Err(e) => {
+                eprintln!("⚠️  Cache file parse error: {}", e);
+                eprintln!("🗑️  Corrupted cache file detected, creating backup and starting fresh");
+                
+                // Create backup by renaming corrupted file
+                let backup_path = path.with_extension("json.backup");
+                if let Err(rename_err) = fs::rename(path, &backup_path) {
+                    eprintln!("⚠️  Failed to create backup: {}", rename_err);
+                    // fallback: try to remove the corrupted file
+                    if let Err(remove_err) = fs::remove_file(path) {
+                        eprintln!("⚠️  Failed to remove corrupted cache file: {}", remove_err);
+                    } else {
+                        println!("🗑️  Corrupted cache file removed");
+                    }
+                } else {
+                    println!("💾 Corrupted cache renamed to: {}", backup_path.display());
+                }
+                
+                // Return empty cache to continue operation
+                println!("🔄 Starting with empty cache");
+                return Ok(HashMap::new());
+            }
+        };
 
         // 古いエントリを削除（30日以上）
         let now = SystemTime::now();

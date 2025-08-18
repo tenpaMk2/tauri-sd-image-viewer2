@@ -1,4 +1,4 @@
-import { invoke, Channel } from '@tauri-apps/api/core';
+import { Channel, invoke } from '@tauri-apps/api/core';
 
 export type AsyncThumbnailQueueConfig = {
 	maxConcurrent: number;
@@ -45,7 +45,9 @@ export class AsyncThumbnailQueue {
 		this.shouldStop = false;
 		this.activeJobs.clear();
 
-		console.log(`Starting async thumbnail queue: ${this.totalCount} images, max concurrent: ${this.config.maxConcurrent}`);
+		console.log(
+			`Starting async thumbnail queue: ${this.totalCount} images, max concurrent: ${this.config.maxConcurrent}`
+		);
 
 		// Start initial jobs up to maxConcurrent
 		for (let i = 0; i < Math.min(this.config.maxConcurrent, this.pendingPaths.length); i++) {
@@ -97,14 +99,14 @@ export class AsyncThumbnailQueue {
 	private async processSingleThumbnail(imagePath: string): Promise<void> {
 		try {
 			const channel = new Channel<Uint8Array>();
-			
+
 			// Set up channel listener before invoke
 			channel.onmessage = (data) => {
 				try {
 					// Convert Uint8Array to Blob and create URL
 					const blob = new Blob([new Uint8Array(data)], { type: 'image/webp' });
 					const thumbnailUrl = URL.createObjectURL(blob);
-					
+
 					// Notify callback
 					this.callbacks.onThumbnailReady?.(imagePath, thumbnailUrl);
 				} catch (error) {
@@ -119,7 +121,6 @@ export class AsyncThumbnailQueue {
 				config: null,
 				channel
 			});
-
 		} catch (error) {
 			const errorMessage = error instanceof Error ? error.message : String(error);
 			console.error(`Failed to generate thumbnail for ${imagePath}:`, errorMessage);
@@ -130,13 +131,13 @@ export class AsyncThumbnailQueue {
 	private async waitForCompletion(): Promise<void> {
 		while (this.activeJobs.size > 0 || this.pendingPaths.length > 0) {
 			if (this.shouldStop) break;
-			
+
 			// Wait for any active job to complete
 			if (this.activeJobs.size > 0) {
 				await Promise.race(Array.from(this.activeJobs));
 			} else {
 				// Small delay to prevent busy waiting
-				await new Promise(resolve => setTimeout(resolve, 10));
+				await new Promise((resolve) => setTimeout(resolve, 10));
 			}
 		}
 	}

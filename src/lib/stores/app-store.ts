@@ -2,8 +2,8 @@ import { open } from '@tauri-apps/plugin-dialog';
 import { writable } from 'svelte/store';
 import type { ImageMetadata } from '../image/types';
 import { getDirectoryFromPath, isDirectory, isImageFile } from '../image/utils';
+import type { AsyncThumbnailQueue } from '../services/async-thumbnail-queue';
 import { unifiedMetadataService } from '../services/unified-metadata-service.svelte';
-import { globalThumbnailService } from '../services/global-thumbnail-service';
 import type { ViewMode } from '../ui/types';
 
 export type AppState = {
@@ -24,6 +24,32 @@ export type AppActions = {
 	handleBackToWelcome: () => Promise<void>;
 	refreshCurrentImageMetadata: () => Promise<void>;
 	handleDroppedPaths: (paths: string[]) => Promise<void>;
+};
+
+// アクティブなサムネイルキューの管理
+let activeQueue: AsyncThumbnailQueue | null = null;
+
+export const setActiveQueue = (queue: AsyncThumbnailQueue): void => {
+	// 以前のキューを停止
+	if (activeQueue && activeQueue !== queue) {
+		console.log('Stopping previous thumbnail queue');
+		activeQueue.stop();
+	}
+	activeQueue = queue;
+};
+
+export const stopActiveQueue = (): void => {
+	if (activeQueue) {
+		console.log('Stopping active thumbnail queue');
+		activeQueue.stop();
+	}
+};
+
+export const clearActiveQueue = (): void => {
+	if (activeQueue) {
+		activeQueue.stop();
+		activeQueue = null;
+	}
 };
 
 // 従来のwritableストアを使用
@@ -50,7 +76,7 @@ const openFileDialog = async (): Promise<void> => {
 
 		if (selected && typeof selected === 'string') {
 			// ファイル選択でビューアーモードに移行する時は、サムネイル生成キューを停止
-			globalThumbnailService.stopActiveQueue();
+			stopActiveQueue();
 
 			const imageMetadata = await unifiedMetadataService.getMetadata(selected);
 			const selectedDirectory = await getDirectoryFromPath(selected);
@@ -104,7 +130,7 @@ const handleImageChange = async (newPath: string): Promise<void> => {
 const handleSwitchToGrid = async (): Promise<void> => {
 	// Rating書き込み処理を待機（クラッシュ防止）
 	await unifiedMetadataService.waitForAllRatingWrites();
-	
+
 	// グリッドモードに戻る時は、前のキューが動いていても継続させる
 	appState.update((state) => ({
 		...state,
@@ -115,9 +141,9 @@ const handleSwitchToGrid = async (): Promise<void> => {
 const handleImageSelect = async (imagePath: string): Promise<void> => {
 	// Rating書き込み処理を待機（クラッシュ防止）
 	await unifiedMetadataService.waitForAllRatingWrites();
-	
+
 	// ビューアーモードに切り替える時は、サムネイル生成キューを停止
-	globalThumbnailService.stopActiveQueue();
+	stopActiveQueue();
 
 	await updateSelectedImage(imagePath);
 	appState.update((state) => ({
@@ -129,7 +155,7 @@ const handleImageSelect = async (imagePath: string): Promise<void> => {
 const handleBackToGrid = async (): Promise<void> => {
 	// Rating書き込み処理を待機（クラッシュ防止）
 	await unifiedMetadataService.waitForAllRatingWrites();
-	
+
 	appState.update((state) => ({
 		...state,
 		viewMode: 'grid'
@@ -139,9 +165,9 @@ const handleBackToGrid = async (): Promise<void> => {
 const handleBackToWelcome = async (): Promise<void> => {
 	// Rating書き込み処理を待機（クラッシュ防止）
 	await unifiedMetadataService.waitForAllRatingWrites();
-	
+
 	// ウェルカム画面に戻る時は、サムネイル生成キューを停止してクリア
-	globalThumbnailService.clearActiveService();
+	clearActiveQueue();
 	appState.set(initialState);
 };
 
@@ -168,14 +194,14 @@ const handleDroppedPaths = async (paths: string[]): Promise<void> => {
 
 	try {
 		if (await isDirectory(firstPath)) {
-			globalThumbnailService.clearActiveService();
+			clearActiveQueue();
 			appState.update((state) => ({
 				...state,
 				selectedDirectory: firstPath,
 				viewMode: 'grid'
 			}));
 		} else if (isImageFile(firstPath)) {
-			globalThumbnailService.stopActiveQueue();
+			stopActiveQueue();
 
 			const imageMetadata = await unifiedMetadataService.getMetadata(firstPath);
 			const selectedDirectory = await getDirectoryFromPath(firstPath);

@@ -3,9 +3,9 @@ import { getImageFiles } from '../image/image-loader';
 import type { ThumbnailCacheInfo } from '../types/shared-types';
 import { unifiedMetadataService } from './unified-metadata-service.svelte';
 
-// サムネイル処理のサービス（統合メタデータサービス対応版）
+// 画像処理・メタデータ操作サービス
+// サムネイル生成、ファイル操作、メタデータアクセスを担当
 export class ThumbnailService {
-	// 注意: メタデータキャッシュは統合サービスに移行済み
 
 	async loadSingleThumbnail(imagePath: string): Promise<string | null> {
 		return new Promise((resolve, reject) => {
@@ -84,7 +84,8 @@ export class ThumbnailService {
 	}
 
 	/**
-	 * Async thumbnail processing with callback-based approach
+	 * 単体テスト・デバッグ用の非同期サムネイル処理
+	 * 通常のアプリケーションではAsyncThumbnailQueueを使用してください
 	 */
 	async processThumbnailsAsync(
 		imagePaths: string[], 
@@ -114,13 +115,4 @@ export class ThumbnailService {
 
 		await Promise.all(promises);
 	}
-
-	/**
-	 * 既存APIとの互換性のため残しておく（削除予定）
-	 */
-	stopCurrentQueue(): void {
-		console.warn('stopCurrentQueue is deprecated. Use ThumbnailQueueManager instead.');
-	}
-
-
 }

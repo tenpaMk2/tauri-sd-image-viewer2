@@ -1,11 +1,15 @@
 <script lang="ts">
 	import ImageThumbnail from './ImageThumbnail.svelte';
-	import { globalThumbnailService } from './services/global-thumbnail-service';
+	import {
+		AsyncThumbnailQueue,
+		type AsyncThumbnailQueueCallbacks,
+		type AsyncThumbnailQueueConfig
+	} from './services/async-thumbnail-queue';
 	import type { TagAggregationResult } from './services/tag-aggregation-service';
 	import { TagAggregationService } from './services/tag-aggregation-service';
 	import { ThumbnailService } from './services/thumbnail-service';
-	import { ThumbnailQueueManager } from './services/thumbnail-queue-manager';
 	import { unifiedMetadataService } from './services/unified-metadata-service.svelte';
+	import { setActiveQueue } from './stores/app-store';
 	import { filterStore } from './stores/filter-store.svelte';
 
 	const {
@@ -160,73 +164,84 @@
 		}
 	};
 
-	// ThumbnailQueueManagerを使用したサムネイル生成
+	// AsyncThumbnailQueueを使用したサムネイル生成
+	let currentQueue: AsyncThumbnailQueue | null = null;
+
 	const loadThumbnailsWithQueue = async () => {
 		console.log('=== loadThumbnailsWithQueue 開始 ===');
 		console.log('imageFiles: ' + imageFiles.length + '個のファイル');
 
 		try {
 			console.log(
-				'ThumbnailQueueManagerでのサムネイル生成開始: ' + imageFiles.length + '個のファイル'
+				'AsyncThumbnailQueueでのサムネイル生成開始: ' + imageFiles.length + '個のファイル'
 			);
 
-			const queueManager = new ThumbnailQueueManager(
-				{ chunkSize: 16, delayBetweenChunks: 10 },
-				{
-					onChunkComplete: (chunkResults) => {
-						console.log('=== チャンク完了 ===');
-						console.log('チャンク結果受信: ' + chunkResults.size + '個のサムネイル');
+			// 前のキューを停止
+			if (currentQueue) {
+				currentQueue.stop();
+			}
 
-						// 既存のthumbnailsに新しいチャンク結果をマージ
-						const newThumbnails = new Map(thumbnails);
-						for (const [imagePath, thumbnailUrl] of chunkResults) {
-							console.log(
-								'サムネイル追加:' + imagePath.split('/').pop() + thumbnailUrl.substring(0, 50) + '...'
-							);
-							newThumbnails.set(imagePath, thumbnailUrl);
-						}
+			const config: AsyncThumbnailQueueConfig = {
+				maxConcurrent: 8
+			};
 
-						thumbnails = newThumbnails;
+			const callbacks: AsyncThumbnailQueueCallbacks = {
+				onThumbnailReady: (imagePath, thumbnailUrl) => {
+					console.log(
+						'サムネイル追加:' + imagePath.split('/').pop() + thumbnailUrl.substring(0, 50) + '...'
+					);
+					// 既存のthumbnailsに新しい結果をマージ
+					const newThumbnails = new Map(thumbnails);
+					newThumbnails.set(imagePath, thumbnailUrl);
+					thumbnails = newThumbnails;
 
-						// リアルタイム更新時にレーティングも読み込み
-						const chunkPaths = Array.from(chunkResults.keys());
-						loadRatings(chunkPaths);
-						ratingUpdateTrigger = Date.now();
-						console.log('🔄 リアルタイム更新、Rating表示更新トリガー: ' + ratingUpdateTrigger);
-						console.log('thumbnails更新 (リアルタイム):', thumbnails.size, '個のサムネイル');
-					},
-					onProgress: (loadedCount, totalCount) => {
-						console.log('プロセス通知: ' + loadedCount + ' / ' + totalCount);
-						loadingState.loadedCount = loadedCount;
-						loadingState.totalCount = totalCount;
-					},
-					onComplete: async () => {
-						// 全レーティングを読み込み
-						await loadRatings(imageFiles);
-						ratingUpdateTrigger = Date.now();
+					// リアルタイム更新時にレーティングも読み込み
+					loadRatings([imagePath]);
+					ratingUpdateTrigger = Date.now();
+					console.log('🔄 リアルタイム更新、Rating表示更新トリガー: ' + ratingUpdateTrigger);
+				},
+				onProgress: (loadedCount, totalCount) => {
+					console.log('プロセス通知: ' + loadedCount + ' / ' + totalCount);
+					loadingState.loadedCount = loadedCount;
+					loadingState.totalCount = totalCount;
+				},
+				onComplete: async () => {
+					// 全レーティングを読み込み
+					await loadRatings(imageFiles);
+					ratingUpdateTrigger = Date.now();
 
-						console.log('ThumbnailQueueManagerでのサムネイル生成完了');
-						loadingState.isProcessing = false;
-					},
-					onError: (error) => {
-						console.error('ThumbnailQueueManager処理エラー: ' + error);
-						loadingState.isProcessing = false;
-					}
+					console.log('AsyncThumbnailQueueでのサムネイル生成完了');
+					loadingState.isProcessing = false;
+					currentQueue = null;
+				},
+				onError: (imagePath, error) => {
+					console.error('AsyncThumbnailQueue処理エラー for ' + imagePath + ': ' + error);
+				},
+				onCancelled: () => {
+					console.log('AsyncThumbnailQueue処理がキャンセルされました');
+					loadingState.isProcessing = false;
+					currentQueue = null;
 				}
-			);
+			};
 
-			await queueManager.startProcessing(imageFiles);
-
+			currentQueue = new AsyncThumbnailQueue(config, callbacks);
+			// アクティブなキューとして登録
+			setActiveQueue(currentQueue);
+			await currentQueue.startProcessing(imageFiles);
 		} catch (err) {
-			console.error('ThumbnailQueueManager処理エラー: ' + err);
+			console.error('AsyncThumbnailQueue処理エラー: ' + err);
 			loadingState.isProcessing = false;
+			currentQueue = null;
 		}
 	};
 
 	// クリーンアップ関数
 	const cleanup = () => {
 		// キューを停止してからクリーンアップ
-		thumbnailService.stopCurrentQueue();
+		if (currentQueue) {
+			currentQueue.stop();
+			currentQueue = null;
+		}
 		thumbnailService.cleanupThumbnails(thumbnails);
 		thumbnails.clear();
 	};
@@ -238,8 +253,6 @@
 	$effect(() => {
 		if (directoryPath && !currentDirectory) {
 			currentDirectory = directoryPath;
-			// このサービスをアクティブなサービスとして登録
-			globalThumbnailService.setActiveService(thumbnailService);
 			loadImageFileList();
 		}
 

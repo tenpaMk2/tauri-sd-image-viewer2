@@ -1,7 +1,6 @@
 use super::image_metadata::ImageMetadata;
 use super::xmp_handler;
 use crate::image_file_lock_service::ImageFileLockService;
-use crate::image_loader::ImageReader;
 use tauri::{AppHandle, Manager};
 use tokio::sync::Mutex as AsyncMutex;
 
@@ -30,10 +29,10 @@ pub async fn read_image_metadata(
         path_mutex,
         path.clone(),
         |path| async move {
-            // キャッシュミス → ファイルから読み込み
-            let reader = ImageReader::from_file(&path)?;
-            let metadata =
-                ImageMetadata::from_reader(&reader, &path).map_err(|e| format!("{:?}", e))?;
+            // キャッシュミス → ファイルから読み込み（非同期版を使用）
+            let metadata = ImageMetadata::from_file_async(&path)
+                .await
+                .map_err(|e| format!("{:?}", e))?;
 
             Ok(metadata)
         },
@@ -67,12 +66,14 @@ pub async fn write_xmp_image_rating(
     let path_mutex = image_file_lock_service.get_or_create_path_mutex(&src_path);
     drop(image_file_lock_service); // Release service lock immediately
 
-    // TODO: `tokio::task::spawn_blocking` で別スレッドへ
     // Execute file operation with exclusive access
     ImageFileLockService::with_exclusive_file_access(path_mutex, src_path, |src_path| async move {
-        // Use unified XMP API for direct file processing
-        xmp_handler::embed_xmp_rating_unified(&src_path, rating)?;
-        Ok(())
+        // Use unified XMP API for direct file processing in blocking task
+        tokio::task::spawn_blocking(move || {
+            xmp_handler::embed_xmp_rating_unified(&src_path, rating)
+        })
+        .await
+        .map_err(|e| format!("XMP rating write task failed: {}", e))?
     })
     .await
 }
@@ -92,9 +93,7 @@ mod tests {
         println!("📁 Original PNG size: {} bytes", original_data.len());
 
         // Test the XMP pipeline components directly (synchronous version)
-        let reader = crate::image_loader::ImageReader::from_file(test_file)
-            .expect("Failed to create ImageReader");
-        let current_data = reader.as_bytes().to_vec();
+        let current_data = fs::read(test_file).expect("Failed to read test file");
 
         // Apply XMP rating using unified API
         // First write to a temporary file for testing

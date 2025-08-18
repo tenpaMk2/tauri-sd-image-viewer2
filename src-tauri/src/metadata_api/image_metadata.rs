@@ -1,9 +1,9 @@
 use super::png_handler;
 use super::sd_parameters::SdParameters;
 use super::xmp_handler;
-use crate::image_loader::ImageReader;
+use image::GenericImageView;
 use serde::{Deserialize, Serialize};
-use std::fs;
+use tokio::fs as async_fs;
 
 /// Comprehensive image metadata information
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -17,31 +17,51 @@ pub struct ImageMetadata {
 }
 
 impl ImageMetadata {
-    /// Build comprehensive metadata information from ImageReader
-    pub fn from_reader(reader: &ImageReader, path: &str) -> Result<Self, String> {
-        // Get file size from filesystem metadata
-        let file_size = fs::metadata(path)
-            .map_err(|e| format!("Failed to get file metadata: {}", e))?
-            .len();
+    /// Build comprehensive metadata information from file path using async I/O
+    pub async fn from_file_async(path: &str) -> Result<Self, String> {
+        // Get file metadata asynchronously
+        let metadata = async_fs::metadata(path)
+            .await
+            .map_err(|e| format!("Failed to get file metadata: {}", e))?;
+        let file_size = metadata.len();
 
-        // Get image dimensions
-        let (width, height) = reader
-            .get_dimensions()
-            .map_err(|e| format!("Resolution acquisition failed: {}", e))?;
+        // Detect MIME type from path
+        let mime_type = crate::common::detect_mime_type_from_path(path);
 
-        // Get SD Parameters (PNG only)
-        let mime_type = reader.mime_type();
+        // Read entire file once
+        let file_data = async_fs::read(path)
+            .await
+            .map_err(|e| format!("Failed to read file: {}", e))?;
+
+        // Get image dimensions using image crate (much simpler and more reliable)
+        let image_data_clone = file_data.clone();
+        let (width, height) = tokio::task::spawn_blocking(move || {
+            let img = image::load_from_memory(&image_data_clone)
+                .map_err(|e| format!("Failed to load image: {}", e))?;
+            Ok::<(u32, u32), String>(img.dimensions())
+        })
+        .await
+        .map_err(|e| format!("Image loading task failed: {}", e))??;
+
+        // Get SD Parameters (PNG only) from the same file data
         let sd_parameters = if mime_type == "image/png" {
-            match png_handler::extract_sd_parameters_from_png(reader.as_bytes()) {
-                Ok(sd) => sd,
-                Err(_) => None,
-            }
+            tokio::task::spawn_blocking(move || {
+                png_handler::extract_sd_parameters_from_png(&file_data)
+            })
+            .await
+            .map_err(|e| format!("PNG SD parameter extraction task failed: {}", e))?
+            .unwrap_or(None)
         } else {
             None
         };
 
-        // Get XMP Rating information
-        let rating = xmp_handler::extract_rating_from_file(path).map(|r| r as u8);
+        // Get XMP Rating information in blocking task
+        let path_clone = path.to_string();
+        let rating = tokio::task::spawn_blocking(move || {
+            xmp_handler::extract_rating_from_file(&path_clone).map(|r| r as u8)
+        })
+        .await
+        .map_err(|e| format!("XMP rating extraction failed: {}", e))?;
 
         Ok(ImageMetadata {
             width,
@@ -52,5 +72,4 @@ impl ImageMetadata {
             rating,
         })
     }
-
 }

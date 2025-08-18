@@ -1,34 +1,41 @@
 <script lang="ts">
-	import { metadataService } from '../services/metadata-service.svelte';
+	import type { ReactiveImageMetadata } from '../stores/image-metadata-store.svelte';
 
 	const {
-		imagePath,
-		rating = 0,
+		metadata,
 		onRatingChange
 	}: {
-		imagePath: string;
-		rating?: number;
+		metadata: ReactiveImageMetadata;
 		onRatingChange?: (newRating: number) => void;
 	} = $props();
 
-	// Rating書き込み中かどうかをリアクティブにチェック
-	const isRatingWriting = $derived(metadataService.currentWritingFiles.includes(imagePath));
+	// メタデータが未読み込みの場合は自動読み込み
+	$effect(() => {
+		if (!metadata.isLoaded && !metadata.isLoading) {
+			metadata.load();
+		}
+	});
+
+	// Rating書き込み中かどうかの状態（新しいストアでは簡略化）
+	const isRatingWriting = $derived(metadata.isLoading);
 
 	let isRatingHovered = $state(false);
 	let hoveredRating = $state(0);
 
 	// 表示用のRating値（ホバー中は予想値、それ以外は実際の値）
-	const displayRating = $derived(isRatingHovered ? hoveredRating : (rating ?? 0));
+	const displayRating = $derived(isRatingHovered ? hoveredRating : (metadata.rating ?? 0));
 
 	// デバッグログ: ratingの受け取り状況をチェック
 	$effect(() => {
 		console.log(
 			'⭐ RatingComponent: ' +
-				imagePath.split('/').pop() +
+				metadata.imagePath.split('/').pop() +
 				' rating=' +
-				JSON.stringify(rating) +
+				JSON.stringify(metadata.rating) +
 				' displayRating=' +
-				displayRating
+				displayRating +
+				' isLoaded=' +
+				metadata.isLoaded
 		);
 	});
 
@@ -47,13 +54,13 @@
 		e.stopPropagation(); // 親要素のクリックイベントを防ぐ
 
 		// 同じ星をクリックした場合は0に戻す、そうでなければ新しいRating値を設定
-		const newRating = (rating || 0) === clickedRating ? 0 : clickedRating;
+		const newRating = (metadata.rating || 0) === clickedRating ? 0 : clickedRating;
 
 		if (onRatingChange) {
 			onRatingChange(newRating);
 		} else {
-			// デフォルトの動作：直接サービスを呼び出し
-			await metadataService.updateImageRating(imagePath, newRating);
+			// デフォルトの動作：直接メタデータストアを呼び出し
+			await metadata.updateRating(newRating);
 		}
 	};
 </script>
@@ -73,7 +80,7 @@
 		</div>
 	{:else}
 		<!-- 通常のRating表示 -->
-		<div class="flex gap-0.5" title={`Rating: ${rating || 0}/5 (click to change)`}>
+		<div class="flex gap-0.5" title={`Rating: ${metadata.rating || 0}/5 (click to change)`}>
 			{#each Array(5) as _, i}
 				<button
 					class="text-sm transition-colors duration-100 hover:scale-110 {i < displayRating

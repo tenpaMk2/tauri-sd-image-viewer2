@@ -1,24 +1,25 @@
 <script lang="ts">
 	import RatingComponent from './components/RatingComponent.svelte';
+	import type { ReactiveImageMetadata } from './stores/image-metadata-store.svelte';
 
 	const {
 		imagePath,
 		thumbnailUrl,
-		rating,
+		metadata,
 		isSelected = false,
 		isLoading = false,
 		onImageClick,
 		onToggleSelection,
-		onRatingChange
+		onRatingUpdate
 	}: {
 		imagePath: string;
 		thumbnailUrl?: string;
-		rating?: number;
+		metadata: ReactiveImageMetadata;
 		isSelected?: boolean;
 		isLoading?: boolean;
 		onImageClick: (imagePath: string) => void;
 		onToggleSelection?: (imagePath: string, shiftKey?: boolean, metaKey?: boolean) => void;
-		onRatingChange?: (imagePath: string, newRating: number) => void;
+		onRatingUpdate?: () => void;
 	} = $props();
 
 	const handleClick = (event?: MouseEvent): void => {
@@ -38,9 +39,10 @@
 		}
 	};
 
-	const handleRatingChange = (newRating: number) => {
-		if (onRatingChange) {
-			onRatingChange(imagePath, newRating);
+	const handleRatingChange = async (newRating: number) => {
+		await metadata.updateRating(newRating);
+		if (onRatingUpdate) {
+			onRatingUpdate();
 		}
 	};
 </script>
@@ -80,6 +82,6 @@
 
 	<!-- Rating Component -->
 	<div class="absolute bottom-1 left-1/2 -translate-x-1/2">
-		<RatingComponent {imagePath} {rating} onRatingChange={handleRatingChange} />
+		<RatingComponent {metadata} onRatingChange={handleRatingChange} />
 	</div>
 </div>

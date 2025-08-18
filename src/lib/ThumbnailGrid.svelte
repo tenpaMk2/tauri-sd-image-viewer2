@@ -5,7 +5,6 @@
 	import { TagAggregationService } from './services/tag-aggregation-service';
 	import { thumbnailService } from './services/thumbnail-service.svelte';
 	import { filterStore } from './stores/filter-store.svelte';
-	import { SvelteMap } from 'svelte/reactivity';
 
 	const {
 		directoryPath,
@@ -41,7 +40,6 @@
 
 	let imageFiles = $state<string[]>([]);
 	let filteredImageFiles = $state<string[]>([]);
-	let ratings = new SvelteMap<string, number | undefined>(); // リアクティブなレーティングキャッシュ
 	let loadingState = $state<LoadingState>({
 		isLoading: true,
 		isProcessing: false,
@@ -50,32 +48,7 @@
 		totalCount: 0
 	});
 	let lastRefreshTrigger = $state<number>(-1);
-	let ratingUpdateTrigger = $state<number>(0); // Rating更新をトリガーするためのstate
-
-	// レーティング読み込み関数（順次更新方式）
-	const loadRatings = async (imagePaths: string[]) => {
-		console.log('=== loadRatings開始 === ' + imagePaths.length + '個のファイル');
-		for (const imagePath of imagePaths) {
-			// 既に取得済みの場合はスキップ
-			if (ratings.has(imagePath)) {
-				console.log('スキップ: ' + imagePath.split('/').pop());
-				continue;
-			}
-
-			try {
-				console.log('取得中: ' + imagePath.split('/').pop());
-				const rating = await metadataService.getRating(imagePath);
-				console.log('取得完了: ' + imagePath.split('/').pop() + ' → ' + JSON.stringify(rating));
-				// 取得完了ごとに即座にSvelteMapを更新（順次表示、自動リアクティブ）
-				ratings.set(imagePath, rating);
-				console.log('SvelteMap更新完了。ratingsサイズ: ' + ratings.size);
-			} catch (error) {
-				console.warn('レーティング取得失敗: ' + imagePath.split('/').pop() + ' ' + error);
-				ratings.set(imagePath, undefined);
-			}
-		}
-		console.log('=== loadRatings完了 ===');
-	};
+	let ratingUpdateTrigger = $state<number>(0); // フィルタ再適用用トリガー
 
 	// ThumbnailServiceの状態を監視して進捗を同期
 	$effect(() => {
@@ -128,8 +101,8 @@
 		ratingUpdateTrigger;
 
 		if (imageFiles.length > 0) {
-			// フィルタを適用して表示用の画像リストを更新（同期処理で高速化）
-			const filtered = filterStore.filterImages(imageFiles, ratings, tagAggregationService);
+			// 新しいストアベースのフィルタ適用
+			const filtered = applyFiltersWithNewStore(imageFiles);
 
 			// 変更があった場合のみ更新
 			if (
@@ -146,6 +119,61 @@
 			}
 		}
 	});
+
+	// 新しいストアベースのフィルタ適用関数
+	const applyFiltersWithNewStore = (imagePaths: string[]): string[] => {
+		return imagePaths.filter((imagePath) => {
+			// ファイル名パターンフィルタ
+			if (filterStore.state.filenamePattern) {
+				const filename = imagePath.split('/').pop() || '';
+				const pattern = new RegExp(filterStore.state.filenamePattern, 'i');
+				if (!pattern.test(filename)) {
+					return false;
+				}
+			}
+
+			// レーティングフィルタ（フィルターが有効な場合のみ）
+			if (filterStore.state.isActive && filterStore.state.targetRating !== null) {
+				const metadata = metadataService.getReactiveMetadata(imagePath);
+				const rating = metadata.rating ?? 0;
+				const target = filterStore.state.targetRating;
+				const comparison = filterStore.state.ratingComparison;
+
+				switch (comparison) {
+					case 'eq':
+						if (rating !== target) return false;
+						break;
+					case 'gte':
+						if (rating < target) return false;
+						break;
+					case 'lte':
+						if (rating > target) return false;
+						break;
+				}
+			}
+
+			// SDタグフィルタ（フィルターが有効で選択されている場合のみ）
+			if (
+				filterStore.state.isActive &&
+				filterStore.state.selectedTags &&
+				filterStore.state.selectedTags.length > 0
+			) {
+				const tagData = tagAggregationService.getTagsForImage(imagePath);
+				if (!tagData || tagData.length === 0) {
+					return false;
+				}
+
+				const imageTags = tagData.map((tag: string) => tag.toLowerCase());
+				const selectedTags = filterStore.state.selectedTags.map((tag: string) => tag.toLowerCase());
+
+				return selectedTags.every((selectedTag) =>
+					imageTags.some((imageTag) => imageTag.includes(selectedTag))
+				);
+			}
+
+			return true;
+		});
+	};
 
 	// 第1段階：画像ファイル一覧の取得とグリッド表示
 	const loadImageFileList = async () => {
@@ -171,7 +199,7 @@
 			imageFiles = await thumbnailService.getImageFiles(directoryPath);
 			console.log('取得された画像ファイル数:', imageFiles.length);
 
-			// 初期状態でフィルタを適用（同期処理のみ）
+			// 初期状態でフィルタを適用
 			filteredImageFiles = imageFiles; // SDタグフィルタが設定されるまでは全画像を表示
 
 			// 親コンポーネントに画像ファイル一覧を通知
@@ -202,6 +230,10 @@
 
 			// 第3段階：SDタグデータを集計
 			loadTagData();
+
+			// 第4段階：メタデータを事前読み込み（新しいストア使用）
+			console.log('メタデータを事前読み込み開始');
+			metadataService.preloadMetadata(imageFiles);
 		} catch (err) {
 			loadingState.error = err instanceof Error ? err.message : 'Failed to load image files';
 			console.error('Failed to load image files: ' + err);
@@ -242,22 +274,6 @@
 		}
 	};
 
-	// レーティング更新時の処理
-	const handleRatingUpdate = async (imagePath: string, newRating: number) => {
-		try {
-			const success = await metadataService.updateImageRating(imagePath, newRating);
-			if (success) {
-				ratings.set(imagePath, newRating);
-				ratingUpdateTrigger++; // フィルタを再適用させるためのトリガー
-				console.log('レーティング更新成功: ' + imagePath + ' -> ' + newRating);
-			} else {
-				console.warn('レーティング更新失敗: ' + imagePath);
-			}
-		} catch (error) {
-			console.error('レーティング更新エラー: ' + imagePath + ' ' + error);
-		}
-	};
-
 	// ディレクトリパスまたはrefreshTriggerが変更されたときに画像リストを再読み込み
 	$effect(() => {
 		console.log('$effect ディレクトリパス変更チェック:', {
@@ -269,14 +285,11 @@
 		if (directoryPath && refreshTrigger !== lastRefreshTrigger) {
 			lastRefreshTrigger = refreshTrigger;
 			console.log('リフレッシュトリガー発動: ' + directoryPath);
-			loadImageFileList();
-		}
-	});
 
-	// 画像ファイルが読み込まれたらレーティングを取得
-	$effect(() => {
-		if (imageFiles.length > 0) {
-			loadRatings(imageFiles);
+			// 古いメタデータをクリア
+			metadataService.clearAllMetadata();
+
+			loadImageFileList();
 		}
 	});
 
@@ -285,6 +298,8 @@
 		return () => {
 			// サムネイル生成を停止
 			thumbnailService.stop();
+			// 未使用メタデータをクリア
+			metadataService.clearUnusedMetadata([]);
 		};
 	});
 </script>
@@ -344,22 +359,18 @@
 		{#each filteredImageFiles as imagePath (imagePath)}
 			{@const thumbnailUrl = thumbnailService.getThumbnail(imagePath)}
 			{@const isSelected = selectedImages.has(imagePath)}
-			{@const currentRating = ratings.get(imagePath)}
-			{console.log(
-				'📺 ThumbnailGrid描画: ' +
-					imagePath.split('/').pop() +
-					' rating=' +
-					JSON.stringify(currentRating)
-			)}
+			{@const metadata = metadataService.getReactiveMetadata(imagePath)}
 
 			<ImageThumbnail
 				{imagePath}
 				{thumbnailUrl}
-				rating={currentRating}
+				{metadata}
 				{isSelected}
 				onImageClick={onImageSelect}
 				{onToggleSelection}
-				onRatingChange={handleRatingUpdate}
+				onRatingUpdate={() => {
+					ratingUpdateTrigger++; // フィルタ再適用をトリガー
+				}}
 			/>
 		{/each}
 	</div>

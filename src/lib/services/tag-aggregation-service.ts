@@ -142,6 +142,14 @@ export class TagAggregationService {
 	};
 
 	/**
+	 * 特定の画像のタグ一覧を取得（キャッシュから）
+	 */
+	getTagsForImage = (imagePath: string): string[] => {
+		const tags = this.imageTagsCache.get(imagePath);
+		return tags ? Array.from(tags) : [];
+	};
+
+	/**
 	 * 特定の画像のSDタグが指定されたタグリストを全て含むかチェック（高速同期版）
 	 * キャッシュされたタグ情報を使用するため非常に高速
 	 */

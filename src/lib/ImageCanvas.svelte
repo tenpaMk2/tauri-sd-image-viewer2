@@ -85,7 +85,8 @@
 	const handleRatingChange = async (newRating: number) => {
 		if (!imagePath) return;
 
-		const success = await metadataService.updateImageRating(imagePath, newRating);
+		const reactiveMetadata = metadataService.getReactiveMetadata(imagePath);
+		const success = await reactiveMetadata.updateRating(newRating);
 		if (success) {
 			// Rating更新成功時のコールバック実行（メタデータ再読み込み）
 			onRatingUpdate?.();
@@ -160,9 +161,9 @@
 	{/if}
 
 	<!-- Rating オーバーレイバー（ズーム時・UI非表示時は非表示） -->
-	{#if imageUrl && metadata.rating !== undefined && viewState.zoomLevel === 1 && isUIVisible && imagePath}
+	{#if imageUrl && imagePath && viewState.zoomLevel === 1 && isUIVisible}
 		<div class="absolute bottom-4 left-1/2 -translate-x-1/2 transform">
-			<RatingComponent {imagePath} rating={metadata.rating} onRatingChange={handleRatingChange} />
+			<RatingComponent metadata={metadataService.getReactiveMetadata(imagePath)} onRatingChange={handleRatingChange} />
 		</div>
 	{/if}
 </div>

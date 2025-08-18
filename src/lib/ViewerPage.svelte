@@ -409,7 +409,6 @@
 	{#if isInfoPanelVisible}
 		<div style="width: {infoPanelWidth}px" class="flex-shrink-0">
 			<MetadataPanel
-				{metadata}
 				imagePath={navigationState.files[navigationState.currentIndex]}
 				onRatingUpdate={() => refreshMetadataOnly()}
 				onFocus={handleInfoPanelFocus}

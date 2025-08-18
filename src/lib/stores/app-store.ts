@@ -3,6 +3,7 @@ import { writable } from 'svelte/store';
 import type { ImageMetadata } from '../image/types';
 import { getDirectoryFromPath, isDirectory, isImageFile } from '../image/utils';
 import type { AsyncThumbnailQueue } from '../services/async-thumbnail-queue';
+import { imageMetadataStore } from './image-metadata-store.svelte';
 import { metadataService } from '../services/metadata-service.svelte';
 import type { ViewMode } from '../ui/types';
 
@@ -78,7 +79,23 @@ const openFileDialog = async (): Promise<void> => {
 			// ファイル選択でビューアーモードに移行する時は、サムネイル生成キューを停止
 			stopActiveQueue();
 
-			const imageMetadata = await metadataService.getMetadata(selected);
+			const reactiveMetadata = metadataService.getReactiveMetadata(selected);
+		// 基本情報のみ先に取得
+		if (!reactiveMetadata.isLoaded && !reactiveMetadata.isLoading) {
+			await reactiveMetadata.load();
+		}
+		const imageMetadata = {
+			filename: reactiveMetadata.filename || 'Unknown',
+			size: reactiveMetadata.fileSize ? Math.round(reactiveMetadata.fileSize / 1024) + ' KB' : 'Unknown',
+			dimensions: reactiveMetadata.width && reactiveMetadata.height 
+				? reactiveMetadata.width + ' × ' + reactiveMetadata.height 
+				: 'Unknown',
+			format: reactiveMetadata.mimeType || 'Unknown',
+			created: 'Unknown',
+			modified: 'Unknown',
+			sdParameters: reactiveMetadata.sdParameters,
+			rating: reactiveMetadata.rating
+		};
 			const selectedDirectory = await getDirectoryFromPath(selected);
 
 			appState.update((state) => ({
@@ -114,7 +131,23 @@ const openDirectoryDialog = async (): Promise<void> => {
 };
 
 const updateSelectedImage = async (imagePath: string): Promise<void> => {
-	const newMetadata = await metadataService.checkAndRefreshIfChanged(imagePath);
+	// リアクティブメタデータから基本情報を取得
+	const reactiveMetadata = metadataService.getReactiveMetadata(imagePath);
+	if (!reactiveMetadata.isLoaded && !reactiveMetadata.isLoading) {
+		await reactiveMetadata.load();
+	}
+	const newMetadata = {
+		filename: reactiveMetadata.filename || 'Unknown',
+		size: reactiveMetadata.fileSize ? Math.round(reactiveMetadata.fileSize / 1024) + ' KB' : 'Unknown',
+		dimensions: reactiveMetadata.width && reactiveMetadata.height 
+			? reactiveMetadata.width + ' × ' + reactiveMetadata.height 
+			: 'Unknown',
+		format: reactiveMetadata.mimeType || 'Unknown',
+		created: 'Unknown',
+		modified: 'Unknown',
+		sdParameters: reactiveMetadata.sdParameters,
+		rating: reactiveMetadata.rating
+	};
 
 	appState.update((state) => ({
 		...state,
@@ -129,7 +162,7 @@ const handleImageChange = async (newPath: string): Promise<void> => {
 
 const handleSwitchToGrid = async (): Promise<void> => {
 	// Rating書き込み処理を待機（クラッシュ防止）
-	await metadataService.waitForAllRatingWrites();
+	await imageMetadataStore.waitForAllRatingWrites();
 
 	// グリッドモードに戻る時は、前のキューが動いていても継続させる
 	appState.update((state) => ({
@@ -140,7 +173,7 @@ const handleSwitchToGrid = async (): Promise<void> => {
 
 const handleImageSelect = async (imagePath: string): Promise<void> => {
 	// Rating書き込み処理を待機（クラッシュ防止）
-	await metadataService.waitForAllRatingWrites();
+	await imageMetadataStore.waitForAllRatingWrites();
 
 	// ビューアーモードに切り替える時は、サムネイル生成キューを停止
 	stopActiveQueue();
@@ -154,7 +187,7 @@ const handleImageSelect = async (imagePath: string): Promise<void> => {
 
 const handleBackToGrid = async (): Promise<void> => {
 	// Rating書き込み処理を待機（クラッシュ防止）
-	await metadataService.waitForAllRatingWrites();
+	await imageMetadataStore.waitForAllRatingWrites();
 
 	appState.update((state) => ({
 		...state,
@@ -164,7 +197,7 @@ const handleBackToGrid = async (): Promise<void> => {
 
 const handleBackToWelcome = async (): Promise<void> => {
 	// Rating書き込み処理を待機（クラッシュ防止）
-	await metadataService.waitForAllRatingWrites();
+	await imageMetadataStore.waitForAllRatingWrites();
 
 	// ウェルカム画面に戻る時は、サムネイル生成キューを停止してクリア
 	clearActiveQueue();
@@ -179,7 +212,21 @@ const refreshCurrentImageMetadata = async (): Promise<void> => {
 	})();
 
 	if (currentImagePath) {
-		const refreshedMetadata = await metadataService.refreshMetadata(currentImagePath);
+		const reactiveMetadata = metadataService.getReactiveMetadata(currentImagePath);
+		// リフレッシュ実行
+		await reactiveMetadata.forceReload();
+		const refreshedMetadata = {
+			filename: reactiveMetadata.filename || 'Unknown',
+			size: reactiveMetadata.fileSize ? Math.round(reactiveMetadata.fileSize / 1024) + ' KB' : 'Unknown',
+			dimensions: reactiveMetadata.width && reactiveMetadata.height 
+				? reactiveMetadata.width + ' × ' + reactiveMetadata.height 
+				: 'Unknown',
+			format: reactiveMetadata.mimeType || 'Unknown',
+			created: 'Unknown',
+			modified: 'Unknown',
+			sdParameters: reactiveMetadata.sdParameters,
+			rating: reactiveMetadata.rating
+		};
 		appState.update((state) => ({
 			...state,
 			imageMetadata: refreshedMetadata
@@ -203,7 +250,23 @@ const handleDroppedPaths = async (paths: string[]): Promise<void> => {
 		} else if (isImageFile(firstPath)) {
 			stopActiveQueue();
 
-			const imageMetadata = await metadataService.getMetadata(firstPath);
+			const reactiveMetadata = metadataService.getReactiveMetadata(firstPath);
+			// 基本情報のみ先に取得
+			if (!reactiveMetadata.isLoaded && !reactiveMetadata.isLoading) {
+				await reactiveMetadata.load();
+			}
+			const imageMetadata = {
+				filename: reactiveMetadata.filename || 'Unknown',
+				size: reactiveMetadata.fileSize ? Math.round(reactiveMetadata.fileSize / 1024) + ' KB' : 'Unknown',
+				dimensions: reactiveMetadata.width && reactiveMetadata.height 
+					? reactiveMetadata.width + ' × ' + reactiveMetadata.height 
+					: 'Unknown',
+				format: reactiveMetadata.mimeType || 'Unknown',
+				created: 'Unknown',
+				modified: 'Unknown',
+				sdParameters: reactiveMetadata.sdParameters,
+				rating: reactiveMetadata.rating
+			};
 			const selectedDirectory = await getDirectoryFromPath(firstPath);
 
 			appState.update((state) => ({

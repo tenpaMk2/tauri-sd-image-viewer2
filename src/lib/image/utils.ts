@@ -1,8 +1,6 @@
-import { invoke } from '@tauri-apps/api/core';
 import { basename, dirname } from '@tauri-apps/api/path';
 import { stat } from '@tauri-apps/plugin-fs';
 import { metadataService } from '../services/metadata-service.svelte';
-import type { ImageMetadataInfo } from '../types/shared-types';
 import type { ImageMetadata } from './types';
 
 /**
@@ -20,11 +18,19 @@ export const createBasicImageInfo = async (
 	const extension = filename.split('.').pop()?.toUpperCase() || '';
 
 	try {
-		const basicInfo = await metadataService.getBasicInfo(imagePath);
+		const reactiveMetadata = metadataService.getReactiveMetadata(imagePath);
+		if (!reactiveMetadata.isLoaded && !reactiveMetadata.isLoading) {
+			await reactiveMetadata.load();
+		}
+		const basicInfo = {
+			file_size: reactiveMetadata.fileSize || 0,
+			width: reactiveMetadata.width || 0,
+			height: reactiveMetadata.height || 0
+		};
 		const sizeFormatted = formatFileSize(basicInfo.file_size);
 		const dimensions =
 			basicInfo.width > 0 && basicInfo.height > 0
-				? `${basicInfo.width} × ${basicInfo.height}`
+				? basicInfo.width + ' × ' + basicInfo.height
 				: 'Unknown';
 
 		return {
@@ -61,15 +67,16 @@ export const createImageMetadata = async (imagePath: string): Promise<ImageMetad
 			? new Date(fileStats.mtime).toLocaleString('ja-JP')
 			: 'Unknown';
 
-		// メタデータを直接取得
-		const imageInfo = await invoke<ImageMetadataInfo>('read_image_metadata', { path: imagePath });
+		// リアクティブメタデータを使用
+		const reactiveMetadata = metadataService.getReactiveMetadata(imagePath);
+		if (!reactiveMetadata.isLoaded && !reactiveMetadata.isLoading) {
+			await reactiveMetadata.load();
+		}
 
-		// console.log('💩💩💩imageInfo: ' + JSON.stringify(imageInfo));
-
-		const sizeFormatted = formatFileSize(imageInfo.file_size);
+		const sizeFormatted = formatFileSize(reactiveMetadata.fileSize || 0);
 		const dimensions =
-			imageInfo.width > 0 && imageInfo.height > 0
-				? `${imageInfo.width} × ${imageInfo.height}`
+			reactiveMetadata.width && reactiveMetadata.height
+				? reactiveMetadata.width + ' × ' + reactiveMetadata.height
 				: 'Unknown';
 
 		return {
@@ -79,8 +86,8 @@ export const createImageMetadata = async (imagePath: string): Promise<ImageMetad
 			format: extension,
 			created,
 			modified,
-			sdParameters: imageInfo.sd_parameters,
-			rating: imageInfo.rating
+			sdParameters: reactiveMetadata.sdParameters,
+			rating: reactiveMetadata.rating
 		};
 	} catch (error) {
 		console.warn('ファイル情報の取得に失敗:' + error);

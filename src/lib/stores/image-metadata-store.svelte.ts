@@ -8,6 +8,7 @@ export class ReactiveImageMetadata {
 	imagePath: string;
 
 	// 基本情報
+	filename = $state<string | undefined>(undefined);
 	width = $state<number | undefined>(undefined);
 	height = $state<number | undefined>(undefined);
 	fileSize = $state<number | undefined>(undefined);
@@ -44,6 +45,7 @@ export class ReactiveImageMetadata {
 			});
 
 			// リアクティブ状態を更新
+			this.filename = this.imagePath.split('/').pop() || 'Unknown';
 			this.width = metadata.width;
 			this.height = metadata.height;
 			this.fileSize = metadata.file_size;
@@ -94,6 +96,13 @@ export class ReactiveImageMetadata {
 		this.isLoaded = false;
 		this.loadError = undefined;
 		await this.load();
+	}
+
+	/**
+	 * 強制再読み込み（旧関数名に対応）
+	 */
+	async forceReload(): Promise<void> {
+		return this.reload();
 	}
 
 	/**
@@ -178,6 +187,43 @@ class ImageMetadataStore {
 	 */
 	get cacheSize(): number {
 		return this.metadataMap.size;
+	}
+
+	/**
+	 * Rating書き込み処理を待機
+	 */
+	async waitForAllRatingWrites(): Promise<void> {
+		// 現在の実装では即座に完了（必要に応じて実装を追加）
+		return;
+	}
+
+	/**
+	 * 強制再読み込み（特定画像のキャッシュを無効化して再読み込み）
+	 */
+	async forceReload(imagePath: string): Promise<void> {
+		const metadata = this.metadataMap.get(imagePath);
+		if (metadata) {
+			await metadata.reload();
+		}
+	}
+
+	/**
+	 * ファイル削除後のキャッシュクリア（内部処理：削除された画像のメタデータキャッシュを無効化）
+	 */
+	invalidateMetadata(imagePath: string): void {
+		const metadata = this.metadataMap.get(imagePath);
+		if (metadata) {
+			// 状態をリセット
+			metadata.isLoaded = false;
+			metadata.loadError = undefined;
+			metadata.filename = undefined;
+			metadata.width = undefined;
+			metadata.height = undefined;
+			metadata.fileSize = undefined;
+			metadata.mimeType = undefined;
+			metadata.rating = undefined;
+			metadata.sdParameters = undefined;
+		}
 	}
 
 	/**

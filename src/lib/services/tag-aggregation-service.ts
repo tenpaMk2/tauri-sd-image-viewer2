@@ -40,7 +40,10 @@ export class TagAggregationService {
 		// 各画像ファイルからSDパラメータを取得してタグを集計
 		for (const imagePath of imagePaths) {
 			try {
-				const metadata = await metadataService.getMetadata(imagePath);
+				const metadata = metadataService.getReactiveMetadata(imagePath);
+				if (!metadata.isLoaded && !metadata.isLoading) {
+					await metadata.load();
+				}
 
 				if (metadata?.sdParameters) {
 					// タグ情報をキャッシュに保存
@@ -177,7 +180,10 @@ export class TagAggregationService {
 		}
 
 		try {
-			const metadata = await metadataService.getMetadata(imagePath);
+			const metadata = metadataService.getReactiveMetadata(imagePath);
+			if (!metadata.isLoaded && !metadata.isLoading) {
+				await metadata.load();
+			}
 			if (!metadata?.sdParameters) return false;
 
 			// 正規化されたタグ名の配列を作成（positive + negative）

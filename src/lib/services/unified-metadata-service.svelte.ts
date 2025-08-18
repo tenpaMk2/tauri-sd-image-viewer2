@@ -1,7 +1,7 @@
 import { invoke } from '@tauri-apps/api/core';
 import type { ImageMetadata } from '../image/types';
 import { createImageMetadata } from '../image/utils';
-import type { ImageFileInfo, ImageMetadataInfo, ThumbnailCacheInfo } from '../types/shared-types';
+import type { ImageFileInfo, ImageMetadataInfo } from '../types/shared-types';
 
 /**
  * 軽量ファイル情報（変更検出用）
@@ -15,7 +15,6 @@ type LightweightFileInfo = {
  */
 type UnifiedMetadataEntry = {
 	imageMetadata: ImageMetadata;
-	thumbnailCacheInfo?: ThumbnailCacheInfo;
 	fileInfo: LightweightFileInfo;
 	cachedAt: number;
 };
@@ -32,7 +31,6 @@ export class UnifiedMetadataService {
 	// Rating書き込み中のファイルを管理（リアクティブ）
 	// Setの代わりに配列を使用してより確実なリアクティビティを実現
 	private writingFilesArray = $state<string[]>([]);
-
 
 	/**
 	 * 基本情報のみを軽量取得
@@ -56,25 +54,12 @@ export class UnifiedMetadataService {
 		}
 	}
 
-
 	/**
 	 * 画像メタデータを取得（キャッシュ対応）
 	 */
 	async getMetadata(imagePath: string): Promise<ImageMetadata> {
 		const entry = await this.getUnifiedEntry(imagePath);
 		return entry.imageMetadata;
-	}
-
-	/**
-	 * サムネイル情報を取得
-	 */
-	async getThumbnailInfo(imagePath: string): Promise<ThumbnailCacheInfo | undefined> {
-		try {
-			const entry = await this.getUnifiedEntry(imagePath);
-			return entry.thumbnailCacheInfo;
-		} catch {
-			return undefined;
-		}
 	}
 
 	/**
@@ -87,10 +72,8 @@ export class UnifiedMetadataService {
 			const rating = metadata.rating ?? null;
 			return rating ?? undefined;
 		} catch (error) {
-			console.warn('軽量Rating取得に失敗、キャッシュから取得:', imagePath, error);
-			// フォールバック: キャッシュから取得
-			const cacheInfo = await this.getThumbnailInfo(imagePath);
-			return cacheInfo?.rating;
+			console.warn('軽量Rating取得に失敗:', imagePath, error);
+			return undefined;
 		}
 	}
 
@@ -107,7 +90,7 @@ export class UnifiedMetadataService {
 		// ロック取得（配列に追加）
 		this.writingFilesArray.push(imagePath);
 
-		console.log("🐓🐓🐓")
+		console.log('🐓🐓🐓');
 
 		try {
 			await invoke('write_xmp_image_rating', {
@@ -115,7 +98,7 @@ export class UnifiedMetadataService {
 				rating: newRating
 			});
 
-			console.log("🐓🐓🐓🐓🐓🐓🐓🐓🐓")
+			console.log('🐓🐓🐓🐓🐓🐓🐓🐓🐓');
 
 			// ファイル変更によりキャッシュを無効化（次回アクセス時に新しいハッシュで再読み込み）
 			this.invalidateMetadata(imagePath);
@@ -182,23 +165,12 @@ export class UnifiedMetadataService {
 		// 統合エントリを作成
 		const entry: UnifiedMetadataEntry = {
 			imageMetadata,
-			thumbnailCacheInfo: undefined, // 必要時に個別設定
 			fileInfo,
 			cachedAt: Date.now()
 		};
 
 		this.cache.set(imagePath, entry);
 		return entry;
-	}
-
-	/**
-	 * サムネイルキャッシュ情報を設定（GridPageからの呼び出し用）
-	 */
-	setThumbnailCacheInfo(imagePath: string, cacheInfo: ThumbnailCacheInfo): void {
-		const entry = this.cache.get(imagePath);
-		if (entry) {
-			entry.thumbnailCacheInfo = cacheInfo;
-		}
 	}
 
 	/**
@@ -220,7 +192,7 @@ export class UnifiedMetadataService {
 	 * 現在のファイル情報を取得
 	 */
 	private async getCurrentFileInfo(imagePath: string): Promise<LightweightFileInfo> {
-		const metadata = await invoke<ImageMetadataInfo>('read_image_metadata', { path: imagePath });
+		await invoke<ImageMetadataInfo>('read_image_metadata', { path: imagePath });
 		return {
 			modifiedTime: Date.now() // TODO: 実際のファイル更新時刻を取得する必要がある
 		};
@@ -247,7 +219,6 @@ export class UnifiedMetadataService {
 		this.loadingPromises.delete(imagePath);
 	}
 
-
 	/**
 	 * メタデータを更新
 	 */
@@ -270,10 +241,10 @@ export class UnifiedMetadataService {
 	async waitForAllRatingWrites(): Promise<void> {
 		let maxWait = 50; // 5秒の最大待機時間
 		while (this.writingFilesArray.length > 0 && maxWait > 0) {
-			await new Promise(resolve => setTimeout(resolve, 100));
+			await new Promise((resolve) => setTimeout(resolve, 100));
 			maxWait--;
 		}
-		
+
 		if (this.writingFilesArray.length > 0) {
 			console.warn('Rating書き込み処理のタイムアウト:', this.writingFilesArray);
 			// 強制的にクリア（安全のため）
@@ -323,7 +294,6 @@ export class UnifiedMetadataService {
 		}
 		return await this.getMetadata(imagePath);
 	}
-
 }
 
 /**

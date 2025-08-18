@@ -3,7 +3,7 @@
 	import CameraInfoSection from './components/metadata/CameraInfoSection.svelte';
 	import SdParamsSection from './components/metadata/SdParamsSection.svelte';
 	import type { ImageMetadata } from './image/types';
-	import { unifiedMetadataService } from './services/unified-metadata-service.svelte';
+	import { metadataService } from './services/metadata-service.svelte';
 
 	const {
 		metadata,
@@ -23,7 +23,7 @@
 	const updateRating = async (rating: number) => {
 		if (!imagePath) return;
 
-		const success = await unifiedMetadataService.updateImageRating(imagePath, rating);
+		const success = await metadataService.updateImageRating(imagePath, rating);
 		if (success) {
 			// Rating更新成功時のコールバック実行
 			onRatingUpdate?.();

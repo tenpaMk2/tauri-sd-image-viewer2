@@ -3,7 +3,7 @@ import { writable } from 'svelte/store';
 import type { ImageMetadata } from '../image/types';
 import { getDirectoryFromPath, isDirectory, isImageFile } from '../image/utils';
 import type { AsyncThumbnailQueue } from '../services/async-thumbnail-queue';
-import { unifiedMetadataService } from '../services/unified-metadata-service.svelte';
+import { metadataService } from '../services/metadata-service.svelte';
 import type { ViewMode } from '../ui/types';
 
 export type AppState = {
@@ -78,7 +78,7 @@ const openFileDialog = async (): Promise<void> => {
 			// ファイル選択でビューアーモードに移行する時は、サムネイル生成キューを停止
 			stopActiveQueue();
 
-			const imageMetadata = await unifiedMetadataService.getMetadata(selected);
+			const imageMetadata = await metadataService.getMetadata(selected);
 			const selectedDirectory = await getDirectoryFromPath(selected);
 
 			appState.update((state) => ({
@@ -114,7 +114,7 @@ const openDirectoryDialog = async (): Promise<void> => {
 };
 
 const updateSelectedImage = async (imagePath: string): Promise<void> => {
-	const newMetadata = await unifiedMetadataService.checkAndRefreshIfChanged(imagePath);
+	const newMetadata = await metadataService.checkAndRefreshIfChanged(imagePath);
 
 	appState.update((state) => ({
 		...state,
@@ -129,7 +129,7 @@ const handleImageChange = async (newPath: string): Promise<void> => {
 
 const handleSwitchToGrid = async (): Promise<void> => {
 	// Rating書き込み処理を待機（クラッシュ防止）
-	await unifiedMetadataService.waitForAllRatingWrites();
+	await metadataService.waitForAllRatingWrites();
 
 	// グリッドモードに戻る時は、前のキューが動いていても継続させる
 	appState.update((state) => ({
@@ -140,7 +140,7 @@ const handleSwitchToGrid = async (): Promise<void> => {
 
 const handleImageSelect = async (imagePath: string): Promise<void> => {
 	// Rating書き込み処理を待機（クラッシュ防止）
-	await unifiedMetadataService.waitForAllRatingWrites();
+	await metadataService.waitForAllRatingWrites();
 
 	// ビューアーモードに切り替える時は、サムネイル生成キューを停止
 	stopActiveQueue();
@@ -154,7 +154,7 @@ const handleImageSelect = async (imagePath: string): Promise<void> => {
 
 const handleBackToGrid = async (): Promise<void> => {
 	// Rating書き込み処理を待機（クラッシュ防止）
-	await unifiedMetadataService.waitForAllRatingWrites();
+	await metadataService.waitForAllRatingWrites();
 
 	appState.update((state) => ({
 		...state,
@@ -164,7 +164,7 @@ const handleBackToGrid = async (): Promise<void> => {
 
 const handleBackToWelcome = async (): Promise<void> => {
 	// Rating書き込み処理を待機（クラッシュ防止）
-	await unifiedMetadataService.waitForAllRatingWrites();
+	await metadataService.waitForAllRatingWrites();
 
 	// ウェルカム画面に戻る時は、サムネイル生成キューを停止してクリア
 	clearActiveQueue();
@@ -179,7 +179,7 @@ const refreshCurrentImageMetadata = async (): Promise<void> => {
 	})();
 
 	if (currentImagePath) {
-		const refreshedMetadata = await unifiedMetadataService.refreshMetadata(currentImagePath);
+		const refreshedMetadata = await metadataService.refreshMetadata(currentImagePath);
 		appState.update((state) => ({
 			...state,
 			imageMetadata: refreshedMetadata
@@ -203,7 +203,7 @@ const handleDroppedPaths = async (paths: string[]): Promise<void> => {
 		} else if (isImageFile(firstPath)) {
 			stopActiveQueue();
 
-			const imageMetadata = await unifiedMetadataService.getMetadata(firstPath);
+			const imageMetadata = await metadataService.getMetadata(firstPath);
 			const selectedDirectory = await getDirectoryFromPath(firstPath);
 
 			appState.update((state) => ({

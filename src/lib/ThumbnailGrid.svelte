@@ -1,9 +1,9 @@
 <script lang="ts">
 	import ImageThumbnail from './ImageThumbnail.svelte';
+	import { metadataService } from './services/metadata-service.svelte';
 	import type { TagAggregationResult } from './services/tag-aggregation-service';
 	import { TagAggregationService } from './services/tag-aggregation-service';
 	import { thumbnailService } from './services/thumbnail-service.svelte';
-	import { unifiedMetadataService } from './services/unified-metadata-service.svelte';
 	import { filterStore } from './stores/filter-store.svelte';
 
 	const {
@@ -56,7 +56,7 @@
 		const newRatings = new Map(ratings);
 		for (const imagePath of imagePaths) {
 			try {
-				const rating = await unifiedMetadataService.getRating(imagePath);
+				const rating = await metadataService.getRating(imagePath);
 				newRatings.set(imagePath, rating);
 			} catch (error) {
 				console.warn('レーティング取得失敗:', imagePath, error);
@@ -87,7 +87,17 @@
 	// サムネイル数の変化をリアルタイム監視
 	$effect(() => {
 		const thumbnailCount = thumbnailService.thumbnails.size;
-		console.log('=== サムネイル総数変化 === ' + thumbnailCount + ' / ' + imageFiles.length + ' keys: [' + Array.from(thumbnailService.thumbnails.keys()).map(path => path.split('/').pop()).join(', ') + ']');
+		console.log(
+			'=== サムネイル総数変化 === ' +
+				thumbnailCount +
+				' / ' +
+				imageFiles.length +
+				' keys: [' +
+				Array.from(thumbnailService.thumbnails.keys())
+					.map((path) => path.split('/').pop())
+					.join(', ') +
+				']'
+		);
 		console.log(
 			'表示可能なサムネイル:' +
 				Array.from(thumbnailService.thumbnails.keys())
@@ -109,13 +119,15 @@
 		if (imageFiles.length > 0) {
 			// フィルタを適用して表示用の画像リストを更新（同期処理で高速化）
 			const filtered = filterStore.filterImages(imageFiles, ratings, tagAggregationService);
-			
+
 			// 変更があった場合のみ更新
-			if (filtered.length !== filteredImageFiles.length || 
-				!filtered.every((path, index) => path === filteredImageFiles[index])) {
+			if (
+				filtered.length !== filteredImageFiles.length ||
+				!filtered.every((path, index) => path === filteredImageFiles[index])
+			) {
 				filteredImageFiles = filtered;
 				console.log('フィルタ適用結果: ' + filtered.length + ' / ' + imageFiles.length);
-				
+
 				// 親コンポーネントにフィルタ結果を通知
 				if (onFilteredImagesUpdate) {
 					onFilteredImagesUpdate(filtered.length, imageFiles.length);
@@ -127,7 +139,7 @@
 	// 第1段階：画像ファイル一覧の取得とグリッド表示
 	const loadImageFileList = async () => {
 		console.log('=== loadImageFileList 開始 ===', directoryPath);
-		
+
 		if (loadingState.isProcessing) {
 			console.log('サムネイル処理中のため、スキップします');
 			return;
@@ -222,7 +234,7 @@
 	// レーティング更新時の処理
 	const handleRatingUpdate = async (imagePath: string, newRating: number) => {
 		try {
-			const success = await unifiedMetadataService.updateImageRating(imagePath, newRating);
+			const success = await metadataService.updateImageRating(imagePath, newRating);
 			if (success) {
 				ratings.set(imagePath, newRating);
 				ratingUpdateTrigger++; // フィルタを再適用させるためのトリガー
@@ -242,7 +254,7 @@
 			refreshTrigger,
 			lastRefreshTrigger
 		});
-		
+
 		if (directoryPath && refreshTrigger !== lastRefreshTrigger) {
 			lastRefreshTrigger = refreshTrigger;
 			console.log('リフレッシュトリガー発動: ' + directoryPath);

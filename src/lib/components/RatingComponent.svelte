@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { unifiedMetadataService } from '../services/unified-metadata-service.svelte';
+	import { metadataService } from '../services/metadata-service.svelte';
 
 	const {
 		imagePath,
@@ -12,7 +12,7 @@
 	} = $props();
 
 	// Rating書き込み中かどうかをリアクティブにチェック
-	const isRatingWriting = $derived(unifiedMetadataService.currentWritingFiles.includes(imagePath));
+	const isRatingWriting = $derived(metadataService.currentWritingFiles.includes(imagePath));
 
 	let isRatingHovered = $state(false);
 	let hoveredRating = $state(0);
@@ -33,15 +33,15 @@
 
 	const handleRatingClick = async (e: Event, clickedRating: number) => {
 		e.stopPropagation(); // 親要素のクリックイベントを防ぐ
-		
+
 		// 同じ星をクリックした場合は0に戻す、そうでなければ新しいRating値を設定
 		const newRating = (rating || 0) === clickedRating ? 0 : clickedRating;
-		
+
 		if (onRatingChange) {
 			onRatingChange(newRating);
 		} else {
 			// デフォルトの動作：直接サービスを呼び出し
-			await unifiedMetadataService.updateImageRating(imagePath, newRating);
+			await metadataService.updateImageRating(imagePath, newRating);
 		}
 	};
 </script>
@@ -55,7 +55,7 @@
 >
 	{#if isRatingWriting}
 		<!-- Rating書き込み中のスピナー -->
-		<div class="flex items-center gap-1 bg-black/50 px-2 py-1 rounded">
+		<div class="flex items-center gap-1 rounded bg-black/50 px-2 py-1">
 			<span class="loading loading-xs loading-spinner text-white"></span>
 			<span class="text-xs text-white">Saving...</span>
 		</div>

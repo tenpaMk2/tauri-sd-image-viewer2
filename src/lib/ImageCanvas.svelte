@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte';
+	import RatingComponent from './components/RatingComponent.svelte';
 	import {
 		calculateFitScale,
 		createImageViewState,
@@ -11,8 +12,7 @@
 		type ImageViewState
 	} from './image/image-manipulation';
 	import type { ImageMetadata } from './image/types';
-	import RatingComponent from './components/RatingComponent.svelte';
-	import { unifiedMetadataService } from './services/unified-metadata-service.svelte';
+	import { metadataService } from './services/metadata-service.svelte';
 
 	const {
 		imageUrl,
@@ -31,7 +31,6 @@
 		onRatingUpdate?: () => void;
 		isUIVisible?: boolean;
 	} = $props();
-
 
 	let containerRef: HTMLDivElement;
 	let imageRef = $state<HTMLImageElement>();
@@ -86,7 +85,7 @@
 	const handleRatingChange = async (newRating: number) => {
 		if (!imagePath) return;
 
-		const success = await unifiedMetadataService.updateImageRating(imagePath, newRating);
+		const success = await metadataService.updateImageRating(imagePath, newRating);
 		if (success) {
 			// Rating更新成功時のコールバック実行（メタデータ再読み込み）
 			onRatingUpdate?.();
@@ -163,11 +162,7 @@
 	<!-- Rating オーバーレイバー（ズーム時・UI非表示時は非表示） -->
 	{#if imageUrl && metadata.rating !== undefined && viewState.zoomLevel === 1 && isUIVisible && imagePath}
 		<div class="absolute bottom-4 left-1/2 -translate-x-1/2 transform">
-			<RatingComponent 
-				{imagePath} 
-				rating={metadata.rating} 
-				onRatingChange={handleRatingChange}
-			/>
+			<RatingComponent {imagePath} rating={metadata.rating} onRatingChange={handleRatingChange} />
 		</div>
 	{/if}
 </div>

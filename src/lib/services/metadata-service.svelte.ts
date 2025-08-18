@@ -13,7 +13,7 @@ type LightweightFileInfo = {
 /**
  * 統合メタデータキャッシュエントリ
  */
-type UnifiedMetadataEntry = {
+type MetadataEntry = {
 	imageMetadata: ImageMetadata;
 	fileInfo: LightweightFileInfo;
 	cachedAt: number;
@@ -23,9 +23,9 @@ type UnifiedMetadataEntry = {
  * 統合メタデータサービス
  * グリッド表示（サムネイル）とシングル表示（ビューワー）の両方に対応
  */
-export class UnifiedMetadataService {
-	private cache = new Map<string, UnifiedMetadataEntry>();
-	private loadingPromises = new Map<string, Promise<UnifiedMetadataEntry>>();
+export class MetadataService {
+	private cache = new Map<string, MetadataEntry>();
+	private loadingPromises = new Map<string, Promise<MetadataEntry>>();
 	private maxCacheSize = 100;
 
 	// Rating書き込み中のファイルを管理（リアクティブ）
@@ -118,7 +118,7 @@ export class UnifiedMetadataService {
 	/**
 	 * 統合エントリを取得（内部メソッド）
 	 */
-	private async getUnifiedEntry(imagePath: string): Promise<UnifiedMetadataEntry> {
+	private async getUnifiedEntry(imagePath: string): Promise<MetadataEntry> {
 		// 既存キャッシュをチェック
 		const cached = this.cache.get(imagePath);
 		if (cached) {
@@ -150,7 +150,7 @@ export class UnifiedMetadataService {
 	/**
 	 * 統合エントリを読み込んでキャッシュ
 	 */
-	private async loadAndCacheUnifiedEntry(imagePath: string): Promise<UnifiedMetadataEntry> {
+	private async loadAndCacheUnifiedEntry(imagePath: string): Promise<MetadataEntry> {
 		// キャッシュサイズ制限チェック
 		if (this.cache.size >= this.maxCacheSize) {
 			this.evictOldestEntries(20);
@@ -163,7 +163,7 @@ export class UnifiedMetadataService {
 		const imageMetadata = await createImageMetadata(imagePath);
 
 		// 統合エントリを作成
-		const entry: UnifiedMetadataEntry = {
+		const entry: MetadataEntry = {
 			imageMetadata,
 			fileInfo,
 			cachedAt: Date.now()
@@ -299,4 +299,4 @@ export class UnifiedMetadataService {
 /**
  * グローバル統合メタデータサービスインスタンス
  */
-export const unifiedMetadataService = new UnifiedMetadataService();
+export const metadataService = new MetadataService();

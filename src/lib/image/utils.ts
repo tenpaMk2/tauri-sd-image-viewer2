@@ -1,7 +1,7 @@
 import { invoke } from '@tauri-apps/api/core';
 import { basename, dirname } from '@tauri-apps/api/path';
 import { stat } from '@tauri-apps/plugin-fs';
-import { unifiedMetadataService } from '../services/unified-metadata-service.svelte';
+import { metadataService } from '../services/metadata-service.svelte';
 import type { ImageMetadataInfo } from '../types/shared-types';
 import type { ImageMetadata } from './types';
 
@@ -20,7 +20,7 @@ export const createBasicImageInfo = async (
 	const extension = filename.split('.').pop()?.toUpperCase() || '';
 
 	try {
-		const basicInfo = await unifiedMetadataService.getBasicInfo(imagePath);
+		const basicInfo = await metadataService.getBasicInfo(imagePath);
 		const sizeFormatted = formatFileSize(basicInfo.file_size);
 		const dimensions =
 			basicInfo.width > 0 && basicInfo.height > 0

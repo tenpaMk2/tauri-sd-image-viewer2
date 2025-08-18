@@ -5,6 +5,7 @@
 	import { TagAggregationService } from './services/tag-aggregation-service';
 	import { thumbnailService } from './services/thumbnail-service.svelte';
 	import { filterStore } from './stores/filter-store.svelte';
+	import { SvelteMap } from 'svelte/reactivity';
 
 	const {
 		directoryPath,
@@ -40,7 +41,7 @@
 
 	let imageFiles = $state<string[]>([]);
 	let filteredImageFiles = $state<string[]>([]);
-	let ratings = $state<Map<string, number | undefined>>(new Map()); // レーティングキャッシュ
+	let ratings = new SvelteMap<string, number | undefined>(); // リアクティブなレーティングキャッシュ
 	let loadingState = $state<LoadingState>({
 		isLoading: true,
 		isProcessing: false,
@@ -51,19 +52,29 @@
 	let lastRefreshTrigger = $state<number>(-1);
 	let ratingUpdateTrigger = $state<number>(0); // Rating更新をトリガーするためのstate
 
-	// レーティング読み込み関数
+	// レーティング読み込み関数（順次更新方式）
 	const loadRatings = async (imagePaths: string[]) => {
-		const newRatings = new Map(ratings);
+		console.log('=== loadRatings開始 === ' + imagePaths.length + '個のファイル');
 		for (const imagePath of imagePaths) {
+			// 既に取得済みの場合はスキップ
+			if (ratings.has(imagePath)) {
+				console.log('スキップ: ' + imagePath.split('/').pop());
+				continue;
+			}
+
 			try {
+				console.log('取得中: ' + imagePath.split('/').pop());
 				const rating = await metadataService.getRating(imagePath);
-				newRatings.set(imagePath, rating);
+				console.log('取得完了: ' + imagePath.split('/').pop() + ' → ' + JSON.stringify(rating));
+				// 取得完了ごとに即座にSvelteMapを更新（順次表示、自動リアクティブ）
+				ratings.set(imagePath, rating);
+				console.log('SvelteMap更新完了。ratingsサイズ: ' + ratings.size);
 			} catch (error) {
-				console.warn('レーティング取得失敗:', imagePath, error);
-				newRatings.set(imagePath, undefined);
+				console.warn('レーティング取得失敗: ' + imagePath.split('/').pop() + ' ' + error);
+				ratings.set(imagePath, undefined);
 			}
 		}
-		ratings = newRatings;
+		console.log('=== loadRatings完了 ===');
 	};
 
 	// ThumbnailServiceの状態を監視して進捗を同期
@@ -332,13 +343,19 @@
 	<div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8">
 		{#each filteredImageFiles as imagePath (imagePath)}
 			{@const thumbnailUrl = thumbnailService.getThumbnail(imagePath)}
-			{@const rating = ratings.get(imagePath)}
 			{@const isSelected = selectedImages.has(imagePath)}
+			{@const currentRating = ratings.get(imagePath)}
+			{console.log(
+				'📺 ThumbnailGrid描画: ' +
+					imagePath.split('/').pop() +
+					' rating=' +
+					JSON.stringify(currentRating)
+			)}
 
 			<ImageThumbnail
 				{imagePath}
 				{thumbnailUrl}
-				{rating}
+				rating={currentRating}
 				{isSelected}
 				onImageClick={onImageSelect}
 				{onToggleSelection}

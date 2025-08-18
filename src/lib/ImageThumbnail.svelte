@@ -21,9 +21,6 @@
 		onRatingChange?: (imagePath: string, newRating: number) => void;
 	} = $props();
 
-
-
-
 	const handleClick = (event?: MouseEvent): void => {
 		if (onToggleSelection) {
 			onToggleSelection(imagePath, event?.shiftKey, event?.metaKey);
@@ -83,10 +80,6 @@
 
 	<!-- Rating Component -->
 	<div class="absolute bottom-1 left-1/2 -translate-x-1/2">
-		<RatingComponent 
-			{imagePath} 
-			{rating} 
-			onRatingChange={handleRatingChange}
-		/>
+		<RatingComponent {imagePath} {rating} onRatingChange={handleRatingChange} />
 	</div>
 </div>

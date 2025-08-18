@@ -70,9 +70,10 @@ export class MetadataService {
 			// Rust側の統合APIからメタデータを取得してRatingを抽出
 			const metadata = await invoke<ImageMetadataInfo>('read_image_metadata', { path: imagePath });
 			const rating = metadata.rating ?? null;
-			return rating ?? undefined;
+			const result = rating ?? undefined;
+			return result;
 		} catch (error) {
-			console.warn('軽量Rating取得に失敗:', imagePath, error);
+			console.warn('軽量Rating取得に失敗: ' + imagePath + ' ' + error);
 			return undefined;
 		}
 	}

@@ -18,7 +18,19 @@
 	let hoveredRating = $state(0);
 
 	// 表示用のRating値（ホバー中は予想値、それ以外は実際の値）
-	const displayRating = $derived(isRatingHovered ? hoveredRating : rating || 0);
+	const displayRating = $derived(isRatingHovered ? hoveredRating : (rating ?? 0));
+
+	// デバッグログ: ratingの受け取り状況をチェック
+	$effect(() => {
+		console.log(
+			'⭐ RatingComponent: ' +
+				imagePath.split('/').pop() +
+				' rating=' +
+				JSON.stringify(rating) +
+				' displayRating=' +
+				displayRating
+		);
+	});
 
 	// Rating編集関連のハンドラー
 	const handleRatingMouseEnter = (starIndex: number) => {

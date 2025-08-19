@@ -146,6 +146,8 @@
 				imageUrl={appState.viewer.imageUrl}
 				isLoading={appState.viewer.isLoading}
 				error={appState.viewer.error}
+				imagePath={navigationService.files[navigationService.currentIndex]}
+				isUIVisible={appState.viewer.ui.isVisible}
 			/>
 		{/if}
 

@@ -1,7 +1,6 @@
 import { open } from '@tauri-apps/plugin-dialog';
 import { getDirectoryFromPath, isDirectory, isImageFile } from '../image/utils';
 import type { AsyncThumbnailQueue } from '../services/async-thumbnail-queue';
-import { metadataService } from '../services/metadata-service.svelte';
 import type { ViewMode } from '../ui/types';
 import { imageMetadataStore } from './image-metadata-store.svelte';
 
@@ -77,7 +76,7 @@ const openFileDialog = async (): Promise<void> => {
 			console.log('🛑 Active queue stopped');
 
 			// リアクティブメタデータの事前読み込み
-			const reactiveMetadata = metadataService.getReactiveMetadata(selected);
+			const reactiveMetadata = imageMetadataStore.getMetadata(selected);
 			console.log('📊 Reactive metadata created');
 			if (!reactiveMetadata.isLoaded && !reactiveMetadata.isLoading) {
 				console.log('🔄 Loading metadata...');
@@ -118,7 +117,7 @@ const openDirectoryDialog = async (): Promise<void> => {
 
 const updateSelectedImage = async (imagePath: string): Promise<void> => {
 	// リアクティブメタデータの事前読み込み
-	const reactiveMetadata = metadataService.getReactiveMetadata(imagePath);
+	const reactiveMetadata = imageMetadataStore.getMetadata(imagePath);
 	if (!reactiveMetadata.isLoaded && !reactiveMetadata.isLoading) {
 		await reactiveMetadata.load();
 	}
@@ -181,7 +180,7 @@ const handleDroppedPaths = async (paths: string[]): Promise<void> => {
 			stopActiveQueue();
 
 			// リアクティブメタデータの事前読み込み
-			const reactiveMetadata = metadataService.getReactiveMetadata(firstPath);
+			const reactiveMetadata = imageMetadataStore.getMetadata(firstPath);
 			if (!reactiveMetadata.isLoaded && !reactiveMetadata.isLoading) {
 				await reactiveMetadata.load();
 			}

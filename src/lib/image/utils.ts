@@ -1,6 +1,6 @@
 import { basename, dirname } from '@tauri-apps/api/path';
 import { stat } from '@tauri-apps/plugin-fs';
-import { metadataService } from '../services/metadata-service.svelte';
+import { imageMetadataStore } from '../stores/image-metadata-store.svelte';
 import type { ImageMetadata } from './types';
 
 /**
@@ -18,7 +18,7 @@ export const createBasicImageInfo = async (
 	const extension = filename.split('.').pop()?.toUpperCase() || '';
 
 	try {
-		const reactiveMetadata = metadataService.getReactiveMetadata(imagePath);
+		const reactiveMetadata = imageMetadataStore.getMetadata(imagePath);
 		const basicInfo = {
 			file_size: reactiveMetadata.autoFileSize || 0,
 			width: reactiveMetadata.autoWidth || 0,
@@ -65,7 +65,7 @@ export const createImageMetadata = async (imagePath: string): Promise<ImageMetad
 			: 'Unknown';
 
 		// リアクティブメタデータを使用
-		const reactiveMetadata = metadataService.getReactiveMetadata(imagePath);
+		const reactiveMetadata = imageMetadataStore.getMetadata(imagePath);
 
 		const sizeFormatted = formatFileSize(reactiveMetadata.autoFileSize || 0);
 		const dimensions =

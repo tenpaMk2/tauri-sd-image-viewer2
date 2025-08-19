@@ -11,7 +11,7 @@
 		updateDrag,
 		type ImageViewState
 	} from './image/image-manipulation';
-	import { metadataService } from './services/metadata-service.svelte';
+	import { imageMetadataStore } from './stores/image-metadata-store.svelte';
 
 	const {
 		imageUrl,
@@ -50,7 +50,7 @@
 	});
 
 	// リアクティブメタデータを取得（imagePathがある場合のみ）
-	const metadata = $derived(imagePath ? metadataService.getReactiveMetadata(imagePath) : null);
+	const metadata = $derived(imagePath ? imageMetadataStore.getMetadata(imagePath) : null);
 
 	// メタデータの自動読み込み
 	$effect(() => {
@@ -112,7 +112,7 @@
 	const handleRatingChange = async (newRating: number) => {
 		if (!imagePath) return;
 
-		const reactiveMetadata = metadataService.getReactiveMetadata(imagePath);
+		const reactiveMetadata = imageMetadataStore.getMetadata(imagePath);
 		await reactiveMetadata.updateRating(newRating);
 		// リアクティブシステムにより自動的にUIが更新されます
 	};
@@ -202,7 +202,7 @@
 	{#if imageUrl && imagePath && viewState.zoomLevel === 1 && isUIVisible}
 		<div class="absolute bottom-4 left-1/2 -translate-x-1/2 transform">
 			<RatingComponent
-				metadata={metadataService.getReactiveMetadata(imagePath)}
+				metadata={imageMetadataStore.getMetadata(imagePath)}
 				onRatingChange={handleRatingChange}
 			/>
 		</div>

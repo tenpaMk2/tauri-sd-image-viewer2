@@ -1,10 +1,10 @@
 <script lang="ts">
 	import ImageThumbnail from './ImageThumbnail.svelte';
-	import { metadataService } from './services/metadata-service.svelte';
 	import type { TagAggregationResult } from './services/tag-aggregation-service';
 	import { TagAggregationService } from './services/tag-aggregation-service';
 	import { thumbnailService } from './services/thumbnail-service.svelte';
 	import { filterStore } from './stores/filter-store.svelte';
+	import { imageMetadataStore } from './stores/image-metadata-store.svelte';
 
 	const {
 		directoryPath,
@@ -131,7 +131,7 @@
 
 			// レーティングフィルタ（フィルターが有効な場合のみ）
 			if (filterStore.state.isActive && filterStore.state.targetRating !== null) {
-				const metadata = metadataService.getReactiveMetadata(imagePath);
+				const metadata = imageMetadataStore.getMetadata(imagePath);
 				const rating = metadata.rating ?? 0;
 				const target = filterStore.state.targetRating;
 				const comparison = filterStore.state.ratingComparison;
@@ -230,7 +230,7 @@
 
 			// 第4段階：メタデータを事前読み込み（新しいストア使用）
 			console.log('メタデータを事前読み込み開始');
-			metadataService.preloadMetadata(imageFiles);
+			imageMetadataStore.preloadMetadata(imageFiles);
 		} catch (err) {
 			loadingState.error = err instanceof Error ? err.message : 'Failed to load image files';
 			console.error('Failed to load image files: ' + err);
@@ -284,7 +284,7 @@
 			console.log('リフレッシュトリガー発動: ' + directoryPath);
 
 			// 古いメタデータをクリア
-			metadataService.clearAllMetadata();
+			imageMetadataStore.clearAll();
 
 			loadImageFileList();
 		}
@@ -296,7 +296,7 @@
 			// サムネイル生成を停止
 			thumbnailService.stop();
 			// 未使用メタデータをクリア
-			metadataService.clearUnusedMetadata([]);
+			imageMetadataStore.clearUnused([]);
 		};
 	});
 </script>
@@ -356,7 +356,7 @@
 		{#each filteredImageFiles as imagePath (imagePath)}
 			{@const thumbnailUrl = thumbnailService.getThumbnail(imagePath)}
 			{@const isSelected = selectedImages.has(imagePath)}
-			{@const metadata = metadataService.getReactiveMetadata(imagePath)}
+			{@const metadata = imageMetadataStore.getMetadata(imagePath)}
 
 			<ImageThumbnail
 				{imagePath}

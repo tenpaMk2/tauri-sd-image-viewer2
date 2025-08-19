@@ -2,7 +2,7 @@
 	import BasicInfoSection from './components/metadata/BasicInfoSection.svelte';
 	import SdParamsSection from './components/metadata/SdParamsSection.svelte';
 	import XmpSection from './components/metadata/XmpSection.svelte';
-	import { metadataService } from './services/metadata-service.svelte';
+	import { imageMetadataStore } from './stores/image-metadata-store.svelte';
 
 	const {
 		imagePath,
@@ -18,7 +18,7 @@
 	const metadata = $derived.by(() => {
 		if (!imagePath) return null;
 		console.log('📊 [MetadataPanel] Getting reactive metadata for: ' + imagePath.split('/').pop());
-		return metadataService.getReactiveMetadata(imagePath);
+		return imageMetadataStore.getMetadata(imagePath);
 	});
 
 	// BasicInfoSection用の変換されたデータ

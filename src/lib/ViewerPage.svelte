@@ -6,8 +6,8 @@
 	import ImageCanvas from './ImageCanvas.svelte';
 	import MetadataPanel from './MetadataPanel.svelte';
 	import NavigationButtons from './NavigationButtons.svelte';
-	import { metadataService } from './services/metadata-service.svelte';
 	import { navigationService } from './services/navigation-service.svelte';
+	import { imageMetadataStore } from './stores/image-metadata-store.svelte';
 	import { showInfoToast, showSuccessToast } from './stores/toast.svelte';
 	import ToolbarOverlay from './ToolbarOverlay.svelte';
 
@@ -27,7 +27,7 @@
 	let reactiveMetadata = $derived.by(() => {
 		if (!imagePath) return null;
 		console.log('📊 Getting reactive metadata for: ' + imagePath.split('/').pop());
-		return metadataService.getReactiveMetadata(imagePath);
+		return imageMetadataStore.getMetadata(imagePath);
 	});
 
 	// デバッグ: ViewerPage初期化ログ

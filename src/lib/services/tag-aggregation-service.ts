@@ -3,8 +3,8 @@
  * ディレクトリ内の全画像からSDタグを抽出・集計する
  */
 
+import { imageMetadataStore } from '../stores/image-metadata-store.svelte';
 import type { SdTag } from '../types/shared-types';
-import { metadataService } from './metadata-service.svelte';
 import type { ThumbnailService } from './thumbnail-service.svelte';
 
 export type TagCount = {
@@ -40,7 +40,7 @@ export class TagAggregationService {
 		// 各画像ファイルからSDパラメータを取得してタグを集計
 		for (const imagePath of imagePaths) {
 			try {
-				const metadata = metadataService.getReactiveMetadata(imagePath);
+				const metadata = imageMetadataStore.getMetadata(imagePath);
 
 				if (metadata?.autoSdParameters) {
 					// タグ情報をキャッシュに保存
@@ -177,7 +177,7 @@ export class TagAggregationService {
 		}
 
 		try {
-			const metadata = metadataService.getReactiveMetadata(imagePath);
+			const metadata = imageMetadataStore.getMetadata(imagePath);
 			if (!metadata?.autoSdParameters) return false;
 
 			// 正規化されたタグ名の配列を作成（positive + negative）

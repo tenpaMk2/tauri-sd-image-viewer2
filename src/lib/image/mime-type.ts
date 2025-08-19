@@ -1,5 +1,12 @@
 import { path } from '@tauri-apps/api';
-import type { MimeType } from './types';
+
+export type MimeType =
+	| 'image/jpeg'
+	| 'image/png'
+	| 'image/webp'
+	| 'image/gif'
+	| 'image/bmp'
+	| 'image/avif';
 
 export const SUPPORTED_IMAGE_EXTS = [
 	'jpg',

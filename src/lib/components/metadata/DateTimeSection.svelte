@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { ImageMetadata } from '../../image/types';
+	import type { ImageMetadata } from '../../image/utils';
 
 	const {
 		metadata

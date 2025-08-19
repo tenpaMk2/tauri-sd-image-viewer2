@@ -1,7 +1,12 @@
 import { join } from '@tauri-apps/api/path';
 import { readDir, readFile } from '@tauri-apps/plugin-fs';
-import { detectImageMimeType, SUPPORTED_IMAGE_EXTS } from './mime-type';
-import type { ImageData, MimeType } from './types';
+import { detectImageMimeType, SUPPORTED_IMAGE_EXTS, type MimeType } from './mime-type';
+
+export type ImageData = {
+	url: string;
+	mimeType: MimeType;
+	filePath: string;
+};
 
 /**
  * ディレクトリ内の画像ファイル一覧を取得
@@ -58,4 +63,3 @@ export const loadImage = async (filePath: string): Promise<ImageData> => {
 		throw new Error(`Failed to load image: ${filePath}`);
 	}
 };
-

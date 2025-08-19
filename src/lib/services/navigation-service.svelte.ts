@@ -1,6 +1,5 @@
 import { dirname } from '@tauri-apps/api/path';
-import { getImageFiles, loadImage } from '../image/image-loader';
-import type { ImageData } from '../image/types';
+import { getImageFiles, loadImage, type ImageData } from '../image/image-loader';
 
 export type NavigationState = {
 	files: string[];

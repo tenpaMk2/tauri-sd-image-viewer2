@@ -1,7 +1,21 @@
 import { basename, dirname } from '@tauri-apps/api/path';
 import { stat } from '@tauri-apps/plugin-fs';
 import { imageMetadataStore } from '../stores/image-metadata-store.svelte';
-import type { ImageMetadata } from './types';
+import type { SdParameters } from '../types/shared-types';
+
+export type ImageMetadata = {
+	filename: string;
+	size: string;
+	dimensions: string;
+	format: string;
+	created: string;
+	modified: string;
+	camera?: string;
+	lens?: string;
+	settings?: string;
+	sdParameters?: SdParameters;
+	rating?: number; // XMP rating from shared-types
+};
 
 /**
  * 基本情報のみを軽量作成（サムネイル用）

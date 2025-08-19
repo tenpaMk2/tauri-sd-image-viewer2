@@ -1,9 +1,9 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte';
-	import type { ImageMetadata } from '../../image/types';
+	import type { ImageMetadata } from '../../image/utils';
+	import { showSuccessToast } from '../../stores/toast.svelte';
 	import { formatSdTags } from '../../utils/image-utils';
 	import { copyToClipboard } from '../../utils/ui-utils';
-	import { showSuccessToast } from '../../stores/toast.svelte';
 
 	const {
 		metadata

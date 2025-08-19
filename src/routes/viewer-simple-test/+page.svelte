@@ -75,7 +75,6 @@
 				onImageChange={actions.handleImageChange}
 				openFileDialog={actions.openFileDialog}
 				onSwitchToGrid={state.selectedDirectory ? actions.handleSwitchToGrid : undefined}
-				refreshMetadata={actions.refreshCurrentImageMetadata}
 			/>
 		{/if}
 	</main>

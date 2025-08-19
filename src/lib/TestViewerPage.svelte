@@ -6,13 +6,11 @@
 	const {
 		imagePath,
 		onImageChange,
-		refreshMetadata,
 		openFileDialog,
 		onSwitchToGrid
 	}: {
 		imagePath: string;
 		onImageChange?: (newPath: string) => Promise<void>;
-		refreshMetadata?: () => Promise<void>;
 		openFileDialog?: () => void;
 		onSwitchToGrid?: () => Promise<void>;
 	} = $props();
@@ -75,20 +73,6 @@
 				(error || 'empty')
 		);
 	});
-
-	// Rating更新用の軽量メタデータ再読み込み（画像は再読み込みしない）
-	const refreshMetadataOnly = async (): Promise<void> => {
-		if (refreshMetadata) {
-			// 軽量なメタデータ更新を実行
-			await refreshMetadata();
-		} else {
-			// fallback: 従来の方法
-			const currentPath = navigationState.files[navigationState.currentIndex];
-			if (currentPath && onImageChange) {
-				await onImageChange(currentPath);
-			}
-		}
-	};
 
 	// NavigationServiceを使用した画像読み込み処理
 	const loadCurrentImage = async (path: string): Promise<void> => {
@@ -261,7 +245,7 @@
 			</div>
 		{/if}
 
-		<ImageCanvas {imageUrl} {isLoading} {error} onRatingUpdate={() => refreshMetadataOnly()} />
+		<ImageCanvas {imageUrl} {isLoading} {error} />
 	</div>
 
 	<!-- デバッグ情報パネル -->
@@ -274,7 +258,6 @@
 				<div class="space-y-1 text-sm">
 					<p>imagePath: {imagePath ? imagePath.split('/').pop() : 'null'}</p>
 					<p>onImageChange: {onImageChange ? 'provided' : 'null'}</p>
-					<p>refreshMetadata: {refreshMetadata ? 'provided' : 'null'}</p>
 					<p>openFileDialog: {openFileDialog ? 'provided' : 'null'}</p>
 					<p>onSwitchToGrid: {onSwitchToGrid ? 'provided' : 'null'}</p>
 				</div>
@@ -309,13 +292,6 @@
 			<div>
 				<h4 class="font-semibold">Test Actions:</h4>
 				<div class="space-y-2">
-					<button
-						class="btn w-full btn-outline btn-sm"
-						onclick={() => refreshMetadataOnly()}
-						disabled={!refreshMetadata}
-					>
-						🔄 Test Metadata Refresh
-					</button>
 					<button
 						class="btn w-full btn-sm btn-primary"
 						onclick={() => openFileDialog?.()}

@@ -18,14 +18,12 @@
 		isLoading,
 		error,
 		imagePath,
-		onRatingUpdate,
 		isUIVisible = true
 	}: {
 		imageUrl: string;
 		isLoading: boolean;
 		error: string;
 		imagePath?: string;
-		onRatingUpdate?: () => void;
 		isUIVisible?: boolean;
 	} = $props();
 
@@ -36,14 +34,14 @@
 		const loading = isLoading;
 		const err = error;
 		const path = imagePath;
-		
+
 		console.log('📊 ImageCanvas props updated:', {
 			imageUrl: url ? `${url.substring(0, 20)}...` : 'null',
 			isLoading: loading,
 			error: err || 'empty',
 			imagePath: path ? path.split('/').pop() : 'null'
 		});
-		
+
 		console.log('🎯 ImageCanvas conditions will be:', {
 			hasError: !!(err && err.length > 0),
 			hasImageUrl: !!(url && url.length > 0),
@@ -115,11 +113,8 @@
 		if (!imagePath) return;
 
 		const reactiveMetadata = metadataService.getReactiveMetadata(imagePath);
-		const success = await reactiveMetadata.updateRating(newRating);
-		if (success) {
-			// Rating更新成功時のコールバック実行（メタデータ再読み込み）
-			onRatingUpdate?.();
-		}
+		await reactiveMetadata.updateRating(newRating);
+		// リアクティブシステムにより自動的にUIが更新されます
 	};
 
 	// ズームリセット機能
@@ -147,7 +142,12 @@
 	onmouseup={handleMouseUp}
 	onmouseleave={handleMouseUp}
 >
-	{console.log('🎯 ImageCanvas condition check:', { error: error || 'empty', errorType: typeof error, imageUrl: imageUrl ? 'exists' : 'null', isLoading })}
+	{console.log('🎯 ImageCanvas condition check:', {
+		error: error || 'empty',
+		errorType: typeof error,
+		imageUrl: imageUrl ? 'exists' : 'null',
+		isLoading
+	})}
 	{#if error && error.length > 0}
 		{console.log('❌ ImageCanvas: Showing error')}
 		<div class="flex flex-col items-center gap-2 text-red-400">
@@ -201,7 +201,10 @@
 	<!-- Rating オーバーレイバー（ズーム時・UI非表示時は非表示） -->
 	{#if imageUrl && imagePath && viewState.zoomLevel === 1 && isUIVisible}
 		<div class="absolute bottom-4 left-1/2 -translate-x-1/2 transform">
-			<RatingComponent metadata={metadataService.getReactiveMetadata(imagePath)} onRatingChange={handleRatingChange} />
+			<RatingComponent
+				metadata={metadataService.getReactiveMetadata(imagePath)}
+				onRatingChange={handleRatingChange}
+			/>
 		</div>
 	{/if}
 </div>

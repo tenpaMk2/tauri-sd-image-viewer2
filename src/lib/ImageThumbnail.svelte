@@ -9,8 +9,7 @@
 		isSelected = false,
 		isLoading = false,
 		onImageClick,
-		onToggleSelection,
-		onRatingUpdate
+		onToggleSelection
 	}: {
 		imagePath: string;
 		thumbnailUrl?: string;
@@ -19,7 +18,6 @@
 		isLoading?: boolean;
 		onImageClick: (imagePath: string) => void;
 		onToggleSelection?: (imagePath: string, shiftKey?: boolean, metaKey?: boolean) => void;
-		onRatingUpdate?: () => void;
 	} = $props();
 
 	const handleClick = (event?: MouseEvent): void => {
@@ -41,9 +39,7 @@
 
 	const handleRatingChange = async (newRating: number) => {
 		await metadata.updateRating(newRating);
-		if (onRatingUpdate) {
-			onRatingUpdate();
-		}
+		// リアクティブシステムにより自動的にUIが更新されます
 	};
 </script>
 

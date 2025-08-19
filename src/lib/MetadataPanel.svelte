@@ -6,12 +6,10 @@
 
 	const {
 		imagePath,
-		onRatingUpdate,
 		onFocus,
 		onBlur
 	}: {
 		imagePath: string;
-		onRatingUpdate?: () => void;
 		onFocus?: () => void;
 		onBlur?: () => void;
 	} = $props();

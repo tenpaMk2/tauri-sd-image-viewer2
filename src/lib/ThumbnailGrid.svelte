@@ -48,7 +48,6 @@
 		totalCount: 0
 	});
 	let lastRefreshTrigger = $state<number>(-1);
-	let ratingUpdateTrigger = $state<number>(0); // フィルタ再適用用トリガー
 
 	// ThumbnailServiceの状態を監視して進捗を同期
 	$effect(() => {
@@ -97,8 +96,6 @@
 		filterStore.state.ratingComparison;
 		filterStore.state.filenamePattern;
 		filterStore.state.selectedTags;
-		// レーティング更新も監視
-		ratingUpdateTrigger;
 
 		if (imageFiles.length > 0) {
 			// 新しいストアベースのフィルタ適用
@@ -368,9 +365,6 @@
 				{isSelected}
 				onImageClick={onImageSelect}
 				{onToggleSelection}
-				onRatingUpdate={() => {
-					ratingUpdateTrigger++; // フィルタ再適用をトリガー
-				}}
 			/>
 		{/each}
 	</div>

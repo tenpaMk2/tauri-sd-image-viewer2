@@ -1,9 +1,9 @@
 import { open } from '@tauri-apps/plugin-dialog';
 import { getDirectoryFromPath, isDirectory, isImageFile } from '../image/utils';
 import type { AsyncThumbnailQueue } from '../services/async-thumbnail-queue';
-import { imageMetadataStore } from './image-metadata-store.svelte';
 import { metadataService } from '../services/metadata-service.svelte';
 import type { ViewMode } from '../ui/types';
+import { imageMetadataStore } from './image-metadata-store.svelte';
 
 export type AppState = {
 	viewMode: ViewMode;
@@ -20,7 +20,6 @@ export type AppActions = {
 	handleImageSelect: (imagePath: string) => Promise<void>;
 	handleBackToGrid: () => Promise<void>;
 	handleBackToWelcome: () => Promise<void>;
-	refreshCurrentImageMetadata: () => Promise<void>;
 	handleDroppedPaths: (paths: string[]) => Promise<void>;
 };
 
@@ -168,17 +167,6 @@ const handleBackToWelcome = async (): Promise<void> => {
 	appState.selectedDirectory = null;
 };
 
-const refreshCurrentImageMetadata = async (): Promise<void> => {
-	const currentImagePath = appState.selectedImagePath;
-
-	if (currentImagePath) {
-		const reactiveMetadata = metadataService.getReactiveMetadata(currentImagePath);
-		// リフレッシュ実行
-		await reactiveMetadata.forceReload();
-		// リアクティブシステムでは自動更新されるため、状態更新は不要
-	}
-};
-
 const handleDroppedPaths = async (paths: string[]): Promise<void> => {
 	if (paths.length === 0) return;
 
@@ -209,7 +197,9 @@ const handleDroppedPaths = async (paths: string[]): Promise<void> => {
 };
 
 export const appStore = {
-	get state() { return appState; },
+	get state() {
+		return appState;
+	},
 	actions: {
 		openFileDialog,
 		openDirectoryDialog,
@@ -219,7 +209,6 @@ export const appStore = {
 		handleImageSelect,
 		handleBackToGrid,
 		handleBackToWelcome,
-		refreshCurrentImageMetadata,
 		handleDroppedPaths
 	}
 };

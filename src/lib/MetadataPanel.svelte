@@ -1,7 +1,7 @@
 <script lang="ts">
 	import BasicInfoSection from './components/metadata/BasicInfoSection.svelte';
-	import CameraInfoSection from './components/metadata/CameraInfoSection.svelte';
 	import SdParamsSection from './components/metadata/SdParamsSection.svelte';
+	import XmpSection from './components/metadata/XmpSection.svelte';
 	import { metadataService } from './services/metadata-service.svelte';
 
 	const {
@@ -95,7 +95,9 @@
 		<div class="metadata-content space-y-3">
 			<BasicInfoSection metadata={basicInfo} />
 			<SdParamsSection metadata={basicInfo} />
-			<CameraInfoSection metadata={basicInfo} />
+			{#if metadata}
+				<XmpSection {metadata} />
+			{/if}
 		</div>
 	</div>
 </div>

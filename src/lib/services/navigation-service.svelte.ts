@@ -7,7 +7,7 @@ export type NavigationState = {
 	isNavigating: boolean;
 };
 
-export class ImageCacheManager {
+class ImageCacheManager {
 	private cache = new Map<string, string>();
 	private preloadingPromises = new Map<string, Promise<string>>();
 	private maxCacheSize = 50;

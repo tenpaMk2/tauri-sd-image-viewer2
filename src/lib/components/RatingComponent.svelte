@@ -10,7 +10,7 @@
 	} = $props();
 
 	// Rating書き込み中かどうかの状態（新しいストアでは簡略化）
-	const isRatingWriting = $derived(metadata.isLoading);
+	const isLoading = $derived(metadata.isLoading);
 
 	let isRatingHovered = $state(false);
 	let hoveredRating = $state(0);
@@ -32,22 +32,22 @@
 		);
 	});
 
-	// Rating編集関連のハンドラー
-	const handleRatingMouseEnter = (starIndex: number) => {
-		isRatingHovered = true;
-		hoveredRating = starIndex;
-	};
-
-	const handleRatingMouseLeave = () => {
+	const onmouseleave = () => {
 		isRatingHovered = false;
 		hoveredRating = 0;
 	};
 
-	const handleRatingClick = async (e: Event, clickedRating: number) => {
+	// Rating編集関連のハンドラー
+	const handleStarMouseEnter = (starIndex: number) => {
+		isRatingHovered = true;
+		hoveredRating = starIndex;
+	};
+
+	const handleStarClick = async (e: Event, clickedRating: number) => {
 		e.stopPropagation(); // 親要素のクリックイベントを防ぐ
 
 		// 同じ星をクリックした場合は0に戻す、そうでなければ新しいRating値を設定
-		const newRating = (metadata.autoRating || 0) === clickedRating ? 0 : clickedRating;
+		const newRating = (metadata.autoRating ?? 0) === clickedRating ? 0 : clickedRating;
 
 		if (onRatingChange) {
 			onRatingChange(newRating);
@@ -59,17 +59,12 @@
 </script>
 
 <!-- Rating Overlay Component -->
-<div
-	class="rounded bg-black/30 px-1 py-0.5"
-	role="group"
-	aria-label="Image Rating"
-	onmouseleave={handleRatingMouseLeave}
->
-	{#if isRatingWriting}
-		<!-- Rating書き込み中のスピナー -->
+<div class="rounded bg-black/30 px-1 py-0.5" role="group" aria-label="Image Rating" {onmouseleave}>
+	{#if isLoading}
+		<!-- メタデータロード中のスピナー -->
 		<div class="flex items-center gap-1 rounded bg-black/50 px-2 py-1">
 			<span class="loading loading-xs loading-spinner text-white"></span>
-			<span class="text-xs text-white">Saving...</span>
+			<span class="text-xs text-white">Loading...</span>
 		</div>
 	{:else}
 		<!-- 通常のRating表示 -->
@@ -79,8 +74,8 @@
 					class="text-sm transition-colors duration-100 hover:scale-110 {i < displayRating
 						? 'text-white'
 						: 'text-white/30'}"
-					onmouseenter={() => handleRatingMouseEnter(i + 1)}
-					onclick={(e) => handleRatingClick(e, i + 1)}
+					onmouseenter={() => handleStarMouseEnter(i + 1)}
+					onclick={(e) => handleStarClick(e, i + 1)}
 					style="text-shadow: 0 1px 2px rgba(0,0,0,0.8);"
 					aria-label={`${i + 1} star rating`}
 				>

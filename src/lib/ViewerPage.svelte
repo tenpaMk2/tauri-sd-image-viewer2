@@ -8,9 +8,11 @@
 	import NavigationButtons from './NavigationButtons.svelte';
 	import { navigationService } from './services/navigation-service.svelte';
 	import { appStore } from './stores/app-store.svelte';
-	import { imageMetadataStore } from './stores/image-metadata-store.svelte';
 	import { showInfoToast, showSuccessToast } from './stores/toast.svelte';
 	import ToolbarOverlay from './ToolbarOverlay.svelte';
+
+	const INFO_PANEL_MIN_WIDTH = 280;
+	const INFO_PANEL_MAX_WIDTH = 600;
 
 	const {
 		imagePath,
@@ -27,27 +29,21 @@
 	// app-storeから状態とアクションを取得
 	const { state: appState, actions } = appStore;
 
-	// メタデータを$derivedで取得
-	let reactiveMetadata = $derived.by(() => {
-		if (!imagePath) return null;
-		console.log('📊 Getting reactive metadata for: ' + imagePath.split('/').pop());
-		return imageMetadataStore.getMetadata(imagePath);
-	});
-
 	// プラットフォーム判定
-	let isMacOS = $state(false);
+	let isMacOs = $state(false);
 
-	// 一回限りの初期化処理
+	// プラットフォーム判定（一回だけ実行）
 	onMount(async () => {
-		// プラットフォーム判定（一回だけ実行）
 		try {
 			const platformName = await platform();
-			isMacOS = platformName === 'macos';
+			isMacOs = platformName === 'macos';
 		} catch (error) {
 			console.error('Failed to get platform: ' + error);
 		}
+	});
 
-		// navigationServiceを初期化
+	// navigationService初期化（imagePath依存）
+	onMount(async () => {
 		if (imagePath) {
 			console.log('🔄 Initializing navigationService with: ' + imagePath.split('/').pop());
 			await navigationService.initializeNavigation(imagePath);
@@ -177,7 +173,7 @@
 								showInfoToast('Failed to copy image to clipboard');
 							}
 						}}
-						{isMacOS}
+						isMacOS={isMacOs}
 					/>
 				</div>
 
@@ -212,7 +208,7 @@
 			<button
 				type="button"
 				class="absolute top-0 bottom-0 left-0 w-1 cursor-col-resize bg-base-300 transition-colors hover:bg-primary"
-				onmousedown={(e) => actions.handleResize(e, 280, 600)}
+				onmousedown={(e) => actions.handleResize(e, INFO_PANEL_MIN_WIDTH, INFO_PANEL_MAX_WIDTH)}
 				aria-label="Resize panel"
 			></button>
 

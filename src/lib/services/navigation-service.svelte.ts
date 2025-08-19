@@ -85,10 +85,77 @@ export class ImageCacheManager {
 			this.cache.delete(path);
 		}
 	}
+
+	get cacheSize(): number {
+		return this.cache.size;
+	}
 }
 
+/**
+ * リアクティブナビゲーションサービス
+ * Svelte 5の$stateを使用してナビゲーション状態をリアクティブに管理
+ */
 export class NavigationService {
 	private cacheManager = new ImageCacheManager();
+
+	// リアクティブな状態
+	private _navigationState = $state<NavigationState>({
+		files: [],
+		currentIndex: 0,
+		isNavigating: false
+	});
+
+	/**
+	 * 現在のナビゲーション状態（読み取り専用）
+	 */
+	get navigationState(): NavigationState {
+		return this._navigationState;
+	}
+
+	/**
+	 * 現在のファイルリスト
+	 */
+	get files(): string[] {
+		return this._navigationState.files;
+	}
+
+	/**
+	 * 現在のインデックス
+	 */
+	get currentIndex(): number {
+		return this._navigationState.currentIndex;
+	}
+
+	/**
+	 * ナビゲーション中かどうか
+	 */
+	get isNavigating(): boolean {
+		return this._navigationState.isNavigating;
+	}
+
+	/**
+	 * 現在の画像パス
+	 */
+	get currentImagePath(): string | null {
+		if (this._navigationState.files.length === 0 || this._navigationState.currentIndex < 0) {
+			return null;
+		}
+		return this._navigationState.files[this._navigationState.currentIndex] || null;
+	}
+
+	/**
+	 * 前の画像があるかどうか
+	 */
+	get hasPrevious(): boolean {
+		return this._navigationState.currentIndex > 0;
+	}
+
+	/**
+	 * 次の画像があるかどうか
+	 */
+	get hasNext(): boolean {
+		return this._navigationState.currentIndex < this._navigationState.files.length - 1;
+	}
 
 	async preloadAdjacentImages(
 		files: string[],
@@ -123,23 +190,35 @@ export class NavigationService {
 	 */
 	async preloadAdjacentByPath(currentPath: string, preloadCount: number = 2): Promise<void> {
 		try {
-			const updatedNavigation = await this.updateNavigationWithCurrentPath(currentPath);
-			await this.preloadAdjacentImages(updatedNavigation.files, updatedNavigation.currentIndex, preloadCount);
+			await this.updateNavigationWithCurrentPath(currentPath);
+			await this.preloadAdjacentImages(
+				this._navigationState.files,
+				this._navigationState.currentIndex,
+				preloadCount
+			);
 		} catch (error) {
 			console.warn('プリロード処理に失敗:', currentPath, error);
 		}
 	}
 
+	/**
+	 * ナビゲーション状態を初期化
+	 */
 	async initializeNavigation(imagePath: string): Promise<NavigationState> {
-		const dirPath = await dirname(imagePath);
-		const files = await getImageFiles(dirPath);
-		const currentIndex = files.findIndex((file) => file === imagePath);
+		this._navigationState.isNavigating = true;
 
-		return {
-			files,
-			currentIndex: currentIndex === -1 ? 0 : currentIndex,
-			isNavigating: false
-		};
+		try {
+			const dirPath = await dirname(imagePath);
+			const files = await getImageFiles(dirPath);
+			const currentIndex = files.findIndex((file) => file === imagePath);
+
+			this._navigationState.files = files;
+			this._navigationState.currentIndex = currentIndex === -1 ? 0 : currentIndex;
+
+			return this._navigationState;
+		} finally {
+			this._navigationState.isNavigating = false;
+		}
 	}
 
 	/**
@@ -147,15 +226,50 @@ export class NavigationService {
 	 * 新しい画像が追加された場合でも現在の画像位置を正確に保持
 	 */
 	async updateNavigationWithCurrentPath(currentPath: string): Promise<NavigationState> {
-		const dirPath = await dirname(currentPath);
-		const files = await getImageFiles(dirPath);
-		const currentIndex = files.findIndex((file) => file === currentPath);
+		this._navigationState.isNavigating = true;
 
-		return {
-			files,
-			currentIndex: currentIndex === -1 ? 0 : currentIndex,
-			isNavigating: false
-		};
+		try {
+			const dirPath = await dirname(currentPath);
+			const files = await getImageFiles(dirPath);
+			const currentIndex = files.findIndex((file) => file === currentPath);
+
+			this._navigationState.files = files;
+			this._navigationState.currentIndex = currentIndex === -1 ? 0 : currentIndex;
+
+			return this._navigationState;
+		} finally {
+			this._navigationState.isNavigating = false;
+		}
+	}
+
+	/**
+	 * 次の画像に移動
+	 */
+	async navigateNext(): Promise<string | null> {
+		if (!this.hasNext) return null;
+
+		this._navigationState.currentIndex++;
+		return this.currentImagePath;
+	}
+
+	/**
+	 * 前の画像に移動
+	 */
+	async navigatePrevious(): Promise<string | null> {
+		if (!this.hasPrevious) return null;
+
+		this._navigationState.currentIndex--;
+		return this.currentImagePath;
+	}
+
+	/**
+	 * 指定したインデックスに移動
+	 */
+	async navigateToIndex(index: number): Promise<string | null> {
+		if (index < 0 || index >= this._navigationState.files.length) return null;
+
+		this._navigationState.currentIndex = index;
+		return this.currentImagePath;
 	}
 
 	/**
@@ -191,6 +305,11 @@ export class NavigationService {
 	}
 
 	getCacheSize(): number {
-		return this.cacheManager['cache'].size;
+		return this.cacheManager.cacheSize;
 	}
 }
+
+/**
+ * グローバルナビゲーションサービスインスタンス
+ */
+export const navigationService = new NavigationService();

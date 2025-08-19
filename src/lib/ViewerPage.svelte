@@ -7,7 +7,7 @@
 	import MetadataPanel from './MetadataPanel.svelte';
 	import NavigationButtons from './NavigationButtons.svelte';
 	import { metadataService } from './services/metadata-service.svelte';
-	import { NavigationService, type NavigationState } from './services/navigation-service';
+	import { navigationService } from './services/navigation-service.svelte';
 	import { showInfoToast, showSuccessToast } from './stores/toast.svelte';
 	import ToolbarOverlay from './ToolbarOverlay.svelte';
 
@@ -35,19 +35,6 @@
 		'🖼️ ViewerPage initialized with imagePath: ' + (imagePath ? imagePath.split('/').pop() : 'null')
 	);
 
-	// フォールバックタイマーは削除（$effectの正しい使用で不要）
-
-	// NavigationService初期化
-	let navigationService: NavigationService;
-	try {
-		console.log('🧭 Initializing NavigationService...');
-		navigationService = new NavigationService();
-		console.log('✅ NavigationService initialized successfully');
-	} catch (error) {
-		console.error('❌ NavigationService initialization failed: ' + error);
-		throw error;
-	}
-
 	console.log('🔄 Initializing ViewerPage states...');
 
 	// 画像表示関連の状態を個別のリアクティブ変数に分割
@@ -56,13 +43,6 @@
 	let imageError = $state<string>('');
 
 	console.log('✅ ImageState initialized');
-
-	let navigationState = $state<NavigationState>({
-		files: [],
-		currentIndex: 0,
-		isNavigating: false
-	});
-	console.log('✅ NavigationState initialized');
 
 	let isInfoPanelFocused = $state<boolean>(false);
 	let isInfoPanelVisible = $state<boolean>(true);
@@ -133,18 +113,18 @@
 			console.log('🔄 Image state reset to loading');
 
 			console.log('🧭 Calling navigationService.initializeNavigation...');
-			navigationState = await navigationService.initializeNavigation(path);
+			await navigationService.initializeNavigation(path);
 			console.log(
 				'✅ Navigation initialized successfully:' +
 					' files=' +
-					navigationState.files.length +
+					navigationService.navigationState.files.length +
 					' currentIndex=' +
-					navigationState.currentIndex +
+					navigationService.navigationState.currentIndex +
 					' isNavigating=' +
-					navigationState.isNavigating
+					navigationService.navigationState.isNavigating
 			);
 
-			if (navigationState.files.length === 0) {
+			if (navigationService.navigationState.files.length === 0) {
 				throw new Error('No image files found in the directory');
 			}
 
@@ -166,73 +146,62 @@
 	// ナビゲーション状態をパス基準で更新
 	const updateNavigationFromPath = async (currentPath: string): Promise<void> => {
 		try {
-			const updatedNavigation =
-				await navigationService.updateNavigationWithCurrentPath(currentPath);
-			navigationState.files = updatedNavigation.files;
-			navigationState.currentIndex = updatedNavigation.currentIndex;
+			await navigationService.updateNavigationWithCurrentPath(currentPath);
 		} catch (error) {
 			console.error('Failed to update navigation from path: ' + error);
 		}
 	};
 
-	// ナビゲーション関数（パス基準で改良）
+	// ナビゲーション関数（新しいリアクティブサービスに対応）
 	const goToPrevious = async (): Promise<void> => {
-		if (!navigationState.isNavigating) {
+		if (!navigationService.navigationState.isNavigating) {
 			stopAutoNavigation(); // 手動ナビゲーション時は自動ナビゲーション停止
 			showUI(); // ナビゲーション時にUIを表示
 
-			navigationState.isNavigating = true;
-
 			// パス基準でナビゲーション状態を更新
-			const currentPath = navigationState.files[navigationState.currentIndex];
+			const currentPath =
+				navigationService.navigationState.files[navigationService.navigationState.currentIndex];
 			await updateNavigationFromPath(currentPath);
 
 			// 前の画像があるかチェック
-			if (0 < navigationState.currentIndex) {
-				const newIndex = navigationState.currentIndex - 1;
-				const newPath = navigationState.files[newIndex];
+			if (navigationService.hasPrevious) {
+				const newPath = await navigationService.navigatePrevious();
+				if (newPath) {
+					await loadCurrentImage(newPath);
+					await onImageChange(newPath);
 
-				navigationState.currentIndex = newIndex;
-				await loadCurrentImage(newPath);
-				await onImageChange(newPath);
-
-				// 隣接画像のプリロード（バックグラウンドで実行）
-				navigationService.preloadAdjacentByPath(newPath).catch((error) => {
-					console.warn('Preload failed:', error);
-				});
+					// 隣接画像のプリロード（バックグラウンドで実行）
+					navigationService.preloadAdjacentByPath(newPath).catch((error) => {
+						console.warn('Preload failed:', error);
+					});
+				}
 			}
-
-			navigationState.isNavigating = false;
 		}
 	};
 
 	const goToNext = async (): Promise<void> => {
-		if (!navigationState.isNavigating) {
+		if (!navigationService.navigationState.isNavigating) {
 			stopAutoNavigation(); // 手動ナビゲーション時は自動ナビゲーション停止
 			showUI(); // ナビゲーション時にUIを表示
 
-			navigationState.isNavigating = true;
-
 			// パス基準でナビゲーション状態を更新
-			const currentPath = navigationState.files[navigationState.currentIndex];
+			const currentPath =
+				navigationService.navigationState.files[navigationService.navigationState.currentIndex];
 			await updateNavigationFromPath(currentPath);
 
 			// 次の画像があるかチェック
-			if (navigationState.currentIndex < navigationState.files.length - 1) {
-				const newIndex = navigationState.currentIndex + 1;
-				const newPath = navigationState.files[newIndex];
+			if (navigationService.hasNext) {
+				const newPath = await navigationService.navigateNext();
+				if (newPath) {
+					await loadCurrentImage(newPath);
+					await onImageChange(newPath);
 
-				navigationState.currentIndex = newIndex;
-				await loadCurrentImage(newPath);
-				await onImageChange(newPath);
-
-				// 隣接画像のプリロード（バックグラウンドで実行）
-				navigationService.preloadAdjacentByPath(newPath).catch((error) => {
-					console.warn('Preload failed:', error);
-				});
+					// 隣接画像のプリロード（バックグラウンドで実行）
+					navigationService.preloadAdjacentByPath(newPath).catch((error) => {
+						console.warn('Preload failed:', error);
+					});
+				}
 			}
-
-			navigationState.isNavigating = false;
 		}
 	};
 
@@ -321,18 +290,17 @@
 	};
 
 	const goToLatest = async (): Promise<void> => {
-		const latestIndex = navigationState.files.length - 1;
+		const latestIndex = navigationService.navigationState.files.length - 1;
 		if (
 			0 <= latestIndex &&
-			latestIndex !== navigationState.currentIndex &&
-			!navigationState.isNavigating
+			latestIndex !== navigationService.navigationState.currentIndex &&
+			!navigationService.navigationState.isNavigating
 		) {
-			navigationState.isNavigating = true;
-			navigationState.currentIndex = latestIndex;
-			const newPath = navigationState.files[latestIndex];
-			await loadCurrentImage(newPath);
-			await onImageChange(newPath);
-			navigationState.isNavigating = false;
+			const newPath = await navigationService.navigateToIndex(latestIndex);
+			if (newPath) {
+				await loadCurrentImage(newPath);
+				await onImageChange(newPath);
+			}
 		}
 	};
 
@@ -347,8 +315,8 @@
 			isAutoNavActive = true;
 			showInfoToast('Auto navigation to latest image enabled');
 			autoNavTimer = setInterval(async () => {
-				const latestIndex = navigationState.files.length - 1;
-				if (latestIndex !== navigationState.currentIndex) {
+				const latestIndex = navigationService.navigationState.files.length - 1;
+				if (latestIndex !== navigationService.navigationState.currentIndex) {
 					await goToLatest();
 				}
 			}, 2000);
@@ -357,7 +325,8 @@
 
 	// クリップボード機能
 	const copyToClipboard = async (): Promise<void> => {
-		const currentPath = navigationState.files[navigationState.currentIndex];
+		const currentPath =
+			navigationService.navigationState.files[navigationService.navigationState.currentIndex];
 		if (!currentPath) return;
 
 		try {
@@ -381,21 +350,16 @@
 			console.log('🔄 Image state reset to loading');
 
 			console.log('🧭 Calling navigationService.initializeNavigation...');
-			const newNavigationState = await navigationService.initializeNavigation(path);
-
-			// Navigation状態を更新
-			navigationState.files = newNavigationState.files;
-			navigationState.currentIndex = newNavigationState.currentIndex;
-			navigationState.isNavigating = newNavigationState.isNavigating;
+			await navigationService.initializeNavigation(path);
 
 			console.log(
 				'✅ Navigation initialized: files=' +
-					navigationState.files.length +
+					navigationService.navigationState.files.length +
 					' currentIndex=' +
-					navigationState.currentIndex
+					navigationService.navigationState.currentIndex
 			);
 
-			if (navigationState.files.length === 0) {
+			if (navigationService.navigationState.files.length === 0) {
 				throw new Error('No image files found in the directory');
 			}
 
@@ -494,8 +458,8 @@
 	<!-- Image Display Area (Full) -->
 	<div class="relative flex-1 bg-black">
 		<ToolbarOverlay
-			imageFiles={navigationState.files}
-			currentIndex={navigationState.currentIndex}
+			imageFiles={navigationService.navigationState.files}
+			currentIndex={navigationService.navigationState.currentIndex}
 			{openFileDialog}
 			{onSwitchToGrid}
 			onToggleInfoPanel={toggleInfoPanel}
@@ -511,13 +475,15 @@
 			{imageUrl}
 			isLoading={imageIsLoading}
 			error={imageError}
-			imagePath={navigationState.files[navigationState.currentIndex]}
+			imagePath={navigationService.navigationState.files[
+				navigationService.navigationState.currentIndex
+			]}
 			{isUIVisible}
 		/>
 		<NavigationButtons
-			imageFiles={navigationState.files}
-			currentIndex={navigationState.currentIndex}
-			isNavigating={navigationState.isNavigating}
+			imageFiles={navigationService.navigationState.files}
+			currentIndex={navigationService.navigationState.currentIndex}
+			isNavigating={navigationService.navigationState.isNavigating}
 			{goToPrevious}
 			{goToNext}
 			{isUIVisible}
@@ -541,7 +507,9 @@
 	{#if isInfoPanelVisible}
 		<div style="width: {infoPanelWidth}px" class="flex-shrink-0">
 			<MetadataPanel
-				imagePath={navigationState.files[navigationState.currentIndex]}
+				imagePath={navigationService.navigationState.files[
+					navigationService.navigationState.currentIndex
+				]}
 				onFocus={handleInfoPanelFocus}
 				onBlur={handleInfoPanelBlur}
 			/>

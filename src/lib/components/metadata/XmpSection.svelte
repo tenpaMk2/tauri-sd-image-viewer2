@@ -8,18 +8,13 @@
 	} = $props();
 </script>
 
-<div class="collapse-arrow collapse bg-base-100">
-	<input type="checkbox" checked />
-	<div class="collapse-title text-lg font-medium">XMP Data</div>
-	<div class="collapse-content">
-		<div class="space-y-2">
-			<!-- Rating -->
-			<div class="flex items-center justify-between">
-				<span class="text-sm font-medium">Rating:</span>
-				<span class="text-sm">
-					{metadata.autoRating ?? 0}/5
-				</span>
-			</div>
+<div class="rounded-lg bg-base-300 p-3">
+	<h3 class="mb-2 text-sm font-semibold">XMP Data</h3>
+	<div class="space-y-1.5 text-xs">
+		<!-- Rating -->
+		<div class="flex justify-between">
+			<div class="text-base-content/70">Rating:</div>
+			<div>{metadata.autoRating ?? 0}/5</div>
 		</div>
 	</div>
 </div>

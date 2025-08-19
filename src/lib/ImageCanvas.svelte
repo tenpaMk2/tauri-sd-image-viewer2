@@ -11,14 +11,12 @@
 		updateDrag,
 		type ImageViewState
 	} from './image/image-manipulation';
-	import type { ImageMetadata } from './image/types';
 	import { metadataService } from './services/metadata-service.svelte';
 
 	const {
 		imageUrl,
 		isLoading,
 		error,
-		metadata,
 		imagePath,
 		onRatingUpdate,
 		isUIVisible = true
@@ -26,11 +24,42 @@
 		imageUrl: string;
 		isLoading: boolean;
 		error: string;
-		metadata: ImageMetadata;
 		imagePath?: string;
 		onRatingUpdate?: () => void;
 		isUIVisible?: boolean;
 	} = $props();
+
+	// デバッグ: propsの変更を監視（より詳細に）
+	$effect(() => {
+		// 全てのpropsを明示的に監視
+		const url = imageUrl;
+		const loading = isLoading;
+		const err = error;
+		const path = imagePath;
+		
+		console.log('📊 ImageCanvas props updated:', {
+			imageUrl: url ? `${url.substring(0, 20)}...` : 'null',
+			isLoading: loading,
+			error: err || 'empty',
+			imagePath: path ? path.split('/').pop() : 'null'
+		});
+		
+		console.log('🎯 ImageCanvas conditions will be:', {
+			hasError: !!(err && err.length > 0),
+			hasImageUrl: !!(url && url.length > 0),
+			isCurrentlyLoading: loading
+		});
+	});
+
+	// リアクティブメタデータを取得（imagePathがある場合のみ）
+	const metadata = $derived(imagePath ? metadataService.getReactiveMetadata(imagePath) : null);
+
+	// メタデータの自動読み込み
+	$effect(() => {
+		if (metadata && !metadata.isLoaded && !metadata.isLoading) {
+			metadata.load();
+		}
+	});
 
 	let containerRef: HTMLDivElement;
 	let imageRef = $state<HTMLImageElement>();
@@ -118,7 +147,9 @@
 	onmouseup={handleMouseUp}
 	onmouseleave={handleMouseUp}
 >
-	{#if error}
+	{console.log('🎯 ImageCanvas condition check:', { error: error || 'empty', errorType: typeof error, imageUrl: imageUrl ? 'exists' : 'null', isLoading })}
+	{#if error && error.length > 0}
+		{console.log('❌ ImageCanvas: Showing error')}
 		<div class="flex flex-col items-center gap-2 text-red-400">
 			<svg class="h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 				<path
@@ -130,20 +161,27 @@
 			</svg>
 			<span class="text-center">{error}</span>
 		</div>
-	{:else if imageUrl}
+	{:else if imageUrl && imageUrl.length > 0}
+		{console.log('🖼️ ImageCanvas: Showing image')}
 		<img
 			bind:this={imageRef}
 			src={imageUrl}
-			alt={metadata.filename}
+			alt={metadata?.filename || 'Image'}
 			class={viewState.isDragging || isImageChanging ? '' : 'transition-transform duration-200'}
 			style="transform: translate({viewState.panX}px, {viewState.panY}px) scale({viewState.fitScale *
 				viewState.zoomLevel}); transform-origin: center center; cursor: grab; max-width: none; max-height: none;"
 			onload={onImageLoad}
 		/>
 	{:else if isLoading}
+		{console.log('⏳ ImageCanvas: Showing loading')}
 		<div class="flex flex-col items-center gap-2 text-white">
 			<span class="loading loading-lg loading-spinner"></span>
 			<span class="opacity-80">Loading image...</span>
+		</div>
+	{:else}
+		{console.log('❓ ImageCanvas: Default state')}
+		<div class="flex flex-col items-center gap-2 text-gray-400">
+			<span class="opacity-80">No content to display</span>
 		</div>
 	{/if}
 

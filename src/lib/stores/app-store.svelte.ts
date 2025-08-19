@@ -1,6 +1,4 @@
 import { open } from '@tauri-apps/plugin-dialog';
-import { writable } from 'svelte/store';
-import type { ImageMetadata } from '../image/types';
 import { getDirectoryFromPath, isDirectory, isImageFile } from '../image/utils';
 import type { AsyncThumbnailQueue } from '../services/async-thumbnail-queue';
 import { imageMetadataStore } from './image-metadata-store.svelte';
@@ -10,7 +8,6 @@ import type { ViewMode } from '../ui/types';
 export type AppState = {
 	viewMode: ViewMode;
 	selectedImagePath: string | null;
-	imageMetadata: ImageMetadata | null;
 	selectedDirectory: string | null;
 };
 
@@ -53,17 +50,15 @@ export const clearActiveQueue = (): void => {
 	}
 };
 
-// 従来のwritableストアを使用
-const initialState: AppState = {
+// Svelte 5の$stateを使用（オブジェクトラッパーパターン）
+let appState = $state<AppState>({
 	viewMode: 'welcome',
 	selectedImagePath: null,
-	imageMetadata: null,
 	selectedDirectory: null
-};
-
-const appState = writable(initialState);
+});
 
 const openFileDialog = async (): Promise<void> => {
+	console.log('🔄 openFileDialog called');
 	try {
 		const selected = await open({
 			multiple: false,
@@ -75,39 +70,34 @@ const openFileDialog = async (): Promise<void> => {
 			]
 		});
 
+		console.log('📁 File selected: ' + selected);
+
 		if (selected && typeof selected === 'string') {
 			// ファイル選択でビューアーモードに移行する時は、サムネイル生成キューを停止
 			stopActiveQueue();
+			console.log('🛑 Active queue stopped');
 
+			// リアクティブメタデータの事前読み込み
 			const reactiveMetadata = metadataService.getReactiveMetadata(selected);
-		// 基本情報のみ先に取得
-		if (!reactiveMetadata.isLoaded && !reactiveMetadata.isLoading) {
-			await reactiveMetadata.load();
-		}
-		const imageMetadata = {
-			filename: reactiveMetadata.filename || 'Unknown',
-			size: reactiveMetadata.fileSize ? Math.round(reactiveMetadata.fileSize / 1024) + ' KB' : 'Unknown',
-			dimensions: reactiveMetadata.width && reactiveMetadata.height 
-				? reactiveMetadata.width + ' × ' + reactiveMetadata.height 
-				: 'Unknown',
-			format: reactiveMetadata.mimeType || 'Unknown',
-			created: 'Unknown',
-			modified: 'Unknown',
-			sdParameters: reactiveMetadata.sdParameters,
-			rating: reactiveMetadata.rating
-		};
+			console.log('📊 Reactive metadata created');
+			if (!reactiveMetadata.isLoaded && !reactiveMetadata.isLoading) {
+				console.log('🔄 Loading metadata...');
+				await reactiveMetadata.load();
+				console.log('✅ Metadata loaded');
+			}
 			const selectedDirectory = await getDirectoryFromPath(selected);
+			console.log('📂 Directory: ' + selectedDirectory);
 
-			appState.update((state) => ({
-				...state,
-				selectedImagePath: selected,
-				imageMetadata,
-				selectedDirectory,
-				viewMode: 'viewer'
-			}));
+			console.log('🔄 Updating app state to viewer mode');
+			appState.selectedImagePath = selected;
+			appState.selectedDirectory = selectedDirectory;
+			appState.viewMode = 'viewer';
+			console.log('✅ App state updated');
+		} else {
+			console.log('❌ No file selected or invalid selection');
 		}
 	} catch (error) {
-		console.error('ファイル選択エラー: ' + error);
+		console.error('❌ ファイル選択エラー: ' + error);
 	}
 };
 
@@ -119,11 +109,8 @@ const openDirectoryDialog = async (): Promise<void> => {
 		});
 
 		if (selected && typeof selected === 'string') {
-			appState.update((state) => ({
-				...state,
-				selectedDirectory: selected,
-				viewMode: 'grid'
-			}));
+			appState.selectedDirectory = selected;
+			appState.viewMode = 'grid';
 		}
 	} catch (error) {
 		console.error('フォルダ選択エラー: ' + error);
@@ -131,29 +118,13 @@ const openDirectoryDialog = async (): Promise<void> => {
 };
 
 const updateSelectedImage = async (imagePath: string): Promise<void> => {
-	// リアクティブメタデータから基本情報を取得
+	// リアクティブメタデータの事前読み込み
 	const reactiveMetadata = metadataService.getReactiveMetadata(imagePath);
 	if (!reactiveMetadata.isLoaded && !reactiveMetadata.isLoading) {
 		await reactiveMetadata.load();
 	}
-	const newMetadata = {
-		filename: reactiveMetadata.filename || 'Unknown',
-		size: reactiveMetadata.fileSize ? Math.round(reactiveMetadata.fileSize / 1024) + ' KB' : 'Unknown',
-		dimensions: reactiveMetadata.width && reactiveMetadata.height 
-			? reactiveMetadata.width + ' × ' + reactiveMetadata.height 
-			: 'Unknown',
-		format: reactiveMetadata.mimeType || 'Unknown',
-		created: 'Unknown',
-		modified: 'Unknown',
-		sdParameters: reactiveMetadata.sdParameters,
-		rating: reactiveMetadata.rating
-	};
 
-	appState.update((state) => ({
-		...state,
-		selectedImagePath: imagePath,
-		imageMetadata: newMetadata
-	}));
+	appState.selectedImagePath = imagePath;
 };
 
 const handleImageChange = async (newPath: string): Promise<void> => {
@@ -165,10 +136,7 @@ const handleSwitchToGrid = async (): Promise<void> => {
 	await imageMetadataStore.waitForAllRatingWrites();
 
 	// グリッドモードに戻る時は、前のキューが動いていても継続させる
-	appState.update((state) => ({
-		...state,
-		viewMode: 'grid'
-	}));
+	appState.viewMode = 'grid';
 };
 
 const handleImageSelect = async (imagePath: string): Promise<void> => {
@@ -179,20 +147,14 @@ const handleImageSelect = async (imagePath: string): Promise<void> => {
 	stopActiveQueue();
 
 	await updateSelectedImage(imagePath);
-	appState.update((state) => ({
-		...state,
-		viewMode: 'viewer'
-	}));
+	appState.viewMode = 'viewer';
 };
 
 const handleBackToGrid = async (): Promise<void> => {
 	// Rating書き込み処理を待機（クラッシュ防止）
 	await imageMetadataStore.waitForAllRatingWrites();
 
-	appState.update((state) => ({
-		...state,
-		viewMode: 'grid'
-	}));
+	appState.viewMode = 'grid';
 };
 
 const handleBackToWelcome = async (): Promise<void> => {
@@ -201,36 +163,19 @@ const handleBackToWelcome = async (): Promise<void> => {
 
 	// ウェルカム画面に戻る時は、サムネイル生成キューを停止してクリア
 	clearActiveQueue();
-	appState.set(initialState);
+	appState.viewMode = 'welcome';
+	appState.selectedImagePath = null;
+	appState.selectedDirectory = null;
 };
 
 const refreshCurrentImageMetadata = async (): Promise<void> => {
-	let currentImagePath: string | null = null;
-
-	appState.subscribe((state) => {
-		currentImagePath = state.selectedImagePath;
-	})();
+	const currentImagePath = appState.selectedImagePath;
 
 	if (currentImagePath) {
 		const reactiveMetadata = metadataService.getReactiveMetadata(currentImagePath);
 		// リフレッシュ実行
 		await reactiveMetadata.forceReload();
-		const refreshedMetadata = {
-			filename: reactiveMetadata.filename || 'Unknown',
-			size: reactiveMetadata.fileSize ? Math.round(reactiveMetadata.fileSize / 1024) + ' KB' : 'Unknown',
-			dimensions: reactiveMetadata.width && reactiveMetadata.height 
-				? reactiveMetadata.width + ' × ' + reactiveMetadata.height 
-				: 'Unknown',
-			format: reactiveMetadata.mimeType || 'Unknown',
-			created: 'Unknown',
-			modified: 'Unknown',
-			sdParameters: reactiveMetadata.sdParameters,
-			rating: reactiveMetadata.rating
-		};
-		appState.update((state) => ({
-			...state,
-			imageMetadata: refreshedMetadata
-		}));
+		// リアクティブシステムでは自動更新されるため、状態更新は不要
 	}
 };
 
@@ -242,40 +187,21 @@ const handleDroppedPaths = async (paths: string[]): Promise<void> => {
 	try {
 		if (await isDirectory(firstPath)) {
 			clearActiveQueue();
-			appState.update((state) => ({
-				...state,
-				selectedDirectory: firstPath,
-				viewMode: 'grid'
-			}));
+			appState.selectedDirectory = firstPath;
+			appState.viewMode = 'grid';
 		} else if (isImageFile(firstPath)) {
 			stopActiveQueue();
 
+			// リアクティブメタデータの事前読み込み
 			const reactiveMetadata = metadataService.getReactiveMetadata(firstPath);
-			// 基本情報のみ先に取得
 			if (!reactiveMetadata.isLoaded && !reactiveMetadata.isLoading) {
 				await reactiveMetadata.load();
 			}
-			const imageMetadata = {
-				filename: reactiveMetadata.filename || 'Unknown',
-				size: reactiveMetadata.fileSize ? Math.round(reactiveMetadata.fileSize / 1024) + ' KB' : 'Unknown',
-				dimensions: reactiveMetadata.width && reactiveMetadata.height 
-					? reactiveMetadata.width + ' × ' + reactiveMetadata.height 
-					: 'Unknown',
-				format: reactiveMetadata.mimeType || 'Unknown',
-				created: 'Unknown',
-				modified: 'Unknown',
-				sdParameters: reactiveMetadata.sdParameters,
-				rating: reactiveMetadata.rating
-			};
 			const selectedDirectory = await getDirectoryFromPath(firstPath);
 
-			appState.update((state) => ({
-				...state,
-				selectedImagePath: firstPath,
-				imageMetadata,
-				selectedDirectory,
-				viewMode: 'viewer'
-			}));
+			appState.selectedImagePath = firstPath;
+			appState.selectedDirectory = selectedDirectory;
+			appState.viewMode = 'viewer';
 		}
 	} catch (error) {
 		console.error('Error processing dropped path: ' + error);
@@ -283,7 +209,7 @@ const handleDroppedPaths = async (paths: string[]): Promise<void> => {
 };
 
 export const appStore = {
-	subscribe: appState.subscribe,
+	get state() { return appState; },
 	actions: {
 		openFileDialog,
 		openDirectoryDialog,

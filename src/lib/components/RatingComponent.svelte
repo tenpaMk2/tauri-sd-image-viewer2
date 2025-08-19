@@ -9,13 +9,6 @@
 		onRatingChange?: (newRating: number) => void;
 	} = $props();
 
-	// メタデータが未読み込みの場合は自動読み込み
-	$effect(() => {
-		if (!metadata.isLoaded && !metadata.isLoading) {
-			metadata.load();
-		}
-	});
-
 	// Rating書き込み中かどうかの状態（新しいストアでは簡略化）
 	const isRatingWriting = $derived(metadata.isLoading);
 
@@ -23,7 +16,7 @@
 	let hoveredRating = $state(0);
 
 	// 表示用のRating値（ホバー中は予想値、それ以外は実際の値）
-	const displayRating = $derived(isRatingHovered ? hoveredRating : (metadata.rating ?? 0));
+	const displayRating = $derived(isRatingHovered ? hoveredRating : (metadata.autoRating ?? 0));
 
 	// デバッグログ: ratingの受け取り状況をチェック
 	$effect(() => {
@@ -31,7 +24,7 @@
 			'⭐ RatingComponent: ' +
 				metadata.imagePath.split('/').pop() +
 				' rating=' +
-				JSON.stringify(metadata.rating) +
+				JSON.stringify(metadata.autoRating) +
 				' displayRating=' +
 				displayRating +
 				' isLoaded=' +
@@ -54,7 +47,7 @@
 		e.stopPropagation(); // 親要素のクリックイベントを防ぐ
 
 		// 同じ星をクリックした場合は0に戻す、そうでなければ新しいRating値を設定
-		const newRating = (metadata.rating || 0) === clickedRating ? 0 : clickedRating;
+		const newRating = (metadata.autoRating || 0) === clickedRating ? 0 : clickedRating;
 
 		if (onRatingChange) {
 			onRatingChange(newRating);
@@ -80,7 +73,7 @@
 		</div>
 	{:else}
 		<!-- 通常のRating表示 -->
-		<div class="flex gap-0.5" title={`Rating: ${metadata.rating || 0}/5 (click to change)`}>
+		<div class="flex gap-0.5" title={`Rating: ${metadata.autoRating || 0}/5 (click to change)`}>
 			{#each Array(5) as _, i}
 				<button
 					class="text-sm transition-colors duration-100 hover:scale-110 {i < displayRating

@@ -41,19 +41,16 @@ export class TagAggregationService {
 		for (const imagePath of imagePaths) {
 			try {
 				const metadata = metadataService.getReactiveMetadata(imagePath);
-				if (!metadata.isLoaded && !metadata.isLoading) {
-					await metadata.load();
-				}
 
-				if (metadata?.sdParameters) {
+				if (metadata?.autoSdParameters) {
 					// タグ情報をキャッシュに保存
 					const imageTags = new Set<string>();
 
-					for (const tag of metadata.sdParameters.positive_sd_tags) {
+					for (const tag of metadata.autoSdParameters.positive_sd_tags) {
 						const normalizedTag = tag.name.trim().toLowerCase();
 						if (normalizedTag) imageTags.add(normalizedTag);
 					}
-					for (const tag of metadata.sdParameters.negative_sd_tags) {
+					for (const tag of metadata.autoSdParameters.negative_sd_tags) {
 						const normalizedTag = tag.name.trim().toLowerCase();
 						if (normalizedTag) imageTags.add(normalizedTag);
 					}
@@ -61,8 +58,8 @@ export class TagAggregationService {
 					this.imageTagsCache.set(imagePath, imageTags);
 
 					// 集計用の処理
-					this.addTagsToCount(tagCounts, metadata.sdParameters.positive_sd_tags, false);
-					this.addTagsToCount(tagCounts, metadata.sdParameters.negative_sd_tags, true);
+					this.addTagsToCount(tagCounts, metadata.autoSdParameters.positive_sd_tags, false);
+					this.addTagsToCount(tagCounts, metadata.autoSdParameters.negative_sd_tags, true);
 				} else {
 					// SDパラメータがない場合は空のSetを保存
 					this.imageTagsCache.set(imagePath, new Set());
@@ -181,18 +178,15 @@ export class TagAggregationService {
 
 		try {
 			const metadata = metadataService.getReactiveMetadata(imagePath);
-			if (!metadata.isLoaded && !metadata.isLoading) {
-				await metadata.load();
-			}
-			if (!metadata?.sdParameters) return false;
+			if (!metadata?.autoSdParameters) return false;
 
 			// 正規化されたタグ名の配列を作成（positive + negative）
 			const imageTags = new Set<string>();
 
-			for (const tag of metadata.sdParameters.positive_sd_tags) {
+			for (const tag of metadata.autoSdParameters.positive_sd_tags) {
 				imageTags.add(tag.name.trim().toLowerCase());
 			}
-			for (const tag of metadata.sdParameters.negative_sd_tags) {
+			for (const tag of metadata.autoSdParameters.negative_sd_tags) {
 				imageTags.add(tag.name.trim().toLowerCase());
 			}
 

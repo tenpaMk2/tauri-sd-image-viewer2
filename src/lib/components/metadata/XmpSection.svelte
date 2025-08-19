@@ -1,6 +1,5 @@
 <script lang="ts">
 	import type { ReactiveImageMetadata } from '../../stores/image-metadata-store.svelte';
-	import RatingComponent from '../RatingComponent.svelte';
 
 	const {
 		metadata
@@ -17,7 +16,9 @@
 			<!-- Rating -->
 			<div class="flex items-center justify-between">
 				<span class="text-sm font-medium">Rating:</span>
-				<RatingComponent {metadata} />
+				<span class="text-sm">
+					{metadata.autoRating ?? 0}/5
+				</span>
 			</div>
 		</div>
 	</div>

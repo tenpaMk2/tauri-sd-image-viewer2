@@ -19,13 +19,10 @@ export const createBasicImageInfo = async (
 
 	try {
 		const reactiveMetadata = metadataService.getReactiveMetadata(imagePath);
-		if (!reactiveMetadata.isLoaded && !reactiveMetadata.isLoading) {
-			await reactiveMetadata.load();
-		}
 		const basicInfo = {
-			file_size: reactiveMetadata.fileSize || 0,
-			width: reactiveMetadata.width || 0,
-			height: reactiveMetadata.height || 0
+			file_size: reactiveMetadata.autoFileSize || 0,
+			width: reactiveMetadata.autoWidth || 0,
+			height: reactiveMetadata.autoHeight || 0
 		};
 		const sizeFormatted = formatFileSize(basicInfo.file_size);
 		const dimensions =
@@ -69,14 +66,11 @@ export const createImageMetadata = async (imagePath: string): Promise<ImageMetad
 
 		// リアクティブメタデータを使用
 		const reactiveMetadata = metadataService.getReactiveMetadata(imagePath);
-		if (!reactiveMetadata.isLoaded && !reactiveMetadata.isLoading) {
-			await reactiveMetadata.load();
-		}
 
-		const sizeFormatted = formatFileSize(reactiveMetadata.fileSize || 0);
+		const sizeFormatted = formatFileSize(reactiveMetadata.autoFileSize || 0);
 		const dimensions =
-			reactiveMetadata.width && reactiveMetadata.height
-				? reactiveMetadata.width + ' × ' + reactiveMetadata.height
+			reactiveMetadata.autoWidth && reactiveMetadata.autoHeight
+				? reactiveMetadata.autoWidth + ' × ' + reactiveMetadata.autoHeight
 				: 'Unknown';
 
 		return {

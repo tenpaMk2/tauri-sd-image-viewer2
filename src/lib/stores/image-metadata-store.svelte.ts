@@ -28,6 +28,54 @@ export class ReactiveImageMetadata {
 	}
 
 	/**
+	 * 必要に応じて自動読み込みを実行
+	 */
+	private ensureLoaded(): void {
+		if (!this.isLoaded && !this.isLoading) {
+			this.load();
+		}
+	}
+
+	/**
+	 * 自動読み込み付きのratingアクセサ
+	 */
+	get autoRating(): number | undefined {
+		this.ensureLoaded();
+		return this.rating;
+	}
+
+	/**
+	 * 自動読み込み付きのsdParametersアクセサ
+	 */
+	get autoSdParameters(): SdParameters | undefined {
+		this.ensureLoaded();
+		return this.sdParameters;
+	}
+
+	/**
+	 * 自動読み込み付きの基本情報アクセサ
+	 */
+	get autoWidth(): number | undefined {
+		this.ensureLoaded();
+		return this.width;
+	}
+
+	get autoHeight(): number | undefined {
+		this.ensureLoaded();
+		return this.height;
+	}
+
+	get autoFileSize(): number | undefined {
+		this.ensureLoaded();
+		return this.fileSize;
+	}
+
+	get autoMimeType(): string | undefined {
+		this.ensureLoaded();
+		return this.mimeType;
+	}
+
+	/**
 	 * メタデータの非同期読み込み
 	 */
 	async load(): Promise<void> {

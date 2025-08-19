@@ -21,30 +21,6 @@
 		return metadataService.getReactiveMetadata(imagePath);
 	});
 
-	// メタデータの自動読み込み（非同期処理を$effect外で実行）
-	const loadMetadataIfNeeded = async () => {
-		if (metadata && !metadata.isLoaded && !metadata.isLoading) {
-			console.log('📊 [MetadataPanel] Starting metadata load...');
-			try {
-				await metadata.load();
-				console.log('✅ [MetadataPanel] Metadata load completed');
-			} catch (error) {
-				console.error('❌ [MetadataPanel] Metadata load failed:', error);
-			}
-		}
-	};
-
-	// メタデータトリガー
-	$effect(() => {
-		const currentMetadata = metadata;
-		console.log('🔄 [MetadataPanel] Metadata changed, checking if load needed...');
-
-		if (currentMetadata && !currentMetadata.isLoaded && !currentMetadata.isLoading) {
-			// 非同期処理を外部関数で実行
-			loadMetadataIfNeeded();
-		}
-	});
-
 	// BasicInfoSection用の変換されたデータ
 	const basicInfo = $derived.by(() => {
 		if (!metadata) {
@@ -65,17 +41,19 @@
 
 		return {
 			filename: metadata.imagePath.split('/').pop() || '',
-			size: metadata.fileSize ? `${Math.round(metadata.fileSize / 1024)} KB` : 'Unknown',
+			size: metadata.autoFileSize ? `${Math.round(metadata.autoFileSize / 1024)} KB` : 'Unknown',
 			dimensions:
-				metadata.width && metadata.height ? `${metadata.width} × ${metadata.height}` : 'Unknown',
-			format: metadata.mimeType || 'Unknown',
+				metadata.autoWidth && metadata.autoHeight
+					? `${metadata.autoWidth} × ${metadata.autoHeight}`
+					: 'Unknown',
+			format: metadata.autoMimeType || 'Unknown',
 			created: 'Unknown', // TODO: 必要に応じて実装
 			modified: 'Unknown', // TODO: 必要に応じて実装
 			camera: undefined, // カメラ情報は廃止済み
 			lens: undefined, // レンズ情報は廃止済み
 			settings: undefined, // 設定情報は廃止済み
-			sdParameters: metadata.sdParameters,
-			rating: metadata.rating
+			sdParameters: metadata.autoSdParameters,
+			rating: metadata.autoRating
 		};
 	});
 </script>

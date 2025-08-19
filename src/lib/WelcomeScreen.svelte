@@ -34,13 +34,5 @@
 			<button class="btn btn-lg btn-primary" onclick={openFileDialog}> Open Image File </button>
 			<button class="btn btn-lg btn-secondary" onclick={openDirectoryDialog}> Open Folder </button>
 		</div>
-
-		<!-- テストページへのリンクボタン -->
-		<div class="divider">Development</div>
-		<div class="flex flex-wrap justify-center gap-2">
-			<a href="/test" class="btn btn-outline btn-sm"> 🧪 Svelte 5 Test </a>
-			<a href="/viewerpage-test" class="btn btn-outline btn-sm"> 📋 ViewerPage Mock </a>
-			<a href="/viewerpage-real-test" class="btn btn-outline btn-sm"> 🎯 ViewerPage Real Test </a>
-		</div>
 	</div>
 </div>

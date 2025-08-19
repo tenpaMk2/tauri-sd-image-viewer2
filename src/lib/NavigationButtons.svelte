@@ -1,16 +1,13 @@
 <script lang="ts">
+	import { navigationService } from '$lib/services/navigation-service.svelte';
 	import Icon from '@iconify/svelte';
 
 	const {
-		imageFiles,
-		currentIndex,
 		isNavigating,
 		goToPrevious,
 		goToNext,
 		isUIVisible
 	}: {
-		imageFiles: string[];
-		currentIndex: number;
 		isNavigating: boolean;
 		goToPrevious: () => void;
 		goToNext: () => void;
@@ -19,9 +16,9 @@
 </script>
 
 <!-- ナビゲーションボタン -->
-{#if 2 <= imageFiles.length}
+{#if 2 <= navigationService.files.length}
 	<!-- 前の画像ボタン -->
-	{#if 0 < currentIndex}
+	{#if navigationService.hasPrevious}
 		<div
 			class="absolute top-1/2 left-6 flex h-16 w-16 -translate-y-1/2 items-center justify-center transition-opacity duration-300"
 			class:opacity-0={!isUIVisible}
@@ -43,7 +40,7 @@
 	{/if}
 
 	<!-- 次の画像ボタン -->
-	{#if currentIndex < imageFiles.length - 1}
+	{#if navigationService.hasNext}
 		<div
 			class="absolute top-1/2 right-6 flex h-16 w-16 -translate-y-1/2 items-center justify-center transition-opacity duration-300"
 			class:opacity-0={!isUIVisible}

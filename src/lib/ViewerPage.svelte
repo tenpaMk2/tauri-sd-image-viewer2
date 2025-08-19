@@ -1,15 +1,14 @@
 <script lang="ts">
+	import { navigationService } from '$lib/services/navigation-service.svelte';
 	import { invoke } from '@tauri-apps/api/core';
 	import { platform } from '@tauri-apps/plugin-os';
 	import { onMount } from 'svelte';
 	import type { Attachment } from 'svelte/attachments';
 	import ImageCanvas from './ImageCanvas.svelte';
 	import MetadataPanel from './MetadataPanel.svelte';
-	import NavigationButtons from './NavigationButtons.svelte';
-	import { navigationService } from './services/navigation-service.svelte';
 	import { appStore } from './stores/app-store.svelte';
 	import { showInfoToast, showSuccessToast } from './stores/toast.svelte';
-	import ToolbarOverlay from './ToolbarOverlay.svelte';
+	import ViewerUIOverlay from './ViewerUIOverlay.svelte';
 
 	const INFO_PANEL_MIN_WIDTH = 280;
 	const INFO_PANEL_MAX_WIDTH = 600;
@@ -28,6 +27,13 @@
 
 	// app-storeから状態とアクションを取得
 	const { state: appState, actions } = appStore;
+
+	// ズーム状態を管理
+	let isZoomed = $state(false);
+
+	const handleZoomStateChange = (zoomed: boolean) => {
+		isZoomed = zoomed;
+	};
 
 	// プラットフォーム判定
 	let isMacOs = $state(false);
@@ -76,14 +82,16 @@
 				case 'ArrowRight':
 					event.preventDefault();
 					console.log('➡️➡️➡️');
-					const next = await navigationService.navigateNext();
-					if (next) await onImageChange(next);
+					await navigationService.navigateNext();
+					if (navigationService.currentFilePath)
+						await onImageChange(navigationService.currentFilePath);
 					break;
 				case 'ArrowLeft':
 					event.preventDefault();
 					console.log('⬅️⬅️⬅️');
-					const prev = await navigationService.navigatePrevious();
-					if (prev) await onImageChange(prev);
+					await navigationService.navigatePrevious();
+					if (navigationService.currentFilePath)
+						await onImageChange(navigationService.currentFilePath);
 					break;
 			}
 		};
@@ -95,8 +103,10 @@
 
 	// 自動ナビゲーション用のハンドラー
 	const handleAutoNavigation = async (): Promise<void> => {
-		const next = await navigationService.navigateNext();
-		if (next) await onImageChange(next);
+		await navigationService.navigateNext();
+		if (navigationService.currentFilePath) {
+			await onImageChange(navigationService.currentFilePath);
+		}
 	};
 
 	// Svelte 5の@attachで使用するアタッチメント
@@ -146,57 +156,44 @@
 				imageUrl={appState.viewer.imageUrl}
 				isLoading={appState.viewer.isLoading}
 				error={appState.viewer.error}
-				imagePath={navigationService.files[navigationService.currentIndex]}
-				isUIVisible={appState.viewer.ui.isVisible}
+				onZoomStateChange={handleZoomStateChange}
 			/>
 		{/if}
 
-		<!-- UI要素のオーバーレイ -->
-		{#if appState.viewer.ui.isVisible}
-			<div class="pointer-events-none absolute inset-0">
-				<!-- ツールバー -->
-				<div class="pointer-events-auto">
-					<ToolbarOverlay
-						imageFiles={navigationService.files}
-						currentIndex={navigationService.currentIndex}
-						{openFileDialog}
-						{onSwitchToGrid}
-						onToggleInfoPanel={actions.toggleInfoPanel}
-						isInfoPanelVisible={appState.viewer.ui.isInfoPanelVisible}
-						onToggleAutoNavigation={() => actions.startAutoNavigation(handleAutoNavigation)}
-						isAutoNavActive={appState.viewer.autoNav.isActive}
-						isUIVisible={appState.viewer.ui.isVisible}
-						onCopyToClipboard={async () => {
-							try {
-								await invoke('copy_image_to_clipboard', { imagePath });
-								showSuccessToast('Image copied to clipboard');
-							} catch (error) {
-								console.error('Failed to copy image to clipboard: ' + error);
-								showInfoToast('Failed to copy image to clipboard');
-							}
-						}}
-						isMacOS={isMacOs}
-					/>
-				</div>
-
-				<!-- ナビゲーションボタン -->
-				<div class="pointer-events-auto">
-					<NavigationButtons
-						imageFiles={navigationService.files}
-						currentIndex={navigationService.currentIndex}
-						isNavigating={navigationService.isNavigating}
-						goToPrevious={async () => {
-							const prev = await navigationService.navigatePrevious();
-							if (prev) await onImageChange(prev);
-						}}
-						goToNext={async () => {
-							const next = await navigationService.navigateNext();
-							if (next) await onImageChange(next);
-						}}
-						isUIVisible={appState.viewer.ui.isVisible}
-					/>
-				</div>
-			</div>
+		<!-- UI要素のオーバーレイ（ズーム時は非表示） -->
+		{#if appState.viewer.ui.isVisible && !isZoomed}
+			<ViewerUIOverlay
+				imagePath={navigationService.currentFilePath}
+				{openFileDialog}
+				{onSwitchToGrid}
+				onToggleInfoPanel={actions.toggleInfoPanel}
+				isInfoPanelVisible={appState.viewer.ui.isInfoPanelVisible}
+				onToggleAutoNavigation={() => actions.startAutoNavigation(handleAutoNavigation)}
+				isAutoNavActive={appState.viewer.autoNav.isActive}
+				onCopyToClipboard={async () => {
+					try {
+						await invoke('copy_image_to_clipboard', { imagePath });
+						showSuccessToast('Image copied to clipboard');
+					} catch (error) {
+						console.error('Failed to copy image to clipboard: ' + error);
+						showInfoToast('Failed to copy image to clipboard');
+					}
+				}}
+				isMacOS={isMacOs}
+				goToPrevious={async () => {
+					await navigationService.navigatePrevious();
+					if (navigationService.currentFilePath) {
+						await onImageChange(navigationService.currentFilePath);
+					}
+				}}
+				goToNext={async () => {
+					await navigationService.navigateNext();
+					if (navigationService.currentFilePath) {
+						await onImageChange(navigationService.currentFilePath);
+					}
+				}}
+				isNavigating={navigationService.isNavigating}
+			/>
 		{/if}
 	</div>
 

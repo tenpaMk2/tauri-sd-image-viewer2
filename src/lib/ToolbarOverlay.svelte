@@ -1,9 +1,8 @@
 <script lang="ts">
+	import { navigationService } from '$lib/services/navigation-service.svelte';
 	import Icon from '@iconify/svelte';
 
 	const {
-		imageFiles,
-		currentIndex,
 		openFileDialog,
 		onSwitchToGrid,
 		onToggleInfoPanel,
@@ -14,8 +13,6 @@
 		onCopyToClipboard,
 		isMacOS
 	}: {
-		imageFiles: string[];
-		currentIndex: number;
 		openFileDialog: () => void;
 		onSwitchToGrid?: () => Promise<void>;
 		onToggleInfoPanel?: () => void;
@@ -37,9 +34,9 @@
 	<div class="flex items-center text-white">
 		<!-- Left: Page Info -->
 		<div class="flex items-center gap-4">
-			{#if 1 < imageFiles.length}
+			{#if 1 < navigationService.files.length}
 				<div class="text-sm opacity-80">
-					{currentIndex + 1} / {imageFiles.length}
+					{navigationService.currentIndex + 1} / {navigationService.files.length}
 				</div>
 			{/if}
 		</div>
@@ -70,7 +67,11 @@
 				</button>
 			{/if}
 			{#if onSwitchToGrid}
-				<button class="btn text-white btn-ghost btn-sm" onclick={() => onSwitchToGrid?.()} title="Grid View">
+				<button
+					class="btn text-white btn-ghost btn-sm"
+					onclick={() => onSwitchToGrid?.()}
+					title="Grid View"
+				>
 					<Icon icon="lucide:layout-grid" class="h-4 w-4" />
 				</button>
 			{/if}

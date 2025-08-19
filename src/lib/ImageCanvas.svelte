@@ -1,6 +1,5 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte';
-	import RatingComponent from './components/RatingComponent.svelte';
 	import {
 		calculateFitScale,
 		createImageViewState,
@@ -11,20 +10,17 @@
 		updateDrag,
 		type ImageViewState
 	} from './image/image-manipulation';
-	import { imageMetadataStore } from './stores/image-metadata-store.svelte';
 
 	const {
 		imageUrl,
 		isLoading,
 		error,
-		imagePath,
-		isUIVisible = true
+		onZoomStateChange
 	}: {
 		imageUrl: string;
 		isLoading: boolean;
 		error: string;
-		imagePath?: string;
-		isUIVisible?: boolean;
+		onZoomStateChange?: (isZoomed: boolean) => void;
 	} = $props();
 
 	// デバッグ: propsの変更を監視（より詳細に）
@@ -33,13 +29,11 @@
 		const url = imageUrl;
 		const loading = isLoading;
 		const err = error;
-		const path = imagePath;
 
 		console.log('📊 ImageCanvas props updated:', {
 			imageUrl: url ? `${url.substring(0, 20)}...` : 'null',
 			isLoading: loading,
-			error: err || 'empty',
-			imagePath: path ? path.split('/').pop() : 'null'
+			error: err || 'empty'
 		});
 
 		console.log('🎯 ImageCanvas conditions will be:', {
@@ -47,16 +41,6 @@
 			hasImageUrl: !!(url && url.length > 0),
 			isCurrentlyLoading: loading
 		});
-	});
-
-	// リアクティブメタデータを取得（imagePathがある場合のみ）
-	const metadata = $derived(imagePath ? imageMetadataStore.getMetadata(imagePath) : null);
-
-	// メタデータの自動読み込み
-	$effect(() => {
-		if (metadata && !metadata.isLoaded && !metadata.isLoading) {
-			metadata.load();
-		}
 	});
 
 	let containerRef: HTMLDivElement;
@@ -109,14 +93,6 @@
 		});
 	};
 
-	const handleRatingChange = async (newRating: number) => {
-		if (!imagePath) return;
-
-		const reactiveMetadata = imageMetadataStore.getMetadata(imagePath);
-		await reactiveMetadata.updateRating(newRating);
-		// リアクティブシステムにより自動的にUIが更新されます
-	};
-
 	// ズームリセット機能
 	const resetZoom = () => {
 		resetImageViewState(viewState);
@@ -126,6 +102,13 @@
 	const isZoomed = $derived(
 		viewState.zoomLevel !== 1 || viewState.panX !== 0 || viewState.panY !== 0
 	);
+
+	// ズーム状態変更時にコールバックを呼び出し
+	$effect(() => {
+		if (onZoomStateChange) {
+			onZoomStateChange(isZoomed);
+		}
+	});
 </script>
 
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
@@ -166,7 +149,7 @@
 		<img
 			bind:this={imageRef}
 			src={imageUrl}
-			alt={metadata?.filename || 'Image'}
+			alt=""
 			class={viewState.isDragging || isImageChanging ? '' : 'transition-transform duration-200'}
 			style="transform: translate({viewState.panX}px, {viewState.panY}px) scale({viewState.fitScale *
 				viewState.zoomLevel}); transform-origin: center center; cursor: grab; max-width: none; max-height: none;"
@@ -196,15 +179,5 @@
 			<Icon icon="lucide:zoom-out" class="h-4 w-4" />
 			Reset
 		</button>
-	{/if}
-
-	<!-- Rating オーバーレイバー（ズーム時・UI非表示時は非表示） -->
-	{#if imageUrl && imagePath && viewState.zoomLevel === 1 && isUIVisible}
-		<div class="absolute bottom-4 left-1/2 -translate-x-1/2 transform">
-			<RatingComponent
-				metadata={imageMetadataStore.getMetadata(imagePath)}
-				onRatingChange={handleRatingChange}
-			/>
-		</div>
 	{/if}
 </div>

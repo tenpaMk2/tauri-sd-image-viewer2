@@ -1,7 +1,7 @@
+import { navigationService } from '$lib/services/navigation-service.svelte';
 import { open } from '@tauri-apps/plugin-dialog';
 import { getDirectoryFromPath, isDirectory, isImageFile } from '../image/utils';
 import type { AsyncThumbnailQueue } from '../services/async-thumbnail-queue';
-import { navigationService } from '../services/navigation-service.svelte';
 import type { ViewMode } from '../ui/types';
 import { imageMetadataStore } from './image-metadata-store.svelte';
 

@@ -183,7 +183,7 @@
 				isAutoNavActive={appState.viewer.autoNav.isActive}
 				onCopyToClipboard={async () => {
 					try {
-						await invoke('copy_image_to_clipboard', { imagePath });
+						await invoke('set_clipboard_files', { paths: [imagePath] });
 						showSuccessToast('Image copied to clipboard');
 					} catch (error) {
 						console.error('Failed to copy image to clipboard: ' + error);

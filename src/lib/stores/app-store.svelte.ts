@@ -161,6 +161,12 @@ const openDirectoryDialog = async (): Promise<void> => {
 		});
 
 		if (selected && typeof selected === 'string') {
+			// 既存のキューを停止してクリア
+			clearActiveQueue();
+			
+			// メタデータをクリア
+			imageMetadataStore.clearAll();
+			
 			appState.selectedDirectory = selected;
 			appState.viewMode = 'grid';
 		}

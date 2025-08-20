@@ -48,6 +48,7 @@
 		loadedCount: 0,
 		totalCount: 0
 	});
+	let lastDirectoryPath = $state<string>('');
 	let lastRefreshTrigger = $state<number>(-1);
 
 	// ThumbnailServiceの状態を監視して進捗を同期
@@ -178,6 +179,7 @@
 		return results;
 	};
 
+
 	// 第1段階：画像ファイル一覧の取得とグリッド表示
 	const loadImageFileList = async () => {
 		console.log('=== loadImageFileList 開始 ===', directoryPath);
@@ -282,19 +284,35 @@
 
 	// ディレクトリパスまたはrefreshTriggerが変更されたときに画像リストを再読み込み
 	$effect(() => {
-		console.log('$effect ディレクトリパス変更チェック:', {
+		console.log('$effect チェック:', {
 			directoryPath,
+			lastDirectoryPath,
 			refreshTrigger,
-			lastRefreshTrigger
+			lastRefreshTrigger,
+			isProcessing: loadingState.isProcessing
 		});
 
-		if (directoryPath && refreshTrigger !== lastRefreshTrigger) {
+		// 処理中の場合はスキップ（無限ループ防止）
+		if (loadingState.isProcessing) {
+			console.log('処理中のためスキップ');
+			return;
+		}
+
+		// ディレクトリパスが変更された場合
+		if (directoryPath && directoryPath !== lastDirectoryPath) {
+			lastDirectoryPath = directoryPath;
 			lastRefreshTrigger = refreshTrigger;
-			console.log('リフレッシュトリガー発動: ' + directoryPath);
-
-			// 古いメタデータをクリア
+			console.log('ディレクトリ変更による再読み込み:', directoryPath);
+			
 			imageMetadataStore.clearAll();
-
+			loadImageFileList();
+		}
+		// refreshTriggerが変更された場合（同じディレクトリでの更新）
+		else if (directoryPath && refreshTrigger !== lastRefreshTrigger) {
+			lastRefreshTrigger = refreshTrigger;
+			console.log('リフレッシュトリガー発動:', refreshTrigger);
+			
+			imageMetadataStore.clearAll();
 			loadImageFileList();
 		}
 	});

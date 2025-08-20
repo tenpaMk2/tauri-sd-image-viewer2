@@ -67,10 +67,11 @@ export class ReactiveImageMetadata {
 
 		return this.loadPromise;
 	}
+
 	/**
-	 * Rating を同期的に取得（リアクティブ、自動ロード付き）
+	 * 自動ロードを開始する共通処理
 	 */
-	get ratingValue(): number | undefined {
+	private triggerAutoLoad(propertyName: string): void {
 		if (this.loadingStatus === 'unloaded') {
 			this.loadingStatus = 'loading';
 			this.ensureLoaded()
@@ -80,10 +81,21 @@ export class ReactiveImageMetadata {
 				.catch((error) => {
 					this.loadingStatus = 'unloaded';
 					console.error(
-						'❌ Auto-load failed for rating: ' + this.imagePath.split('/').pop() + ' ' + error
+						'❌ Auto-load failed for ' +
+							propertyName +
+							': ' +
+							this.imagePath.split('/').pop() +
+							' ' +
+							error
 					);
 				});
 		}
+	}
+	/**
+	 * Rating を同期的に取得（リアクティブ、自動ロード付き）
+	 */
+	get ratingValue(): number | undefined {
+		this.triggerAutoLoad('rating');
 		return this.rating;
 	}
 
@@ -91,19 +103,7 @@ export class ReactiveImageMetadata {
 	 * SD Parameters を同期的に取得（リアクティブ、自動ロード付き）
 	 */
 	get sdParametersValue(): SdParameters | undefined {
-		if (this.loadingStatus === 'unloaded') {
-			this.loadingStatus = 'loading';
-			this.ensureLoaded()
-				.then(() => {
-					this.loadingStatus = 'loaded';
-				})
-				.catch((error) => {
-					this.loadingStatus = 'unloaded';
-					console.error(
-						'❌ Auto-load failed for sdParameters: ' + this.imagePath.split('/').pop() + ' ' + error
-					);
-				});
-		}
+		this.triggerAutoLoad('sdParameters');
 		return this.sdParameters;
 	}
 
@@ -111,19 +111,7 @@ export class ReactiveImageMetadata {
 	 * Width を同期的に取得（リアクティブ、自動ロード付き）
 	 */
 	get widthValue(): number | undefined {
-		if (this.loadingStatus === 'unloaded') {
-			this.loadingStatus = 'loading';
-			this.ensureLoaded()
-				.then(() => {
-					this.loadingStatus = 'loaded';
-				})
-				.catch((error) => {
-					this.loadingStatus = 'unloaded';
-					console.error(
-						'❌ Auto-load failed for width: ' + this.imagePath.split('/').pop() + ' ' + error
-					);
-				});
-		}
+		this.triggerAutoLoad('width');
 		return this.width;
 	}
 
@@ -131,19 +119,7 @@ export class ReactiveImageMetadata {
 	 * Height を同期的に取得（リアクティブ、自動ロード付き）
 	 */
 	get heightValue(): number | undefined {
-		if (this.loadingStatus === 'unloaded') {
-			this.loadingStatus = 'loading';
-			this.ensureLoaded()
-				.then(() => {
-					this.loadingStatus = 'loaded';
-				})
-				.catch((error) => {
-					this.loadingStatus = 'unloaded';
-					console.error(
-						'❌ Auto-load failed for height: ' + this.imagePath.split('/').pop() + ' ' + error
-					);
-				});
-		}
+		this.triggerAutoLoad('height');
 		return this.height;
 	}
 
@@ -151,19 +127,7 @@ export class ReactiveImageMetadata {
 	 * FileSize を同期的に取得（リアクティブ、自動ロード付き）
 	 */
 	get fileSizeValue(): number | undefined {
-		if (this.loadingStatus === 'unloaded') {
-			this.loadingStatus = 'loading';
-			this.ensureLoaded()
-				.then(() => {
-					this.loadingStatus = 'loaded';
-				})
-				.catch((error) => {
-					this.loadingStatus = 'unloaded';
-					console.error(
-						'❌ Auto-load failed for fileSize: ' + this.imagePath.split('/').pop() + ' ' + error
-					);
-				});
-		}
+		this.triggerAutoLoad('fileSize');
 		return this.fileSize;
 	}
 
@@ -171,19 +135,7 @@ export class ReactiveImageMetadata {
 	 * MimeType を同期的に取得（リアクティブ、自動ロード付き）
 	 */
 	get mimeTypeValue(): string | undefined {
-		if (this.loadingStatus === 'unloaded') {
-			this.loadingStatus = 'loading';
-			this.ensureLoaded()
-				.then(() => {
-					this.loadingStatus = 'loaded';
-				})
-				.catch((error) => {
-					this.loadingStatus = 'unloaded';
-					console.error(
-						'❌ Auto-load failed for mimeType: ' + this.imagePath.split('/').pop() + ' ' + error
-					);
-				});
-		}
+		this.triggerAutoLoad('mimeType');
 		return this.mimeType;
 	}
 
@@ -292,11 +244,13 @@ class ImageMetadataStore {
 			console.log('🆕 Creating metadata store: ' + imagePath.split('/').pop());
 			const metadata = new ReactiveImageMetadata(imagePath);
 			this.metadataMap.set(imagePath, metadata);
-			
+
 			// 新しいインスタンス作成時に自動的にロードを開始
 			if (metadata.loadingStatus === 'unloaded' && !metadata.isLoading) {
 				metadata.load().catch((error: unknown) => {
-					console.error('Failed to auto-load metadata for ' + imagePath.split('/').pop() + ': ' + error);
+					console.error(
+						'Failed to auto-load metadata for ' + imagePath.split('/').pop() + ': ' + error
+					);
 				});
 			}
 		}

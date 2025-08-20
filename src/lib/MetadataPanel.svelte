@@ -53,7 +53,7 @@
 			lens: undefined, // レンズ情報は廃止済み
 			settings: undefined, // 設定情報は廃止済み
 			sdParameters: metadata.autoSdParameters,
-			rating: metadata.autoRating
+			rating: metadata.rating ?? 0 // 直接ratingを使用（autoRatingはPromiseなので）
 		};
 	});
 </script>

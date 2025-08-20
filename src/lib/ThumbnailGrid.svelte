@@ -228,9 +228,7 @@
 			// 第3段階：SDタグデータを集計
 			loadTagData();
 
-			// 第4段階：メタデータを事前読み込み（新しいストア使用）
-			console.log('メタデータを事前読み込み開始');
-			imageMetadataStore.preloadMetadata(imageFiles);
+			// メタデータは autoRating などのアクセス時に自動的にキューイングされる
 		} catch (err) {
 			loadingState.error = err instanceof Error ? err.message : 'Failed to load image files';
 			console.error('Failed to load image files: ' + err);
@@ -253,6 +251,8 @@
 			loadingState.isProcessing = false;
 		}
 	};
+
+	// メタデータ読み込みは autoRating アクセス時に自動的に行われる
 
 	// SDタグデータを集計
 	const loadTagData = async () => {

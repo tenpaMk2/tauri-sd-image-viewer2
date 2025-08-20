@@ -14,7 +14,7 @@
 		<!-- Rating -->
 		<div class="flex justify-between">
 			<div class="text-base-content/70">Rating:</div>
-			<div>{metadata.autoRating ?? 0}/5</div>
+			<div>{metadata.rating ?? 0}/5</div>
 		</div>
 	</div>
 </div>

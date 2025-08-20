@@ -1,4 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
+import { metadataQueueService } from '../services/metadata-queue-service.svelte';
 import type { ImageMetadataInfo, SdParameters } from '../types/shared-types';
 
 /**
@@ -28,20 +29,26 @@ export class ReactiveImageMetadata {
 	}
 
 	/**
-	 * 必要に応じて自動読み込みを実行
+	 * 必要に応じて自動読み込みを実行（MetadataQueueServiceに委譲）
 	 */
 	private ensureLoaded(): void {
 		if (!this.isLoaded && !this.isLoading) {
-			this.load();
+			// MetadataQueueServiceにキューイングを依頼
+			metadataQueueService.enqueue(this.imagePath);
 		}
 	}
 
 	/**
-	 * 自動読み込み付きのratingアクセサ
+	 * 自動読み込み付きのratingアクセサ（Promiseを返す）
 	 */
-	get autoRating(): number | undefined {
-		this.ensureLoaded();
-		return this.rating;
+	async autoRating(): Promise<number | undefined> {
+		// すでにロード済みの場合は即座に返す
+		if (this.isLoaded) {
+			return this.rating;
+		}
+
+		// キューサービスにenqueueしてPromiseを受け取る
+		return metadataQueueService.enqueue(this.imagePath);
 	}
 
 	/**

@@ -9,27 +9,25 @@
 		onRatingChange?: (newRating: number) => void;
 	} = $props();
 
-	// Rating書き込み中かどうかの状態（新しいストアでは簡略化）
-	const isLoading = $derived(metadata.isLoading);
-
 	let isRatingHovered = $state(false);
 	let hoveredRating = $state(0);
 
-	// 表示用のRating値（ホバー中は予想値、それ以外は実際の値）
-	const displayRating = $derived(isRatingHovered ? hoveredRating : (metadata.autoRating ?? 0));
+	// autoRating()はPromiseを返すようになったので、{#await}で使用
+	const ratingPromise = $derived(metadata.autoRating());
 
-	// デバッグログ: ratingの受け取り状況をチェック
+	// 表示用のRating値（ホバー中は予想値、それ以外はawaitの結果）
+	// displayRatingは{#await}内で直接計算
+
+	// デバッグログ: autoRatingの受け取り状況をチェック
 	$effect(() => {
-		console.log(
-			'⭐ RatingComponent: ' +
-				metadata.imagePath.split('/').pop() +
-				' rating=' +
-				JSON.stringify(metadata.autoRating) +
-				' displayRating=' +
-				displayRating +
-				' isLoaded=' +
-				metadata.isLoaded
-		);
+		ratingPromise.then((rating) => {
+			console.log(
+				'⭐ RatingComponent: ' +
+					metadata.imagePath.split('/').pop() +
+					' autoRating=' +
+					JSON.stringify(rating)
+			);
+		});
 	});
 
 	const onmouseleave = () => {
@@ -47,7 +45,8 @@
 		e.stopPropagation(); // 親要素のクリックイベントを防ぐ
 
 		// 同じ星をクリックした場合は0に戻す、そうでなければ新しいRating値を設定
-		const newRating = (metadata.autoRating ?? 0) === clickedRating ? 0 : clickedRating;
+		// autoRating()はPromiseなので、現在の値を直接取得するためにmetadata.ratingを使用
+		const newRating = (metadata.rating ?? 0) === clickedRating ? 0 : clickedRating;
 
 		if (onRatingChange) {
 			onRatingChange(newRating);
@@ -60,15 +59,16 @@
 
 <!-- Rating Overlay Component -->
 <div class="rounded bg-black/30 px-1 py-0.5" role="group" aria-label="Image Rating" {onmouseleave}>
-	{#if isLoading}
+	{#await ratingPromise}
 		<!-- メタデータロード中のスピナー -->
 		<div class="flex items-center gap-1 rounded bg-black/50 px-2 py-1">
 			<span class="loading loading-xs loading-spinner text-white"></span>
 			<span class="text-xs text-white">Loading...</span>
 		</div>
-	{:else}
+	{:then rating}
 		<!-- 通常のRating表示 -->
-		<div class="flex gap-0.5" title={`Rating: ${metadata.autoRating || 0}/5 (click to change)`}>
+		{@const displayRating = isRatingHovered ? hoveredRating : (rating ?? 0)}
+		<div class="flex gap-0.5" title={`Rating: ${rating || 0}/5 (click to change)`}>
 			{#each Array(5) as _, i}
 				<button
 					class="text-sm transition-colors duration-100 hover:scale-110 {i < displayRating
@@ -83,5 +83,10 @@
 				</button>
 			{/each}
 		</div>
-	{/if}
+	{:catch error}
+		<!-- エラー表示 -->
+		<div class="flex items-center gap-1 rounded bg-red-500/50 px-2 py-1">
+			<span class="text-xs text-white">Error</span>
+		</div>
+	{/await}
 </div>

@@ -65,7 +65,7 @@ export class ThumbnailService {
 	 */
 	async startProcessing(imagePaths: string[]): Promise<void> {
 		console.log('ThumbnailService.startProcessing 呼び出し:', imagePaths.length + '個のファイル');
-		
+
 		if (this._status === 'running') {
 			console.warn('ThumbnailService is already running');
 			return;
@@ -182,7 +182,9 @@ export class ThumbnailService {
 			const channel = new Channel<Uint8Array>();
 
 			channel.onmessage = (data) => {
-				console.log('サムネイルデータ受信: ' + imagePath + ' データサイズ: ' + (data?.length || 'undefined'));
+				console.log(
+					'サムネイルデータ受信: ' + imagePath + ' データサイズ: ' + (data?.length || 'undefined')
+				);
 				try {
 					const blob = new Blob([new Uint8Array(data)], { type: 'image/webp' });
 					const thumbnailUrl = URL.createObjectURL(blob);

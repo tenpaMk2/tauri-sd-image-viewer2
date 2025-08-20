@@ -357,12 +357,14 @@
 			{@const thumbnailUrl = thumbnailService.getThumbnail(imagePath)}
 			{@const isSelected = selectedImages.has(imagePath)}
 			{@const metadata = imageMetadataStore.getMetadata(imagePath)}
+			{@const isLoading = !thumbnailUrl && loadingState.isProcessing}
 
 			<ImageThumbnail
 				{imagePath}
 				{thumbnailUrl}
 				{metadata}
 				{isSelected}
+				{isLoading}
 				onImageClick={onImageSelect}
 				{onToggleSelection}
 			/>

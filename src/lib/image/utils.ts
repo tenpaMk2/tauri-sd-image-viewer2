@@ -1,113 +1,16 @@
-import { basename, dirname } from '@tauri-apps/api/path';
+import { dirname } from '@tauri-apps/api/path';
 import { stat } from '@tauri-apps/plugin-fs';
-import { imageMetadataStore } from '../stores/image-metadata-store.svelte';
 import type { SdParameters } from '../types/shared-types';
 
 export type ImageMetadata = {
 	filename: string;
-	size: string;
-	dimensions: string;
-	format: string;
-	created: string;
-	modified: string;
-	camera?: string;
-	lens?: string;
-	settings?: string;
-	sdParameters?: SdParameters;
-	rating?: number; // XMP rating from shared-types
-};
-
-/**
- * 基本情報のみを軽量作成（サムネイル用）
- */
-export const createBasicImageInfo = async (
-	imagePath: string
-): Promise<{
-	filename: string;
-	size: string;
-	dimensions: string;
-	format: string;
-}> => {
-	const filename = await basename(imagePath);
-	const extension = filename.split('.').pop()?.toUpperCase() || '';
-
-	try {
-		const reactiveMetadata = imageMetadataStore.getMetadata(imagePath);
-		const basicInfo = {
-			file_size: reactiveMetadata.autoFileSize || 0,
-			width: reactiveMetadata.autoWidth || 0,
-			height: reactiveMetadata.autoHeight || 0
-		};
-		const sizeFormatted = formatFileSize(basicInfo.file_size);
-		const dimensions =
-			basicInfo.width > 0 && basicInfo.height > 0
-				? basicInfo.width + ' × ' + basicInfo.height
-				: 'Unknown';
-
-		return {
-			filename,
-			size: sizeFormatted,
-			dimensions,
-			format: extension
-		};
-	} catch (error) {
-		console.warn('基本ファイル情報の取得に失敗:' + error);
-		return {
-			filename,
-			size: 'Unknown',
-			dimensions: 'Unknown',
-			format: extension
-		};
-	}
-};
-
-/**
- * 画像メタデータを効率的に作成
- */
-export const createImageMetadata = async (imagePath: string): Promise<ImageMetadata> => {
-	const filename = await basename(imagePath);
-	const extension = filename.split('.').pop()?.toUpperCase() || '';
-
-	try {
-		// ファイルシステム情報を取得
-		const fileStats = await stat(imagePath);
-		const created = fileStats.birthtime
-			? new Date(fileStats.birthtime).toLocaleString('ja-JP')
-			: 'Unknown';
-		const modified = fileStats.mtime
-			? new Date(fileStats.mtime).toLocaleString('ja-JP')
-			: 'Unknown';
-
-		// リアクティブメタデータを使用
-		const reactiveMetadata = imageMetadataStore.getMetadata(imagePath);
-
-		const sizeFormatted = formatFileSize(reactiveMetadata.autoFileSize || 0);
-		const dimensions =
-			reactiveMetadata.autoWidth && reactiveMetadata.autoHeight
-				? reactiveMetadata.autoWidth + ' × ' + reactiveMetadata.autoHeight
-				: 'Unknown';
-
-		return {
-			filename,
-			size: sizeFormatted,
-			dimensions,
-			format: extension,
-			created,
-			modified,
-			sdParameters: reactiveMetadata.sdParameters,
-			rating: reactiveMetadata.rating
-		};
-	} catch (error) {
-		console.warn('ファイル情報の取得に失敗:' + error);
-		return {
-			filename,
-			size: 'Unknown',
-			dimensions: 'Unknown',
-			format: extension,
-			created: 'Unknown',
-			modified: 'Unknown'
-		};
-	}
+	size: Promise<string>;
+	dimensions: Promise<string>;
+	format: Promise<string | undefined>;
+	created: Promise<string | undefined>;
+	modified: Promise<string | undefined>;
+	sdParameters: Promise<SdParameters | undefined>;
+	rating: Promise<number | undefined>;
 };
 
 const formatFileSize = (bytes: number): string => {

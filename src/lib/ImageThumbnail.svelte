@@ -29,18 +29,6 @@
 	const handleDoubleClick = (): void => {
 		onImageClick(imagePath);
 	};
-
-	const handleCheckboxChange = (e: Event): void => {
-		e.stopPropagation();
-		if (onToggleSelection) {
-			onToggleSelection(imagePath);
-		}
-	};
-
-	const handleRatingChange = async (newRating: number) => {
-		await metadata.updateRating(newRating);
-		// リアクティブシステムにより自動的にUIが更新されます
-	};
 </script>
 
 <div class="group relative cursor-pointer">
@@ -78,6 +66,6 @@
 
 	<!-- Rating Component -->
 	<div class="absolute bottom-1 left-1/2 -translate-x-1/2">
-		<RatingComponent {metadata} onRatingChange={handleRatingChange} />
+		<RatingComponent {imagePath} />
 	</div>
 </div>

@@ -1,34 +1,16 @@
 <script lang="ts">
-	import type { ReactiveImageMetadata } from '../stores/image-metadata-store.svelte';
+	import { imageMetadataStore } from '$lib/stores/image-metadata-store.svelte';
 
-	const {
-		metadata,
-		onRatingChange
-	}: {
-		metadata: ReactiveImageMetadata;
-		onRatingChange?: (newRating: number) => void;
-	} = $props();
+	type Props = {
+		imagePath: string;
+	};
+
+	const { imagePath }: Props = $props();
+
+	const metadata = imageMetadataStore.getMetadata(imagePath);
 
 	let isRatingHovered = $state(false);
 	let hoveredRating = $state(0);
-
-	// autoRating()はPromiseを返すようになったので、{#await}で使用
-	const ratingPromise = $derived(metadata.autoRating());
-
-	// 表示用のRating値（ホバー中は予想値、それ以外はawaitの結果）
-	// displayRatingは{#await}内で直接計算
-
-	// デバッグログ: autoRatingの受け取り状況をチェック
-	$effect(() => {
-		ratingPromise.then((rating) => {
-			console.log(
-				'⭐ RatingComponent: ' +
-					metadata.imagePath.split('/').pop() +
-					' autoRating=' +
-					JSON.stringify(rating)
-			);
-		});
-	});
 
 	const onmouseleave = () => {
 		isRatingHovered = false;
@@ -44,22 +26,23 @@
 	const handleStarClick = async (e: Event, clickedRating: number) => {
 		e.stopPropagation(); // 親要素のクリックイベントを防ぐ
 
-		// 同じ星をクリックした場合は0に戻す、そうでなければ新しいRating値を設定
-		// autoRating()はPromiseなので、現在の値を直接取得するためにmetadata.ratingを使用
-		const newRating = (metadata.rating ?? 0) === clickedRating ? 0 : clickedRating;
+		try {
+			// 現在のrating値を取得（新しいPromiseベースAPI使用）
+			const currentRating = await metadata.getRating();
 
-		if (onRatingChange) {
-			onRatingChange(newRating);
-		} else {
-			// デフォルトの動作：直接メタデータストアを呼び出し
+			// 同じ星をクリックした場合は0に戻す、そうでなければ新しいRating値を設定
+			const newRating = (currentRating ?? 0) === clickedRating ? 0 : clickedRating;
+
 			await metadata.updateRating(newRating);
+		} catch (error) {
+			console.error(`Failed to update rating for ${imagePath.split('/').pop()}:`, error);
 		}
 	};
 </script>
 
 <!-- Rating Overlay Component -->
 <div class="rounded bg-black/30 px-1 py-0.5" role="group" aria-label="Image Rating" {onmouseleave}>
-	{#await ratingPromise}
+	{#await metadata.getRating()}
 		<!-- メタデータロード中のスピナー -->
 		<div class="flex items-center gap-1 rounded bg-black/50 px-2 py-1">
 			<span class="loading loading-xs loading-spinner text-white"></span>

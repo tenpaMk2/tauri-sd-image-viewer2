@@ -37,20 +37,27 @@ export class TagAggregationService {
 		// キャッシュをクリア
 		this.imageTagsCache.clear();
 
+		console.log(`タグ集計開始: ${imagePaths.length}個の画像`);
+
 		// 各画像ファイルからSDパラメータを取得してタグを集計
+		let successCount = 0;
+		let errorCount = 0;
+
 		for (const imagePath of imagePaths) {
 			try {
+				// メタデータストアから取得
 				const metadata = imageMetadataStore.getMetadata(imagePath);
+				const sdParameters = await metadata.getSdParameters();
 
-				if (metadata?.autoSdParameters) {
+				if (sdParameters) {
 					// タグ情報をキャッシュに保存
 					const imageTags = new Set<string>();
 
-					for (const tag of metadata.autoSdParameters.positive_sd_tags) {
+					for (const tag of sdParameters.positive_sd_tags) {
 						const normalizedTag = tag.name.trim().toLowerCase();
 						if (normalizedTag) imageTags.add(normalizedTag);
 					}
-					for (const tag of metadata.autoSdParameters.negative_sd_tags) {
+					for (const tag of sdParameters.negative_sd_tags) {
 						const normalizedTag = tag.name.trim().toLowerCase();
 						if (normalizedTag) imageTags.add(normalizedTag);
 					}
@@ -58,19 +65,22 @@ export class TagAggregationService {
 					this.imageTagsCache.set(imagePath, imageTags);
 
 					// 集計用の処理
-					this.addTagsToCount(tagCounts, metadata.autoSdParameters.positive_sd_tags, false);
-					this.addTagsToCount(tagCounts, metadata.autoSdParameters.negative_sd_tags, true);
+					this.addTagsToCount(tagCounts, sdParameters.positive_sd_tags, false);
+					this.addTagsToCount(tagCounts, sdParameters.negative_sd_tags, true);
+					successCount++;
 				} else {
 					// SDパラメータがない場合は空のSetを保存
 					this.imageTagsCache.set(imagePath, new Set());
 				}
 			} catch (error) {
 				console.warn(`SDタグ取得失敗: ${imagePath}`, error);
+				errorCount++;
 				// エラーがあった場合も空のSetを保存
 				this.imageTagsCache.set(imagePath, new Set());
 			}
 		}
 
+		console.log(`タグ集計完了: 成功 ${successCount}個, エラー ${errorCount}個`);
 		return this.processAggregationResult(tagCounts);
 	};
 
@@ -178,15 +188,18 @@ export class TagAggregationService {
 
 		try {
 			const metadata = imageMetadataStore.getMetadata(imagePath);
-			if (!metadata?.autoSdParameters) return false;
+
+			// 個別のPromiseベースAPIを使用してSDパラメータを取得
+			const sdParameters = await metadata.getSdParameters();
+			if (!sdParameters) return false;
 
 			// 正規化されたタグ名の配列を作成（positive + negative）
 			const imageTags = new Set<string>();
 
-			for (const tag of metadata.autoSdParameters.positive_sd_tags) {
+			for (const tag of sdParameters.positive_sd_tags) {
 				imageTags.add(tag.name.trim().toLowerCase());
 			}
-			for (const tag of metadata.autoSdParameters.negative_sd_tags) {
+			for (const tag of sdParameters.negative_sd_tags) {
 				imageTags.add(tag.name.trim().toLowerCase());
 			}
 

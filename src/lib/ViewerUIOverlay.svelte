@@ -1,7 +1,6 @@
 <script lang="ts">
 	import RatingComponent from './components/RatingComponent.svelte';
 	import NavigationButtons from './NavigationButtons.svelte';
-	import { imageMetadataStore } from './stores/image-metadata-store.svelte';
 	import ToolbarOverlay from './ToolbarOverlay.svelte';
 
 	const {
@@ -16,8 +15,7 @@
 		isMacOS,
 		goToPrevious,
 		goToNext,
-		isNavigating,
-		onRatingChange
+		isNavigating
 	}: {
 		imagePath?: string;
 		openFileDialog: () => void;
@@ -31,18 +29,7 @@
 		goToPrevious: () => void;
 		goToNext: () => void;
 		isNavigating: boolean;
-		onRatingChange?: (newRating: number) => void;
 	} = $props();
-
-	const handleRatingChange = async (newRating: number) => {
-		if (onRatingChange) {
-			onRatingChange(newRating);
-		} else if (imagePath) {
-			// デフォルト動作: メタデータストアを直接更新
-			const metadata = imageMetadataStore.getMetadata(imagePath);
-			await metadata.updateRating(newRating);
-		}
-	};
 </script>
 
 <!-- UI要素のオーバーレイ -->
@@ -70,10 +57,7 @@
 	<!-- Rating Component -->
 	{#if imagePath}
 		<div class="pointer-events-auto absolute bottom-4 left-1/2 -translate-x-1/2 transform">
-			<RatingComponent
-				metadata={imageMetadataStore.getMetadata(imagePath)}
-				onRatingChange={handleRatingChange}
-			/>
+			<RatingComponent {imagePath} />
 		</div>
 	{/if}
 </div>

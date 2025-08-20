@@ -1,11 +1,12 @@
 <script lang="ts">
-	import type { ReactiveImageMetadata } from '../../stores/image-metadata-store.svelte';
+	import { imageMetadataStore } from '../../stores/image-metadata-store.svelte';
 
-	const {
-		metadata
-	}: {
-		metadata: ReactiveImageMetadata;
-	} = $props();
+	type Props = {
+		imagePath: string;
+	};
+	const { imagePath }: Props = $props();
+
+	const metadata = imageMetadataStore.getMetadata(imagePath);
 </script>
 
 <div class="rounded-lg bg-base-300 p-3">
@@ -14,7 +15,15 @@
 		<!-- Rating -->
 		<div class="flex justify-between">
 			<div class="text-base-content/70">Rating:</div>
-			<div>{metadata.rating ?? 0}/5</div>
+			<div>
+				{#await metadata.getRating()}
+					Loading...
+				{:then rating}
+					{rating ?? 0}/5
+				{:catch}
+					Error
+				{/await}
+			</div>
 		</div>
 	</div>
 </div>

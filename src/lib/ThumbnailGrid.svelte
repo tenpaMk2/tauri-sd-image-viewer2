@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onDestroy } from 'svelte';
 	import ImageThumbnail from './ImageThumbnail.svelte';
 	import type { TagAggregationResult } from './services/tag-aggregation-service';
 	import { TagAggregationService } from './services/tag-aggregation-service';
@@ -50,43 +51,30 @@
 	let lastRefreshTrigger = $state<number>(-1);
 
 	// ThumbnailServiceの状態を監視して進捗を同期
-	$effect(() => {
-		const progress = thumbnailService.progress;
-		loadingState.loadedCount = progress.completed;
-		loadingState.totalCount = progress.total;
+	const currentProgress = $derived(thumbnailService.progress);
+	const currentStatus = $derived(thumbnailService.status);
 
-		// 処理状態も同期
-		loadingState.isProcessing = thumbnailService.status === 'running';
+	// 進捗状態の同期（$derivedを使用）
+	const syncedLoadingState = $derived.by(() => {
+		const newState = { ...loadingState };
+		newState.loadedCount = currentProgress.completed;
+		newState.totalCount = currentProgress.total;
+		newState.isProcessing = currentStatus === 'running';
 
-		if (thumbnailService.status === 'completed') {
-			console.log('サムネイル生成完了');
-			loadingState.isProcessing = false;
-		} else if (thumbnailService.status === 'cancelled') {
-			console.log('サムネイル生成がキャンセルされました');
-			loadingState.isProcessing = false;
-		}
+		return newState;
 	});
 
-	// サムネイル数の変化をリアルタイム監視
+	// 状態変更は別のeffectで処理
 	$effect(() => {
-		const thumbnailCount = thumbnailService.thumbnails.size;
-		console.log(
-			'=== サムネイル総数変化 === ' +
-				thumbnailCount +
-				' / ' +
-				imageFiles.length +
-				' keys: [' +
-				Array.from(thumbnailService.thumbnails.keys())
-					.map((path) => path.split('/').pop())
-					.join(', ') +
-				']'
-		);
-		console.log(
-			'表示可能なサムネイル:' +
-				Array.from(thumbnailService.thumbnails.keys())
-					.slice(0, 5)
-					.map((path) => (path as string).split('/').pop())
-		);
+		loadingState.loadedCount = syncedLoadingState.loadedCount;
+		loadingState.totalCount = syncedLoadingState.totalCount;
+		loadingState.isProcessing = syncedLoadingState.isProcessing;
+
+		if (currentStatus === 'completed') {
+			console.log('サムネイル生成完了');
+		} else if (currentStatus === 'cancelled') {
+			console.log('サムネイル生成がキャンセルされました');
+		}
 	});
 
 	// フィルタが変更されたときに画像リストを再計算
@@ -98,8 +86,15 @@
 		filterStore.state.selectedTags;
 
 		if (imageFiles.length > 0) {
-			// 新しいストアベースのフィルタ適用
-			const filtered = applyFiltersWithNewStore(imageFiles);
+			// 非同期でフィルタ適用（state_unsafe_mutationエラーを回避）
+			applyFiltersAsync(imageFiles);
+		}
+	});
+
+	// 非同期フィルタ適用関数
+	const applyFiltersAsync = async (imagePaths: string[]) => {
+		try {
+			const filtered = await applyFiltersWithNewStore(imagePaths);
 
 			// 変更があった場合のみ更新
 			if (
@@ -114,39 +109,46 @@
 					onFilteredImagesUpdate(filtered.length, imageFiles.length);
 				}
 			}
+		} catch (error) {
+			console.error('フィルタ適用エラー:', error);
 		}
-	});
+	};
 
-	// 新しいストアベースのフィルタ適用関数
-	const applyFiltersWithNewStore = (imagePaths: string[]): string[] => {
-		return imagePaths.filter((imagePath) => {
+	// 新しいストアベースのフィルタ適用関数（非同期版）
+	const applyFiltersWithNewStore = async (imagePaths: string[]): Promise<string[]> => {
+		const results: string[] = [];
+
+		for (const imagePath of imagePaths) {
 			// ファイル名パターンフィルタ
 			if (filterStore.state.filenamePattern) {
 				const filename = imagePath.split('/').pop() || '';
 				const pattern = new RegExp(filterStore.state.filenamePattern, 'i');
 				if (!pattern.test(filename)) {
-					return false;
+					continue;
 				}
 			}
 
 			// レーティングフィルタ（フィルターが有効な場合のみ）
 			if (filterStore.state.isActive && filterStore.state.targetRating !== null) {
 				const metadata = imageMetadataStore.getMetadata(imagePath);
-				const rating = metadata.rating ?? 0;
+				const rating = (await metadata.getRating()) ?? 0;
 				const target = filterStore.state.targetRating;
 				const comparison = filterStore.state.ratingComparison;
 
+				let passRatingFilter = true;
 				switch (comparison) {
 					case 'eq':
-						if (rating !== target) return false;
+						if (rating !== target) passRatingFilter = false;
 						break;
 					case 'gte':
-						if (rating < target) return false;
+						if (rating < target) passRatingFilter = false;
 						break;
 					case 'lte':
-						if (rating > target) return false;
+						if (rating > target) passRatingFilter = false;
 						break;
 				}
+
+				if (!passRatingFilter) continue;
 			}
 
 			// SDタグフィルタ（フィルターが有効で選択されている場合のみ）
@@ -157,19 +159,23 @@
 			) {
 				const tagData = tagAggregationService.getTagsForImage(imagePath);
 				if (!tagData || tagData.length === 0) {
-					return false;
+					continue;
 				}
 
 				const imageTags = tagData.map((tag: string) => tag.toLowerCase());
 				const selectedTags = filterStore.state.selectedTags.map((tag: string) => tag.toLowerCase());
 
-				return selectedTags.every((selectedTag) =>
+				const passTagFilter = selectedTags.every((selectedTag) =>
 					imageTags.some((imageTag) => imageTag.includes(selectedTag))
 				);
+
+				if (!passTagFilter) continue;
 			}
 
-			return true;
-		});
+			results.push(imagePath);
+		}
+
+		return results;
 	};
 
 	// 第1段階：画像ファイル一覧の取得とグリッド表示
@@ -196,8 +202,9 @@
 			imageFiles = await thumbnailService.getImageFiles(directoryPath);
 			console.log('取得された画像ファイル数:', imageFiles.length);
 
-			// 初期状態でフィルタを適用
-			filteredImageFiles = imageFiles; // SDタグフィルタが設定されるまでは全画像を表示
+			// 初期状態でフィルタを適用（非同期で）
+			filteredImageFiles = imageFiles; // まず全画像を表示
+			applyFiltersAsync(imageFiles); // その後非同期でフィルタ適用
 
 			// 親コンポーネントに画像ファイル一覧を通知
 			if (onImageFilesLoaded) {
@@ -225,8 +232,10 @@
 			console.log('loadThumbnails() を呼び出します');
 			loadThumbnails();
 
-			// 第3段階：SDタグデータを集計
-			loadTagData();
+			// 第3段階：SDタグデータを集計（非同期で実行してリアクティブコンテキストから分離）
+			setTimeout(() => {
+				loadTagData();
+			}, 0);
 
 			// メタデータは autoRating などのアクセス時に自動的にキューイングされる
 		} catch (err) {
@@ -290,14 +299,12 @@
 		}
 	});
 
-	// onDestroy時のクリーンアップ
-	$effect(() => {
-		return () => {
-			// サムネイル生成を停止
-			thumbnailService.stop();
-			// 未使用メタデータをクリア
-			imageMetadataStore.clearUnused([]);
-		};
+	// クリーンアップ
+	onDestroy(() => {
+		// サムネイル生成を停止
+		thumbnailService.stop();
+		// 未使用メタデータをクリア
+		imageMetadataStore.clearUnused([]);
 	});
 </script>
 

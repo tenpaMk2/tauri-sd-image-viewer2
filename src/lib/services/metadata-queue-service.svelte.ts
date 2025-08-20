@@ -1,43 +1,58 @@
 import { imageMetadataStore } from '../stores/image-metadata-store.svelte';
 
 /**
- * メタデータロードのキュー管理サービス（リアクティブ版）
+ * メタデータロードのキュー管理サービス
  * サムネイル生成完了に応じて順次メタデータをロードする
  */
 export class MetadataQueueService {
-	private queue = $state<string[]>([]);
-	private processing = $state(false);
+	private queue: string[] = [];
+	private processing = false;
 	private maxConcurrent = 2; // メタデータ読み込みの同時実行数
 	private activeJobs = new Set<Promise<void>>();
 
-	// Promise resolve用のマップ
-	private resolvers = new Map<string, (value: number | undefined) => void>();
+	// 進行中のロード処理を管理（パスごとにresolve関数を保持）
+	private pendingResolvers = new Map<
+		string,
+		{
+			resolve: () => void;
+			reject: (error: any) => void;
+		}
+	>();
 
 	/**
 	 * 画像のメタデータロードをキューに追加してPromiseを返す
 	 */
-	async enqueue(imagePath: string): Promise<number | undefined> {
-		// すでにロード済みの場合は即座に値を返す
+	async enqueue(imagePath: string): Promise<void> {
+		// すでにロード済みの場合は即座に完了
 		const metadata = imageMetadataStore.getMetadata(imagePath);
 		if (metadata.isLoaded) {
-			return metadata.rating;
+			return;
 		}
 
-		// すでにキューに入っている場合は既存のPromiseを返す
-		if (this.resolvers.has(imagePath)) {
-			return new Promise<number | undefined>((resolve) => {
-				// 既存のresolverをチェーンする
-				const existingResolver = this.resolvers.get(imagePath);
-				this.resolvers.set(imagePath, (value) => {
-					existingResolver?.(value);
-					resolve(value);
+		// すでに同じ画像のロード処理が進行中の場合は、そのPromiseに相乗り
+		if (this.pendingResolvers.has(imagePath)) {
+			return new Promise<void>((resolve, reject) => {
+				const existing = this.pendingResolvers.get(imagePath)!;
+				const originalResolve = existing.resolve;
+				const originalReject = existing.reject;
+
+				// 既存のPromiseをチェーン
+				this.pendingResolvers.set(imagePath, {
+					resolve: () => {
+						originalResolve();
+						resolve();
+					},
+					reject: (error) => {
+						originalReject(error);
+						reject(error);
+					}
 				});
 			});
 		}
 
 		// 新しいPromiseを作成
-		const promise = new Promise<number | undefined>((resolve) => {
-			this.resolvers.set(imagePath, resolve);
+		const promise = new Promise<void>((resolve, reject) => {
+			this.pendingResolvers.set(imagePath, { resolve, reject });
 		});
 
 		if (!this.queue.includes(imagePath)) {
@@ -95,27 +110,25 @@ export class MetadataQueueService {
 	private async loadMetadata(imagePath: string): Promise<void> {
 		try {
 			const metadata = imageMetadataStore.getMetadata(imagePath);
-			if (!metadata.isLoaded && !metadata.isLoading) {
-				console.log('🔄 Loading metadata from queue: ' + imagePath.split('/').pop());
-				await metadata.load();
-			}
+			console.log('🔄 Loading metadata from queue: ' + imagePath.split('/').pop());
+			await metadata.load();
 
-			// ロード完了時にPromiseをresolve
-			const resolver = this.resolvers.get(imagePath);
+			// 成功時にPromiseをresolve
+			const resolver = this.pendingResolvers.get(imagePath);
 			if (resolver) {
-				resolver(metadata.rating);
-				this.resolvers.delete(imagePath);
+				resolver.resolve();
+				this.pendingResolvers.delete(imagePath);
 			}
 		} catch (error) {
 			console.error(
 				'❌ Metadata load failed from queue: ' + imagePath.split('/').pop() + ' ' + error
 			);
 
-			// エラー時もPromiseをresolve（undefinedで）
-			const resolver = this.resolvers.get(imagePath);
+			// エラー時にPromiseをreject
+			const resolver = this.pendingResolvers.get(imagePath);
 			if (resolver) {
-				resolver(undefined);
-				this.resolvers.delete(imagePath);
+				resolver.reject(error);
+				this.pendingResolvers.delete(imagePath);
 			}
 		}
 	}
@@ -124,17 +137,17 @@ export class MetadataQueueService {
 	 * キューをクリア
 	 */
 	clear(): void {
-		// 未完了のPromiseもresolve
-		for (const [imagePath, resolver] of this.resolvers) {
-			resolver(undefined);
+		// 未完了のPromiseをreject
+		for (const [imagePath, resolver] of this.pendingResolvers) {
+			resolver.reject(new Error('Queue cleared'));
 		}
-		this.resolvers.clear();
+		this.pendingResolvers.clear();
 		this.queue = [];
 		console.log('🗑️ Metadata queue cleared');
 	}
 
 	/**
-	 * 現在のキューサイズを取得（リアクティブ）
+	 * 現在のキューサイズを取得
 	 */
 	get queueSize(): number {
 		return this.queue.length;

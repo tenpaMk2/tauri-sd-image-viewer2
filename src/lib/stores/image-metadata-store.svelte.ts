@@ -3,94 +3,119 @@ import { metadataQueueService } from '../services/metadata-queue-service.svelte'
 import type { ImageMetadataInfo, SdParameters } from '../types/shared-types';
 
 /**
- * リアクティブな画像メタデータ
+ * リアクティブな画像メタデータ（Promiseベース）
  */
 export class ReactiveImageMetadata {
 	imagePath: string;
 
-	// 基本情報
+	// 基本情報（$stateで管理、undefinedは未ロード状態）
 	filename = $state<string | undefined>(undefined);
 	width = $state<number | undefined>(undefined);
 	height = $state<number | undefined>(undefined);
 	fileSize = $state<number | undefined>(undefined);
 	mimeType = $state<string | undefined>(undefined);
 
-	// 評価・メタデータ
+	// 評価・メタデータ（$stateで管理、undefinedは未ロード状態）
 	rating = $state<number | undefined>(undefined);
 	sdParameters = $state<SdParameters | undefined>(undefined);
 
-	// 読み込み状態
-	isLoading = $state(false);
-	isLoaded = $state(false);
+	// エラー状態管理
 	loadError = $state<string | undefined>(undefined);
+
+	// ロード状態管理
+	private loadPromise?: Promise<void>;
 
 	constructor(imagePath: string) {
 		this.imagePath = imagePath;
 	}
 
 	/**
-	 * 必要に応じて自動読み込みを実行（MetadataQueueServiceに委譲）
+	 * すべてのプロパティが利用可能かチェック
 	 */
-	private ensureLoaded(): void {
-		if (!this.isLoaded && !this.isLoading) {
-			// MetadataQueueServiceにキューイングを依頼
-			metadataQueueService.enqueue(this.imagePath);
-		}
+	get isLoaded(): boolean {
+		return this.filename !== undefined; // filenameが設定されていればロード済み
 	}
 
 	/**
-	 * 自動読み込み付きのratingアクセサ（Promiseを返す）
+	 * ロード中かチェック
 	 */
-	async autoRating(): Promise<number | undefined> {
-		// すでにロード済みの場合は即座に返す
+	get isLoading(): boolean {
+		return this.loadPromise !== undefined;
+	}
+
+	/**
+	 * メタデータの読み込み（一度だけ実行される）
+	 */
+	private async ensureLoaded(): Promise<void> {
+		// 既にロード済みの場合は何もしない
 		if (this.isLoaded) {
-			return this.rating;
+			return;
 		}
 
-		// キューサービスにenqueueしてPromiseを受け取る
-		return metadataQueueService.enqueue(this.imagePath);
+		// 既にロード中の場合は既存のPromiseを待つ
+		if (this.loadPromise) {
+			return this.loadPromise;
+		}
+
+		// キューサービス経由でロード処理を開始
+		this.loadPromise = metadataQueueService.enqueue(this.imagePath).then(() => {
+			this.loadPromise = undefined; // ロード完了時にPromiseをクリア
+		});
+
+		return this.loadPromise;
+	}
+	/**
+	 * Rating を非同期で取得（自動ロード付き）
+	 */
+	async getRating(): Promise<number | undefined> {
+		await this.ensureLoaded();
+		return this.rating;
 	}
 
 	/**
-	 * 自動読み込み付きのsdParametersアクセサ
+	 * SD Parameters を非同期で取得（自動ロード付き）
 	 */
-	get autoSdParameters(): SdParameters | undefined {
-		this.ensureLoaded();
+	async getSdParameters(): Promise<SdParameters | undefined> {
+		await this.ensureLoaded();
 		return this.sdParameters;
 	}
 
 	/**
-	 * 自動読み込み付きの基本情報アクセサ
+	 * Width を非同期で取得（自動ロード付き）
 	 */
-	get autoWidth(): number | undefined {
-		this.ensureLoaded();
+	async getWidth(): Promise<number | undefined> {
+		await this.ensureLoaded();
 		return this.width;
 	}
 
-	get autoHeight(): number | undefined {
-		this.ensureLoaded();
+	/**
+	 * Height を非同期で取得（自動ロード付き）
+	 */
+	async getHeight(): Promise<number | undefined> {
+		await this.ensureLoaded();
 		return this.height;
 	}
 
-	get autoFileSize(): number | undefined {
-		this.ensureLoaded();
+	/**
+	 * FileSize を非同期で取得（自動ロード付き）
+	 */
+	async getFileSize(): Promise<number | undefined> {
+		await this.ensureLoaded();
 		return this.fileSize;
 	}
 
-	get autoMimeType(): string | undefined {
-		this.ensureLoaded();
+	/**
+	 * MimeType を非同期で取得（自動ロード付き）
+	 */
+	async getMimeType(): Promise<string | undefined> {
+		await this.ensureLoaded();
 		return this.mimeType;
 	}
 
 	/**
-	 * メタデータの非同期読み込み
+	 * メタデータの実際のロード処理（キューサービスから呼ばれる）
 	 */
 	async load(): Promise<void> {
-		if (this.isLoaded || this.isLoading) return;
-
-		this.isLoading = true;
-		this.loadError = undefined;
-
 		try {
 			console.log('🔄 Loading metadata: ' + this.imagePath.split('/').pop());
 
@@ -99,7 +124,7 @@ export class ReactiveImageMetadata {
 				path: this.imagePath
 			});
 
-			// リアクティブ状態を更新
+			// すべての$stateプロパティを一度に設定
 			this.filename = this.imagePath.split('/').pop() || 'Unknown';
 			this.width = metadata.width;
 			this.height = metadata.height;
@@ -108,15 +133,12 @@ export class ReactiveImageMetadata {
 			this.rating = metadata.rating ?? undefined;
 			this.sdParameters = metadata.sd_parameters ?? undefined;
 
-			this.isLoaded = true;
 			console.log(
 				'✅ Metadata loaded: ' + this.imagePath.split('/').pop() + ' rating=' + this.rating
 			);
 		} catch (error) {
 			console.error('❌ Metadata load failed: ' + this.imagePath.split('/').pop() + ' ' + error);
-			this.loadError = error instanceof Error ? error.message : String(error);
-		} finally {
-			this.isLoading = false;
+			throw error; // エラーを再スロー
 		}
 	}
 
@@ -148,16 +170,18 @@ export class ReactiveImageMetadata {
 	 * メタデータの強制リロード
 	 */
 	async reload(): Promise<void> {
-		this.isLoaded = false;
+		// すべての$stateをundefinedにしてリセット
+		this.filename = undefined;
+		this.width = undefined;
+		this.height = undefined;
+		this.fileSize = undefined;
+		this.mimeType = undefined;
+		this.rating = undefined;
+		this.sdParameters = undefined;
 		this.loadError = undefined;
-		await this.load();
-	}
+		this.loadPromise = undefined;
 
-	/**
-	 * 強制再読み込み（旧関数名に対応）
-	 */
-	async forceReload(): Promise<void> {
-		return this.reload();
+		await this.ensureLoaded();
 	}
 
 	/**
@@ -250,35 +274,6 @@ class ImageMetadataStore {
 	async waitForAllRatingWrites(): Promise<void> {
 		// 現在の実装では即座に完了（必要に応じて実装を追加）
 		return;
-	}
-
-	/**
-	 * 強制再読み込み（特定画像のキャッシュを無効化して再読み込み）
-	 */
-	async forceReload(imagePath: string): Promise<void> {
-		const metadata = this.metadataMap.get(imagePath);
-		if (metadata) {
-			await metadata.reload();
-		}
-	}
-
-	/**
-	 * ファイル削除後のキャッシュクリア（内部処理：削除された画像のメタデータキャッシュを無効化）
-	 */
-	invalidateMetadata(imagePath: string): void {
-		const metadata = this.metadataMap.get(imagePath);
-		if (metadata) {
-			// 状態をリセット
-			metadata.isLoaded = false;
-			metadata.loadError = undefined;
-			metadata.filename = undefined;
-			metadata.width = undefined;
-			metadata.height = undefined;
-			metadata.fileSize = undefined;
-			metadata.mimeType = undefined;
-			metadata.rating = undefined;
-			metadata.sdParameters = undefined;
-		}
 	}
 
 	/**

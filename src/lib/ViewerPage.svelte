@@ -101,6 +101,19 @@
 		});
 	};
 
+	// グローバルキーボードイベントリスナー（UIの表示状態に関係なく動作）
+	onMount(() => {
+		const handleGlobalKeyDown = (event: KeyboardEvent) => {
+			handleKeydown(event);
+		};
+
+		window.addEventListener('keydown', handleGlobalKeyDown);
+
+		return () => {
+			window.removeEventListener('keydown', handleGlobalKeyDown);
+		};
+	});
+
 	// 自動ナビゲーション用のハンドラー
 	const handleAutoNavigation = async (): Promise<void> => {
 		await navigationService.navigateNext();
@@ -113,10 +126,8 @@
 	const attachment: Attachment = (element) => {
 		const htmlElement = element as HTMLElement;
 		htmlElement.addEventListener('mousemove', actions.handleMouseMove);
-		htmlElement.addEventListener('keydown', handleKeydown);
 		return () => {
 			htmlElement.removeEventListener('mousemove', actions.handleMouseMove);
-			htmlElement.removeEventListener('keydown', handleKeydown);
 			// 自動ナビゲーションを停止
 			actions.stopAutoNavigation();
 			// UIタイマーをリセット（app-store内で管理）
@@ -129,7 +140,7 @@
 
 <!-- メイン画面のレイアウト（@attachでキーボードイベントとクリーンアップをこのコンポーネントにスコープ） -->
 <div
-	class="relative flex h-full bg-base-300"
+	class="relative flex h-full bg-base-300 outline-none"
 	tabindex="-1"
 	role="application"
 	aria-label="Image viewer"

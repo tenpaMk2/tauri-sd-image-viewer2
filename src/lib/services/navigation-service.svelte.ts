@@ -147,19 +147,67 @@ class NavigationServiceClass {
 
 	// パブリックメソッド
 	navigateNext = async (): Promise<void> => {
-		if (!this.hasNext) return;
+		console.log('🔄 NavigationService.navigateNext called');
+		if (!this.hasNext) {
+			console.log('❌ No next image available');
+			return;
+		}
 
 		const nextIndex = this.currentIndex + 1;
-		this._state.currentFilePath = this._state.files[nextIndex];
-		await this.preloadAdjacentImages(this._state.files, nextIndex);
+		const nextPath = this._state.files[nextIndex];
+		console.log('🔄 Next image path: ' + nextPath.split('/').pop());
+
+		// ナビゲーション開始
+		this._state.isNavigating = true;
+
+		try {
+			// 次の画像をプリロード（完了を待つ）
+			console.log('🔄 Preloading next image...');
+			await this.cacheManager.loadImage(nextPath);
+			console.log('✅ Next image preloaded');
+
+			// プリロード完了後にパスを更新
+			this._state.currentFilePath = nextPath;
+
+			// 隣接する画像もプリロード（非同期で実行）
+			this.preloadAdjacentImages(this._state.files, nextIndex).catch((error: any) => {
+				console.warn('Failed to preload adjacent images:', error);
+			});
+		} finally {
+			this._state.isNavigating = false;
+		}
 	};
 
 	navigatePrevious = async (): Promise<void> => {
-		if (!this.hasPrevious) return;
+		console.log('🔄 NavigationService.navigatePrevious called');
+		if (!this.hasPrevious) {
+			console.log('❌ No previous image available');
+			return;
+		}
 
 		const prevIndex = this.currentIndex - 1;
-		this._state.currentFilePath = this._state.files[prevIndex];
-		await this.preloadAdjacentImages(this._state.files, prevIndex);
+		const prevPath = this._state.files[prevIndex];
+		console.log('🔄 Previous image path: ' + prevPath.split('/').pop());
+
+		// ナビゲーション開始
+		this._state.isNavigating = true;
+
+		try {
+			// 前の画像をプリロード（完了を待つ）
+			console.log('🔄 Preloading previous image...');
+			await this.cacheManager.loadImage(prevPath);
+			console.log('✅ Previous image preloaded');
+
+			// プリロード完了後にパスを更新
+			this._state.currentFilePath = prevPath;
+
+			// 隣接する画像もプリロード（非同期で実行）
+			this.preloadAdjacentImages(this._state.files, prevIndex).catch((error: any) => {
+				console.warn('Failed to preload adjacent images:', error);
+			});
+		} finally {
+			this._state.isNavigating = false;
+		}
 	};
 
 	initializeNavigation = async (imagePath: string): Promise<void> => {
@@ -171,6 +219,14 @@ class NavigationServiceClass {
 
 			this._state.files = files;
 			this._state.currentFilePath = imagePath;
+
+			// 初期化時に現在の画像の隣接する画像をプリロード
+			const currentIndex = files.findIndex((path) => path === imagePath);
+			if (0 <= currentIndex) {
+				this.preloadAdjacentImages(files, currentIndex).catch((error: any) => {
+					console.warn('Failed to preload adjacent images on initialization:', error);
+				});
+			}
 		} finally {
 			this._state.isNavigating = false;
 		}
@@ -178,6 +234,10 @@ class NavigationServiceClass {
 
 	loadImage = async (path: string): Promise<string> => {
 		return await this.cacheManager.loadImage(path);
+	};
+
+	hasImageInCache = (path: string): boolean => {
+		return this.cacheManager.has(path);
 	};
 
 	clearCache = (): void => {

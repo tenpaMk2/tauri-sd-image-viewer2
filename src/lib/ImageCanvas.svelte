@@ -1,15 +1,6 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte';
-	import {
-		calculateFitScale,
-		createImageViewState,
-		endDrag,
-		handleZoom,
-		resetImageViewState,
-		startDrag,
-		updateDrag,
-		type ImageViewState
-	} from './image/image-manipulation';
+	import { ImageViewService } from './image/image-manipulation.svelte';
 
 	const {
 		imageUrl,
@@ -45,62 +36,60 @@
 
 	let containerRef: HTMLDivElement;
 	let imageRef = $state<HTMLImageElement>();
-	let viewState = $state<ImageViewState>(createImageViewState());
-	let isImageChanging = $state(false);
+	let imageViewService = new ImageViewService();
 	let previousImageUrl = '';
 
-	// 画像URLが変更されたときにズームとパンをリセット
+	// 画像URLが変更されたときは準備のみ（fitScaleは保持）
 	$effect(() => {
 		if (imageUrl && imageUrl !== previousImageUrl) {
-			isImageChanging = true;
-			resetImageViewState(viewState);
+			// ズーム状態をリセット（fitScaleは保持）
+			imageViewService.prepareForNewImage();
 			previousImageUrl = imageUrl;
 		}
 	});
 
+	// トランジションを表示するかどうかの判定（ズーム中かつドラッグ中でない場合のみ）
+	const shouldShowTransition = $derived(
+		imageViewService.viewState.isZooming && !imageViewService.viewState.isDragging
+	);
+
 	const handleWheel = (event: WheelEvent) => {
 		event.preventDefault();
-		handleZoom(viewState, event.deltaY);
+		imageViewService.zoom(event.deltaY);
 	};
 
 	const handleMouseDown = (event: MouseEvent) => {
 		// ミドルボタン（ボタン1）でドラッグを開始
 		if (event.button === 1) {
 			event.preventDefault();
-			startDrag(viewState, event.clientX, event.clientY);
+			imageViewService.startDrag(event.clientX, event.clientY);
 		}
 	};
 
 	const handleMouseMove = (event: MouseEvent) => {
-		if (viewState.isDragging) {
+		if (imageViewService.viewState.isDragging) {
 			event.preventDefault();
-			updateDrag(viewState, event.clientX, event.clientY);
+			imageViewService.updateDrag(event.clientX, event.clientY);
 		}
 	};
 
 	const handleMouseUp = (event: MouseEvent) => {
 		event.preventDefault();
-		endDrag(viewState);
+		imageViewService.endDrag();
 	};
 
 	const onImageLoad = () => {
 		if (imageRef) {
-			viewState.fitScale = calculateFitScale(imageRef, containerRef);
+			// 画像読み込み完了時に全ての状態をリセット
+			imageViewService.onImageLoaded(imageRef, containerRef);
 		}
-		// 次フレームでトランジション再有効化
-		requestAnimationFrame(() => {
-			isImageChanging = false;
-		});
-	};
-
-	// ズームリセット機能
-	const resetZoom = () => {
-		resetImageViewState(viewState);
 	};
 
 	// ズームされているかどうかをチェック
 	const isZoomed = $derived(
-		viewState.zoomLevel !== 1 || viewState.panX !== 0 || viewState.panY !== 0
+		imageViewService.viewState.zoomLevel !== 1 ||
+			imageViewService.viewState.panX !== 0 ||
+			imageViewService.viewState.panY !== 0
 	);
 
 	// ズーム状態変更時にコールバックを呼び出し
@@ -150,9 +139,11 @@
 			bind:this={imageRef}
 			src={imageUrl}
 			alt=""
-			class={viewState.isDragging || isImageChanging ? '' : 'transition-transform duration-200'}
-			style="transform: translate({viewState.panX}px, {viewState.panY}px) scale({viewState.fitScale *
-				viewState.zoomLevel}); transform-origin: center center; cursor: grab; max-width: none; max-height: none;"
+			class={shouldShowTransition ? 'transition-transform duration-200' : ''}
+			style="transform: translate({imageViewService.viewState.panX}px, {imageViewService.viewState
+				.panY}px) scale({imageViewService.viewState.fitScale *
+				imageViewService.viewState
+					.zoomLevel}); transform-origin: center center; cursor: grab; max-width: none; max-height: none;"
 			onload={onImageLoad}
 		/>
 	{:else if isLoading}
@@ -172,7 +163,7 @@
 	{#if imageUrl && isZoomed}
 		<button
 			class="btn absolute right-4 bottom-4 bg-black/60 text-white btn-ghost backdrop-blur-sm btn-sm hover:bg-black/80"
-			onclick={resetZoom}
+			onclick={() => imageViewService.resetZoom()}
 			title="Reset zoom (1:1)"
 			aria-label="Reset zoom"
 		>

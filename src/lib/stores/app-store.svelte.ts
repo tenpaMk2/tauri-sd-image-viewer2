@@ -271,12 +271,9 @@ const loadImage = async (imagePath: string): Promise<void> => {
 	);
 
 	try {
-		// 状態をリセット
-		appState.viewer.imageUrl = '';
-		appState.viewer.isLoading = true;
 		appState.viewer.error = '';
 
-		console.log('🔄 Calling navigationService.loadImage...');
+		console.log('🔄 Loading image...');
 		const url = await navigationService.loadImage(imagePath);
 		console.log('✅ Image loaded, URL: ' + (url ? 'blob:...' : 'null'));
 

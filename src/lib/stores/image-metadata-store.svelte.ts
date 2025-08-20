@@ -3,6 +3,11 @@ import { metadataQueueService } from '../services/metadata-queue-service.svelte'
 import type { ImageMetadataInfo, SdParameters } from '../types/shared-types';
 
 /**
+ * メタデータロード状態
+ */
+type LoadingStatus = 'unloaded' | 'loading' | 'loaded';
+
+/**
  * リアクティブな画像メタデータ（Promiseベース）
  */
 export class ReactiveImageMetadata {
@@ -19,10 +24,11 @@ export class ReactiveImageMetadata {
 	rating = $state<number | undefined>(undefined);
 	sdParameters = $state<SdParameters | undefined>(undefined);
 
-	// エラー状態管理
+	// ロード状態管理
+	loadingStatus = $state<LoadingStatus>('unloaded');
 	loadError = $state<string | undefined>(undefined);
 
-	// ロード状態管理
+	// 内部管理用
 	private loadPromise?: Promise<void>;
 
 	constructor(imagePath: string) {
@@ -30,17 +36,14 @@ export class ReactiveImageMetadata {
 	}
 
 	/**
-	 * すべてのプロパティが利用可能かチェック
+	 * ロード状態のチェック用ゲッター（互換性のため）
 	 */
 	get isLoaded(): boolean {
-		return this.filename !== undefined; // filenameが設定されていればロード済み
+		return this.loadingStatus === 'loaded';
 	}
 
-	/**
-	 * ロード中かチェック
-	 */
 	get isLoading(): boolean {
-		return this.loadPromise !== undefined;
+		return this.loadingStatus === 'loading';
 	}
 
 	/**
@@ -65,50 +68,122 @@ export class ReactiveImageMetadata {
 		return this.loadPromise;
 	}
 	/**
-	 * Rating を非同期で取得（自動ロード付き）
+	 * Rating を同期的に取得（リアクティブ、自動ロード付き）
 	 */
-	async getRating(): Promise<number | undefined> {
-		await this.ensureLoaded();
+	get ratingValue(): number | undefined {
+		if (this.loadingStatus === 'unloaded') {
+			this.loadingStatus = 'loading';
+			this.ensureLoaded()
+				.then(() => {
+					this.loadingStatus = 'loaded';
+				})
+				.catch((error) => {
+					this.loadingStatus = 'unloaded';
+					console.error(
+						'❌ Auto-load failed for rating: ' + this.imagePath.split('/').pop() + ' ' + error
+					);
+				});
+		}
 		return this.rating;
 	}
 
 	/**
-	 * SD Parameters を非同期で取得（自動ロード付き）
+	 * SD Parameters を同期的に取得（リアクティブ、自動ロード付き）
 	 */
-	async getSdParameters(): Promise<SdParameters | undefined> {
-		await this.ensureLoaded();
+	get sdParametersValue(): SdParameters | undefined {
+		if (this.loadingStatus === 'unloaded') {
+			this.loadingStatus = 'loading';
+			this.ensureLoaded()
+				.then(() => {
+					this.loadingStatus = 'loaded';
+				})
+				.catch((error) => {
+					this.loadingStatus = 'unloaded';
+					console.error(
+						'❌ Auto-load failed for sdParameters: ' + this.imagePath.split('/').pop() + ' ' + error
+					);
+				});
+		}
 		return this.sdParameters;
 	}
 
 	/**
-	 * Width を非同期で取得（自動ロード付き）
+	 * Width を同期的に取得（リアクティブ、自動ロード付き）
 	 */
-	async getWidth(): Promise<number | undefined> {
-		await this.ensureLoaded();
+	get widthValue(): number | undefined {
+		if (this.loadingStatus === 'unloaded') {
+			this.loadingStatus = 'loading';
+			this.ensureLoaded()
+				.then(() => {
+					this.loadingStatus = 'loaded';
+				})
+				.catch((error) => {
+					this.loadingStatus = 'unloaded';
+					console.error(
+						'❌ Auto-load failed for width: ' + this.imagePath.split('/').pop() + ' ' + error
+					);
+				});
+		}
 		return this.width;
 	}
 
 	/**
-	 * Height を非同期で取得（自動ロード付き）
+	 * Height を同期的に取得（リアクティブ、自動ロード付き）
 	 */
-	async getHeight(): Promise<number | undefined> {
-		await this.ensureLoaded();
+	get heightValue(): number | undefined {
+		if (this.loadingStatus === 'unloaded') {
+			this.loadingStatus = 'loading';
+			this.ensureLoaded()
+				.then(() => {
+					this.loadingStatus = 'loaded';
+				})
+				.catch((error) => {
+					this.loadingStatus = 'unloaded';
+					console.error(
+						'❌ Auto-load failed for height: ' + this.imagePath.split('/').pop() + ' ' + error
+					);
+				});
+		}
 		return this.height;
 	}
 
 	/**
-	 * FileSize を非同期で取得（自動ロード付き）
+	 * FileSize を同期的に取得（リアクティブ、自動ロード付き）
 	 */
-	async getFileSize(): Promise<number | undefined> {
-		await this.ensureLoaded();
+	get fileSizeValue(): number | undefined {
+		if (this.loadingStatus === 'unloaded') {
+			this.loadingStatus = 'loading';
+			this.ensureLoaded()
+				.then(() => {
+					this.loadingStatus = 'loaded';
+				})
+				.catch((error) => {
+					this.loadingStatus = 'unloaded';
+					console.error(
+						'❌ Auto-load failed for fileSize: ' + this.imagePath.split('/').pop() + ' ' + error
+					);
+				});
+		}
 		return this.fileSize;
 	}
 
 	/**
-	 * MimeType を非同期で取得（自動ロード付き）
+	 * MimeType を同期的に取得（リアクティブ、自動ロード付き）
 	 */
-	async getMimeType(): Promise<string | undefined> {
-		await this.ensureLoaded();
+	get mimeTypeValue(): string | undefined {
+		if (this.loadingStatus === 'unloaded') {
+			this.loadingStatus = 'loading';
+			this.ensureLoaded()
+				.then(() => {
+					this.loadingStatus = 'loaded';
+				})
+				.catch((error) => {
+					this.loadingStatus = 'unloaded';
+					console.error(
+						'❌ Auto-load failed for mimeType: ' + this.imagePath.split('/').pop() + ' ' + error
+					);
+				});
+		}
 		return this.mimeType;
 	}
 
@@ -132,6 +207,9 @@ export class ReactiveImageMetadata {
 			this.mimeType = metadata.mime_type;
 			this.rating = metadata.rating ?? undefined;
 			this.sdParameters = metadata.sd_parameters ?? undefined;
+
+			// ロード状態を更新
+			this.loadingStatus = 'loaded';
 
 			console.log(
 				'✅ Metadata loaded: ' + this.imagePath.split('/').pop() + ' rating=' + this.rating
@@ -180,6 +258,7 @@ export class ReactiveImageMetadata {
 		this.sdParameters = undefined;
 		this.loadError = undefined;
 		this.loadPromise = undefined;
+		this.loadingStatus = 'unloaded';
 
 		await this.ensureLoaded();
 	}
@@ -211,7 +290,15 @@ class ImageMetadataStore {
 	getMetadata(imagePath: string): ReactiveImageMetadata {
 		if (!this.metadataMap.has(imagePath)) {
 			console.log('🆕 Creating metadata store: ' + imagePath.split('/').pop());
-			this.metadataMap.set(imagePath, new ReactiveImageMetadata(imagePath));
+			const metadata = new ReactiveImageMetadata(imagePath);
+			this.metadataMap.set(imagePath, metadata);
+			
+			// 新しいインスタンス作成時に自動的にロードを開始
+			if (metadata.loadingStatus === 'unloaded' && !metadata.isLoading) {
+				metadata.load().catch((error: unknown) => {
+					console.error('Failed to auto-load metadata for ' + imagePath.split('/').pop() + ': ' + error);
+				});
+			}
 		}
 		return this.metadataMap.get(imagePath)!;
 	}
@@ -241,7 +328,7 @@ class ImageMetadataStore {
 		const currentPathSet = new Set(currentImagePaths);
 		let removedCount = 0;
 
-		for (const [path, metadata] of this.metadataMap) {
+		for (const [path] of this.metadataMap) {
 			if (!currentPathSet.has(path)) {
 				this.metadataMap.delete(path);
 				removedCount++;

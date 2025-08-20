@@ -131,7 +131,7 @@
 			// レーティングフィルタ（フィルターが有効な場合のみ）
 			if (filterStore.state.isActive && filterStore.state.targetRating !== null) {
 				const metadata = imageMetadataStore.getMetadata(imagePath);
-				const rating = (await metadata.getRating()) ?? 0;
+				const rating = metadata.ratingValue ?? 0;
 				const target = filterStore.state.targetRating;
 				const comparison = filterStore.state.ratingComparison;
 

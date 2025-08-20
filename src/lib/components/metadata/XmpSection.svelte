@@ -6,7 +6,11 @@
 	};
 	const { imagePath }: Props = $props();
 
-	const metadata = imageMetadataStore.getMetadata(imagePath);
+	// リアクティブなメタデータオブジェクト取得
+	const metadata = $derived(imageMetadataStore.getMetadata(imagePath));
+
+	// リアクティブな値を取得
+	const currentRating = $derived(metadata.ratingValue);
 </script>
 
 <div class="rounded-lg bg-base-300 p-3">
@@ -16,13 +20,11 @@
 		<div class="flex justify-between">
 			<div class="text-base-content/70">Rating:</div>
 			<div>
-				{#await metadata.getRating()}
+				{#if metadata.loadingStatus === 'loaded'}
+					{currentRating ?? 0}/5
+				{:else}
 					Loading...
-				{:then rating}
-					{rating ?? 0}/5
-				{:catch}
-					Error
-				{/await}
+				{/if}
 			</div>
 		</div>
 	</div>

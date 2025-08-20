@@ -6,7 +6,14 @@
 	};
 	const { imagePath }: Props = $props();
 
-	const metadata = imageMetadataStore.getMetadata(imagePath);
+	// リアクティブなメタデータオブジェクト取得
+	const metadata = $derived(imageMetadataStore.getMetadata(imagePath));
+
+	// リアクティブな値を取得
+	const fileSize = $derived(metadata.fileSizeValue);
+	const width = $derived(metadata.widthValue);
+	const height = $derived(metadata.heightValue);
+	const mimeType = $derived(metadata.mimeTypeValue);
 </script>
 
 <div class="rounded-lg bg-base-300 p-3">
@@ -22,39 +29,33 @@
 		<div class="flex justify-between">
 			<div class="text-base-content/70">Size:</div>
 			<div>
-				{#await metadata.getFileSize()}
+				{#if metadata.loadingStatus === 'loaded'}
+					{fileSize ? `${Math.round(fileSize / 1024)} KB` : 'Unknown'}
+				{:else}
 					Loading...
-				{:then size}
-					{size ? `${Math.round(size / 1024)} KB` : 'Unknown'}
-				{:catch}
-					Unknown
-				{/await}
+				{/if}
 			</div>
 		</div>
 
 		<div class="flex justify-between">
 			<div class="text-base-content/70">Resolution:</div>
 			<div>
-				{#await Promise.all([metadata.getWidth(), metadata.getHeight()])}
-					Loading...
-				{:then [width, height]}
+				{#if metadata.loadingStatus === 'loaded'}
 					{width && height ? `${width} × ${height}` : 'Unknown'}
-				{:catch}
-					Unknown
-				{/await}
+				{:else}
+					Loading...
+				{/if}
 			</div>
 		</div>
 
 		<div class="flex justify-between">
 			<div class="text-base-content/70">Format:</div>
 			<div>
-				{#await metadata.getMimeType()}
+				{#if metadata.loadingStatus === 'loaded'}
+					{mimeType || 'Unknown'}
+				{:else}
 					Loading...
-				{:then format}
-					{format || 'Unknown'}
-				{:catch}
-					Unknown
-				{/await}
+				{/if}
 			</div>
 		</div>
 

@@ -7,10 +7,15 @@
 
 	const { imagePath }: Props = $props();
 
-	const metadata = imageMetadataStore.getMetadata(imagePath);
+	// リアクティブなメタデータオブジェクト取得
+	const metadata = $derived(imageMetadataStore.getMetadata(imagePath));
+
+	// リアクティブな値を取得  
+	const currentRating = $derived(metadata.ratingValue);
 
 	let isRatingHovered = $state(false);
 	let hoveredRating = $state(0);
+
 
 	const onmouseleave = () => {
 		isRatingHovered = false;
@@ -27,15 +32,12 @@
 		e.stopPropagation(); // 親要素のクリックイベントを防ぐ
 
 		try {
-			// 現在のrating値を取得（新しいPromiseベースAPI使用）
-			const currentRating = await metadata.getRating();
-
 			// 同じ星をクリックした場合は0に戻す、そうでなければ新しいRating値を設定
 			const newRating = (currentRating ?? 0) === clickedRating ? 0 : clickedRating;
 
 			await metadata.updateRating(newRating);
 		} catch (error) {
-			console.error(`Failed to update rating for ${imagePath.split('/').pop()}:`, error);
+			console.error('Failed to update rating for ' + imagePath.split('/').pop() + ': ' + error);
 		}
 	};
 </script>
@@ -47,16 +49,10 @@
 	aria-label="Image Rating"
 	{onmouseleave}
 >
-	{#await metadata.getRating()}
-		<!-- メタデータロード中のスピナー -->
-		<div class="flex items-center gap-1 rounded bg-black/50 px-2 py-1">
-			<span class="loading loading-xs loading-spinner text-white"></span>
-			<span class="text-xs text-white">Loading...</span>
-		</div>
-	{:then rating}
+	{#if metadata.loadingStatus === 'loaded'}
 		<!-- DaisyUI Rating表示 -->
-		{@const displayRating = isRatingHovered ? hoveredRating : (rating ?? 0)}
-		<div class="rating-xs rating" title={`Rating: ${rating || 0}/5 (click to change)`}>
+		{@const displayRating = isRatingHovered ? hoveredRating : (currentRating ?? 0)}
+		<div class="rating-xs rating" title={`Rating: ${currentRating || 0}/5 (click to change)`}>
 			{#each Array(5) as _, i}
 				<input
 					type="radio"
@@ -73,10 +69,11 @@
 				/>
 			{/each}
 		</div>
-	{:catch error}
-		<!-- エラー表示 -->
-		<div class="flex items-center gap-1 rounded bg-red-500/50 px-2 py-1">
-			<span class="text-xs text-white">Error</span>
+	{:else}
+		<!-- メタデータロード中のスピナー -->
+		<div class="flex items-center gap-1 rounded bg-black/50 px-2 py-1">
+			<span class="loading loading-xs loading-spinner text-white"></span>
+			<span class="text-xs text-white">Loading...</span>
 		</div>
-	{/await}
+	{/if}
 </div>

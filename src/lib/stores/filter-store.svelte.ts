@@ -22,7 +22,7 @@ export type FilterState = {
 const createFilterStore = () => {
 	let state = $state<FilterState>({
 		targetRating: 0, // Always active: 0 = unrated, 1-5 = rated
-		ratingComparison: 'lte', // Default: <= 0 (show all)
+		ratingComparison: 'gte', // Default: >= 0 (show all)
 		filenamePattern: '',
 		selectedTags: [],
 		isActive: false
@@ -60,8 +60,8 @@ const createFilterStore = () => {
 	};
 
 	const clearFilters = () => {
-		state.targetRating = 0; // Reset to <= 0 (show all)
-		state.ratingComparison = 'lte';
+		state.targetRating = 0; // Reset to >= 0 (show all)
+		state.ratingComparison = 'gte';
 		state.filenamePattern = '';
 		state.selectedTags = [];
 		state.isActive = false;
@@ -126,8 +126,8 @@ const createFilterStore = () => {
 		if (!state.isActive) return '';
 
 		const filters = [];
-		// Always show rating filter (only show if not default <= 0)
-		if (!(state.targetRating === 0 && state.ratingComparison === 'lte')) {
+		// Always show rating filter (only show if not default >= 0)
+		if (!(state.targetRating === 0 && state.ratingComparison === 'gte')) {
 			const comparisonSymbol =
 				state.ratingComparison === 'gte' ? '+' : state.ratingComparison === 'eq' ? '' : '-';
 			const ratingText =

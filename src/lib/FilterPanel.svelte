@@ -39,14 +39,14 @@
 	const handleStarClick = (rating: number) => {
 		// 現在選択中の星を再度クリックしたら星0になる
 		const newRating = selectedRating === rating ? 0 : rating;
-		filterStore.updateRatingFilter(newRating, selectedComparison);
+		filterStore.actions.updateRatingFilter(newRating, selectedComparison);
 	};
 
 	// Handle comparison operator change
 	const handleComparisonChange = (event: Event) => {
 		const target = event.target as HTMLSelectElement;
 		const newComparison = target.value as RatingComparison;
-		filterStore.updateRatingFilter(selectedRating, newComparison);
+		filterStore.actions.updateRatingFilter(selectedRating, newComparison);
 	};
 
 	// Handle pattern input changes with debouncing
@@ -58,7 +58,7 @@
 		// Debounce pattern updates
 		clearTimeout(patternTimeout);
 		patternTimeout = setTimeout(() => {
-			filterStore.updateFilenamePattern(inputValue);
+			filterStore.actions.updateFilenamePattern(inputValue);
 		}, 300);
 	};
 
@@ -80,7 +80,7 @@
 			const foundTag = tagData.uniqueTagNames.find((tag) => tag.toLowerCase() === lowerTagName);
 
 			if (foundTag) {
-				filterStore.addTag(foundTag);
+				filterStore.actions.addTag(foundTag);
 				tagInput = '';
 			}
 		}
@@ -88,12 +88,12 @@
 
 	// Handle tag removal
 	const removeTag = (tagName: string) => {
-		filterStore.removeTag(tagName);
+		filterStore.actions.removeTag(tagName);
 	};
 
 	// Clear all tags
 	const clearAllTags = () => {
-		filterStore.clearAllTags();
+		filterStore.actions.clearAllTags();
 	};
 
 	// Show help modal

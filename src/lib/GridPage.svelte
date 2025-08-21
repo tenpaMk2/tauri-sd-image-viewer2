@@ -66,7 +66,7 @@
 		const ratingsMap = imageMetadataStore.getRatingsMapSync(imageFiles);
 
 		// フィルタを適用
-		return filterStore.filterImages(imageFiles, ratingsMap, tagStore.state.tagAggregationService);
+		return filterStore.actions.filterImages(imageFiles, ratingsMap, tagStore.state.tagAggregationService);
 	});
 
 	const filteredImageCount = $derived(filteredImageFiles.length);

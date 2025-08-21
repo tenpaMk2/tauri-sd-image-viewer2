@@ -1,9 +1,12 @@
 import { navigationService } from '$lib/services/navigation-service.svelte';
 import { open } from '@tauri-apps/plugin-dialog';
+import { getImageFiles } from '../image/image-loader';
 import { getDirectoryFromPath, isDirectory, isImageFile } from '../image/utils';
-import type { AsyncThumbnailQueue } from '../services/async-thumbnail-queue';
 import type { ViewMode } from '../ui/types';
 import { imageMetadataStore } from './image-metadata-store.svelte';
+import { thumbnailStore } from './thumbnail-store.svelte';
+
+export type ImageLoadingState = 'idle' | 'loading' | 'loaded';
 
 export type ViewerState = {
 	imageUrl: string;
@@ -26,6 +29,10 @@ export type AppState = {
 	selectedImagePath: string | null;
 	selectedDirectory: string | null;
 	viewer: ViewerState;
+	// 画像ファイル管理
+	imageFiles: string[];
+	imageLoadingState: ImageLoadingState;
+	imageFileLoadError: string | null;
 };
 
 export type AppActions = {
@@ -38,6 +45,9 @@ export type AppActions = {
 	handleBackToGrid: () => Promise<void>;
 	handleBackToWelcome: () => Promise<void>;
 	handleDroppedPaths: (paths: string[]) => Promise<void>;
+	// 画像ファイル管理
+	loadImageFiles: () => Promise<void>;
+	clearImageFiles: () => void;
 	// ViewerPage用のアクション
 	loadImage: (imagePath: string) => Promise<void>;
 	toggleInfoPanel: () => void;
@@ -54,35 +64,9 @@ export type AppActions = {
 	handleResize: (event: MouseEvent, minWidth: number, maxWidth: number) => void;
 };
 
-// アクティブなサムネイルキューの管理
-let activeQueue: AsyncThumbnailQueue | null = null;
-
 // Viewer用のタイマー管理
 let uiTimer: number | null = null;
 let autoNavTimer: number | null = null;
-
-export const setActiveQueue = (queue: AsyncThumbnailQueue): void => {
-	// 以前のキューを停止
-	if (activeQueue && activeQueue !== queue) {
-		console.log('Stopping previous thumbnail queue');
-		activeQueue.stop();
-	}
-	activeQueue = queue;
-};
-
-export const stopActiveQueue = (): void => {
-	if (activeQueue) {
-		console.log('Stopping active thumbnail queue');
-		activeQueue.stop();
-	}
-};
-
-export const clearActiveQueue = (): void => {
-	if (activeQueue) {
-		activeQueue.stop();
-		activeQueue = null;
-	}
-};
 
 // Svelte 5の$stateを使用（オブジェクトラッパーパターン）
 let appState: AppState = $state({
@@ -103,8 +87,81 @@ let appState: AppState = $state({
 		autoNav: {
 			isActive: false
 		}
-	}
+	},
+	// 画像ファイル管理
+	imageFiles: [],
+	imageLoadingState: 'idle',
+	imageFileLoadError: null
 });
+
+// 画像ファイル管理のアクション
+const loadImageFiles = async (): Promise<void> => {
+	console.log(
+		'🔄 loadImageFiles: 開始 selectedDirectory=' +
+			appState.selectedDirectory +
+			' currentImageFiles=' +
+			appState.imageFiles.length
+	);
+
+	if (!appState.selectedDirectory) {
+		console.log('❌ loadImageFiles: selectedDirectoryが空');
+		appState.imageFiles = [];
+		appState.imageLoadingState = 'idle';
+		return;
+	}
+
+	console.log('🔄 loadImageFiles: ローディング状態を設定');
+	appState.imageLoadingState = 'loading';
+	appState.imageFileLoadError = null;
+
+	try {
+		console.log('🔄 loadImageFiles: getImageFiles呼び出し', appState.selectedDirectory);
+		const files = await getImageFiles(appState.selectedDirectory);
+		console.log(
+			'✅ loadImageFiles: getImageFiles成功 directory=' +
+				appState.selectedDirectory +
+				' fileCount=' +
+				files.length +
+				' firstFile=' +
+				(files[0] || 'none')
+		);
+
+		console.log('🔄 loadImageFiles: appState.imageFilesを更新');
+		appState.imageFiles = files;
+		console.log(
+			'✅ loadImageFiles: appState.imageFiles更新完了 newLength=' +
+				appState.imageFiles.length +
+				' state=' +
+				appState.imageLoadingState
+		);
+	} catch (error) {
+		console.error('❌ loadImageFiles: getImageFilesでエラー', {
+			directory: appState.selectedDirectory,
+			error: error,
+			errorMessage: error instanceof Error ? error.message : String(error),
+			errorStack: error instanceof Error ? error.stack : undefined
+		});
+		appState.imageFileLoadError = error instanceof Error ? error.message : String(error);
+		appState.imageFiles = [];
+	} finally {
+		console.log('🔄 loadImageFiles: finally - ローディング状態をloadedに');
+		appState.imageLoadingState = 'loaded';
+		console.log(
+			'✅ loadImageFiles: 完了 finalImageFiles=' +
+				appState.imageFiles.length +
+				' state=' +
+				appState.imageLoadingState +
+				' error=' +
+				appState.imageFileLoadError
+		);
+	}
+};
+
+const clearImageFiles = (): void => {
+	appState.imageFiles = [];
+	appState.imageLoadingState = 'idle';
+	appState.imageFileLoadError = null;
+};
 
 const openFileDialog = async (): Promise<void> => {
 	console.log('🔄 openFileDialog called');
@@ -122,10 +179,6 @@ const openFileDialog = async (): Promise<void> => {
 		console.log('📁 File selected: ' + selected);
 
 		if (selected && typeof selected === 'string') {
-			// ファイル選択でビューアーモードに移行する時は、サムネイル生成キューを停止
-			stopActiveQueue();
-			console.log('🛑 Active queue stopped');
-
 			// リアクティブメタデータの事前読み込み
 			const reactiveMetadata = imageMetadataStore.getMetadata(selected);
 			console.log('📊 Reactive metadata created');
@@ -155,23 +208,49 @@ const openFileDialog = async (): Promise<void> => {
 
 const openDirectoryDialog = async (): Promise<void> => {
 	try {
+		console.log('🔄 openDirectoryDialog: ダイアログを開く');
 		const selected = await open({
 			directory: true,
 			multiple: false
 		});
 
+		console.log('📁 openDirectoryDialog: 選択結果', selected);
+
 		if (selected && typeof selected === 'string') {
-			// 既存のキューを停止してクリア
-			clearActiveQueue();
-			
-			// メタデータをクリア
+			console.log('✅ openDirectoryDialog: 有効なディレクトリが選択された', selected);
+
+			// 古いデータをクリア
+			console.log('🗑️ openDirectoryDialog: 古いデータをクリア');
 			imageMetadataStore.clearAll();
-			
+			thumbnailStore.clearAll();
+			clearImageFiles();
+
+			console.log('🔄 openDirectoryDialog: appStateを更新');
 			appState.selectedDirectory = selected;
 			appState.viewMode = 'grid';
+
+			console.log(
+				'🔄 openDirectoryDialog: 現在のappState selectedDirectory=' +
+					appState.selectedDirectory +
+					' viewMode=' +
+					appState.viewMode +
+					' imageFiles=' +
+					appState.imageFiles.length +
+					' imageLoadingState=' +
+					appState.imageLoadingState +
+					' imageFileLoadError=' +
+					appState.imageFileLoadError
+			);
+
+			// 画像ファイルを自動的にロード
+			console.log('🔄 openDirectoryDialog: loadImageFiles開始');
+			await loadImageFiles();
+			console.log('✅ openDirectoryDialog: loadImageFiles完了');
+		} else {
+			console.log('❌ openDirectoryDialog: ディレクトリが選択されなかった');
 		}
 	} catch (error) {
-		console.error('フォルダ選択エラー: ' + error);
+		console.error('❌ openDirectoryDialog: エラー発生', error);
 	}
 };
 
@@ -210,9 +289,6 @@ const handleImageSelect = async (imagePath: string): Promise<void> => {
 	// Rating書き込み処理を待機（クラッシュ防止）
 	await imageMetadataStore.waitForAllRatingWrites();
 
-	// ビューアーモードに切り替える時は、サムネイル生成キューを停止
-	stopActiveQueue();
-
 	await updateSelectedImage(imagePath);
 	appState.viewMode = 'viewer';
 
@@ -231,8 +307,11 @@ const handleBackToWelcome = async (): Promise<void> => {
 	// Rating書き込み処理を待機（クラッシュ防止）
 	await imageMetadataStore.waitForAllRatingWrites();
 
-	// ウェルカム画面に戻る時は、サムネイル生成キューを停止してクリア
-	clearActiveQueue();
+	// すべてをクリア
+	clearImageFiles();
+	imageMetadataStore.clearAll();
+	thumbnailStore.clearAll();
+
 	appState.viewMode = 'welcome';
 	appState.selectedImagePath = null;
 	appState.selectedDirectory = null;
@@ -245,12 +324,17 @@ const handleDroppedPaths = async (paths: string[]): Promise<void> => {
 
 	try {
 		if (await isDirectory(firstPath)) {
-			clearActiveQueue();
+			// 古いデータをクリア
+			imageMetadataStore.clearAll();
+			thumbnailStore.clearAll();
+			clearImageFiles();
+
 			appState.selectedDirectory = firstPath;
 			appState.viewMode = 'grid';
-		} else if (isImageFile(firstPath)) {
-			stopActiveQueue();
 
+			// 画像ファイルを自動的にロード
+			await loadImageFiles();
+		} else if (isImageFile(firstPath)) {
 			// リアクティブメタデータの事前読み込み
 			const reactiveMetadata = imageMetadataStore.getMetadata(firstPath);
 			if (!reactiveMetadata.isLoaded && !reactiveMetadata.isLoading) {
@@ -415,10 +499,17 @@ const handleResize = (event: MouseEvent, minWidth: number, maxWidth: number): vo
 	document.addEventListener('mouseup', handleMouseUp);
 };
 
+// 個別のプロパティをエクスポート（リアクティブ）
+export const viewMode = () => appState.viewMode;
+export const selectedImagePath = () => appState.selectedImagePath;
+export const selectedDirectory = () => appState.selectedDirectory;
+export const imageFiles = appState.imageFiles;
+export const imageLoadingState = appState.imageLoadingState;
+export const imageFileLoadError = appState.imageFileLoadError;
+export const viewer = () => appState.viewer;
+
 export const appStore = {
-	get state() {
-		return appState;
-	},
+	state: appState,
 	actions: {
 		openFileDialog,
 		openDirectoryDialog,
@@ -429,6 +520,9 @@ export const appStore = {
 		handleBackToGrid,
 		handleBackToWelcome,
 		handleDroppedPaths,
+		// 画像ファイル管理
+		loadImageFiles,
+		clearImageFiles,
 		// ViewerPage用のアクション
 		loadImage,
 		toggleInfoPanel,

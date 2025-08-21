@@ -13,15 +13,16 @@ export type ImageData = {
  */
 export const getImageFiles = async (directoryPath: string): Promise<string[]> => {
 	try {
-		console.log('ディレクトリ読み込み: ' + directoryPath);
+		console.log('Reading directory: ' + directoryPath);
 		const entries = await readDir(directoryPath);
-		console.log('ディレクトリエントリ数: ' + entries.length);
+		console.log('Directory entry count: ' + entries.length);
 
 		const imageExtensions = SUPPORTED_IMAGE_EXTS.map((ext) => `.${ext}`);
 		const imageEntries = entries.filter(
 			(entry) =>
 				entry.isFile && imageExtensions.some((ext) => entry.name.toLowerCase().endsWith(ext))
 		);
+		console.log('Filtered image entries count:', imageEntries.length);
 
 		// path.joinを使って正しいパスを構築
 		const imageFiles = await Promise.all(
@@ -30,11 +31,11 @@ export const getImageFiles = async (directoryPath: string): Promise<string[]> =>
 				.map(async (entry): Promise<string> => await join(directoryPath, entry.name))
 		);
 
-		console.log('画像ファイル一覧: ' + imageFiles.length + '個のファイル');
+		console.log('Image file list completed: ' + imageFiles.length + ' files');
 		return imageFiles;
 	} catch (error) {
-		console.error('ディレクトリの読み込みに失敗しました: ' + directoryPath + ' ' + error);
-		throw new Error(`Failed to load directory: ${directoryPath}`);
+		console.error('Failed to read directory: ' + directoryPath + ' Error:', error);
+		throw new Error(`Failed to load directory: ${directoryPath}. Original error: ${error}`);
 	}
 };
 

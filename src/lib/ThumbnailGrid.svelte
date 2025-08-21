@@ -3,267 +3,29 @@
 	import ImageThumbnail from './ImageThumbnail.svelte';
 	import type { TagAggregationResult } from './services/tag-aggregation-service';
 	import { TagAggregationService } from './services/tag-aggregation-service';
-	import { thumbnailService } from './services/thumbnail-service.svelte';
-	import { filterStore } from './stores/filter-store.svelte';
 	import { imageMetadataStore } from './stores/image-metadata-store.svelte';
+	import { thumbnailStore } from './stores/thumbnail-store.svelte';
 
 	const {
-		directoryPath,
+		imageFiles,
 		onImageSelect,
 		selectedImages = new Set(),
 		onToggleSelection,
 		refreshTrigger = 0,
-		onImageFilesLoaded,
 		onFilteredImagesUpdate,
 		onTagDataLoaded
 	}: {
-		directoryPath: string;
+		imageFiles: string[];
 		onImageSelect: (imagePath: string) => void;
 		selectedImages?: Set<string>;
 		onToggleSelection?: (imagePath: string, shiftKey?: boolean, metaKey?: boolean) => void;
 		refreshTrigger?: number;
-		onImageFilesLoaded?: (files: string[]) => void;
 		onFilteredImagesUpdate?: (filteredCount: number, totalCount: number) => void;
 		onTagDataLoaded?: (tagData: TagAggregationResult) => void;
 	} = $props();
 
-	// ローディング状態を統合
-	type LoadingState = {
-		isLoading: boolean;
-		isProcessing: boolean;
-		error: string;
-		loadedCount: number;
-		totalCount: number;
-	};
-
 	// サービスインスタンス
-	const tagAggregationService = new TagAggregationService(thumbnailService);
-
-	let imageFiles = $state<string[]>([]);
-	let filteredImageFiles = $state<string[]>([]);
-	let loadingState = $state<LoadingState>({
-		isLoading: true,
-		isProcessing: false,
-		error: '',
-		loadedCount: 0,
-		totalCount: 0
-	});
-	let lastDirectoryPath = $state<string>('');
-	let lastRefreshTrigger = $state<number>(-1);
-
-	// ThumbnailServiceの状態を監視して進捗を同期
-	const currentProgress = $derived(thumbnailService.progress);
-	const currentStatus = $derived(thumbnailService.status);
-
-	// 進捗状態の同期（$derivedを使用）
-	const syncedLoadingState = $derived.by(() => {
-		const newState = { ...loadingState };
-		newState.loadedCount = currentProgress.completed;
-		newState.totalCount = currentProgress.total;
-		newState.isProcessing = currentStatus === 'running';
-
-		return newState;
-	});
-
-	// 状態変更は別のeffectで処理
-	$effect(() => {
-		loadingState.loadedCount = syncedLoadingState.loadedCount;
-		loadingState.totalCount = syncedLoadingState.totalCount;
-		loadingState.isProcessing = syncedLoadingState.isProcessing;
-
-		if (currentStatus === 'completed') {
-			console.log('サムネイル生成完了');
-		} else if (currentStatus === 'cancelled') {
-			console.log('サムネイル生成がキャンセルされました');
-		}
-	});
-
-	// フィルタが変更されたときに画像リストを再計算
-	$effect(() => {
-		// フィルタストアの状態変更を監視
-		filterStore.state.targetRating;
-		filterStore.state.ratingComparison;
-		filterStore.state.filenamePattern;
-		filterStore.state.selectedTags;
-
-		if (imageFiles.length > 0) {
-			// 非同期でフィルタ適用（state_unsafe_mutationエラーを回避）
-			applyFiltersAsync(imageFiles);
-		}
-	});
-
-	// 非同期フィルタ適用関数
-	const applyFiltersAsync = async (imagePaths: string[]) => {
-		try {
-			const filtered = await applyFiltersWithNewStore(imagePaths);
-
-			// 変更があった場合のみ更新
-			if (
-				filtered.length !== filteredImageFiles.length ||
-				!filtered.every((path, index) => path === filteredImageFiles[index])
-			) {
-				filteredImageFiles = filtered;
-				console.log('フィルタ適用結果: ' + filtered.length + ' / ' + imageFiles.length);
-
-				// 親コンポーネントにフィルタ結果を通知
-				if (onFilteredImagesUpdate) {
-					onFilteredImagesUpdate(filtered.length, imageFiles.length);
-				}
-			}
-		} catch (error) {
-			console.error('フィルタ適用エラー:', error);
-		}
-	};
-
-	// 新しいストアベースのフィルタ適用関数（非同期版）
-	const applyFiltersWithNewStore = async (imagePaths: string[]): Promise<string[]> => {
-		const results: string[] = [];
-
-		for (const imagePath of imagePaths) {
-			// ファイル名パターンフィルタ
-			if (filterStore.state.filenamePattern) {
-				const filename = imagePath.split('/').pop() || '';
-				const pattern = new RegExp(filterStore.state.filenamePattern, 'i');
-				if (!pattern.test(filename)) {
-					continue;
-				}
-			}
-
-			// レーティングフィルタ（フィルターが有効な場合のみ）
-			if (filterStore.state.isActive && filterStore.state.targetRating !== null) {
-				const metadata = imageMetadataStore.getMetadata(imagePath);
-				const rating = metadata.ratingValue ?? 0;
-				const target = filterStore.state.targetRating;
-				const comparison = filterStore.state.ratingComparison;
-
-				let passRatingFilter = true;
-				switch (comparison) {
-					case 'eq':
-						if (rating !== target) passRatingFilter = false;
-						break;
-					case 'gte':
-						if (rating < target) passRatingFilter = false;
-						break;
-					case 'lte':
-						if (rating > target) passRatingFilter = false;
-						break;
-				}
-
-				if (!passRatingFilter) continue;
-			}
-
-			// SDタグフィルタ（フィルターが有効で選択されている場合のみ）
-			if (
-				filterStore.state.isActive &&
-				filterStore.state.selectedTags &&
-				filterStore.state.selectedTags.length > 0
-			) {
-				const tagData = tagAggregationService.getTagsForImage(imagePath);
-				if (!tagData || tagData.length === 0) {
-					continue;
-				}
-
-				const imageTags = tagData.map((tag: string) => tag.toLowerCase());
-				const selectedTags = filterStore.state.selectedTags.map((tag: string) => tag.toLowerCase());
-
-				const passTagFilter = selectedTags.every((selectedTag) =>
-					imageTags.some((imageTag) => imageTag.includes(selectedTag))
-				);
-
-				if (!passTagFilter) continue;
-			}
-
-			results.push(imagePath);
-		}
-
-		return results;
-	};
-
-
-	// 第1段階：画像ファイル一覧の取得とグリッド表示
-	const loadImageFileList = async () => {
-		console.log('=== loadImageFileList 開始 ===', directoryPath);
-
-		if (loadingState.isProcessing) {
-			console.log('サムネイル処理中のため、スキップします');
-			return;
-		}
-
-		try {
-			loadingState.isProcessing = true;
-			loadingState.isLoading = true;
-			loadingState.error = '';
-			loadingState.loadedCount = 0;
-
-			console.log('既存のサムネイルをクリア');
-			// 既存のサムネイルをクリア
-			thumbnailService.clearThumbnails();
-
-			console.log('画像ファイル一覧を取得中...', directoryPath);
-			// ディレクトリ内の画像ファイル一覧を取得
-			imageFiles = await thumbnailService.getImageFiles(directoryPath);
-			console.log('取得された画像ファイル数:', imageFiles.length);
-
-			// 初期状態でフィルタを適用（非同期で）
-			filteredImageFiles = imageFiles; // まず全画像を表示
-			applyFiltersAsync(imageFiles); // その後非同期でフィルタ適用
-
-			// 親コンポーネントに画像ファイル一覧を通知
-			if (onImageFilesLoaded) {
-				onImageFilesLoaded(imageFiles);
-			}
-
-			// フィルタ結果も通知
-			if (onFilteredImagesUpdate) {
-				onFilteredImagesUpdate(filteredImageFiles.length, imageFiles.length);
-			}
-
-			if (imageFiles.length === 0) {
-				loadingState.error = 'No image files found';
-				loadingState.isLoading = false;
-				loadingState.isProcessing = false;
-				return;
-			}
-
-			loadingState.totalCount = imageFiles.length;
-			loadingState.isLoading = false; // グリッドを表示可能にする
-
-			console.log('画像ファイル一覧取得完了: ' + imageFiles.length + '個のファイル');
-
-			// 第2段階：サムネイル生成を開始
-			console.log('loadThumbnails() を呼び出します');
-			loadThumbnails();
-
-			// 第3段階：SDタグデータを集計（非同期で実行してリアクティブコンテキストから分離）
-			setTimeout(() => {
-				loadTagData();
-			}, 0);
-
-			// メタデータは autoRating などのアクセス時に自動的にキューイングされる
-		} catch (err) {
-			loadingState.error = err instanceof Error ? err.message : 'Failed to load image files';
-			console.error('Failed to load image files: ' + err);
-			loadingState.isLoading = false;
-			loadingState.isProcessing = false;
-		}
-	};
-
-	// サムネイル生成を開始（新しいリアクティブサービスを使用）
-	const loadThumbnails = async () => {
-		console.log('=== サムネイル生成開始 ===');
-		console.log('imageFiles: ' + imageFiles.length + '個のファイル');
-
-		try {
-			// ThumbnailServiceでサムネイル生成を開始
-			await thumbnailService.startProcessing(imageFiles);
-		} catch (err) {
-			console.error('サムネイル生成エラー: ' + err);
-			loadingState.error = err instanceof Error ? err.message : 'Failed to load thumbnails';
-			loadingState.isProcessing = false;
-		}
-	};
-
-	// メタデータ読み込みは autoRating アクセス時に自動的に行われる
+	const tagAggregationService = new TagAggregationService();
 
 	// SDタグデータを集計
 	const loadTagData = async () => {
@@ -282,124 +44,53 @@
 		}
 	};
 
-	// ディレクトリパスまたはrefreshTriggerが変更されたときに画像リストを再読み込み
+	// 副作用：ファイルリストが確定したときの後続処理
 	$effect(() => {
-		console.log('$effect チェック:', {
-			directoryPath,
-			lastDirectoryPath,
-			refreshTrigger,
-			lastRefreshTrigger,
-			isProcessing: loadingState.isProcessing
-		});
+		if (imageFiles.length > 0) {
+			console.log('副作用: 後続処理開始', imageFiles.length);
 
-		// 処理中の場合はスキップ（無限ループ防止）
-		if (loadingState.isProcessing) {
-			console.log('処理中のためスキップ');
-			return;
-		}
+			// 親コンポーネントに通知
+			if (onFilteredImagesUpdate) {
+				onFilteredImagesUpdate(imageFiles.length, imageFiles.length); // フィルタなしで全件
+			}
 
-		// ディレクトリパスが変更された場合
-		if (directoryPath && directoryPath !== lastDirectoryPath) {
-			lastDirectoryPath = directoryPath;
-			lastRefreshTrigger = refreshTrigger;
-			console.log('ディレクトリ変更による再読み込み:', directoryPath);
-			
-			imageMetadataStore.clearAll();
-			loadImageFileList();
-		}
-		// refreshTriggerが変更された場合（同じディレクトリでの更新）
-		else if (directoryPath && refreshTrigger !== lastRefreshTrigger) {
-			lastRefreshTrigger = refreshTrigger;
-			console.log('リフレッシュトリガー発動:', refreshTrigger);
-			
-			imageMetadataStore.clearAll();
-			loadImageFileList();
+			// SDタグ集計のみ開始（サムネイルはオンデマンド）
+			setTimeout(() => loadTagData(), 0);
 		}
 	});
 
 	// クリーンアップ
 	onDestroy(() => {
-		// サムネイル生成を停止
-		thumbnailService.stop();
 		// 未使用メタデータをクリア
 		imageMetadataStore.clearUnused([]);
+		// 未使用サムネイルをクリア
+		thumbnailStore.clearUnused([]);
 	});
 </script>
 
-<!-- ローディング表示 -->
-{#if loadingState.isLoading}
-	<div class="flex h-96 items-center justify-center">
-		<div class="flex items-center space-x-2">
-			<span class="loading loading-md loading-spinner"></span>
-			<span>Loading image files...</span>
-		</div>
-	</div>
-{:else if loadingState.error}
-	<div class="flex h-96 items-center justify-center">
-		<div class="alert max-w-md alert-error">
-			<svg
-				xmlns="http://www.w3.org/2000/svg"
-				class="h-6 w-6 shrink-0 stroke-current"
-				fill="none"
-				viewBox="0 0 24 24"
-			>
-				<path
-					stroke-linecap="round"
-					stroke-linejoin="round"
-					stroke-width="2"
-					d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
-				/>
-			</svg>
-			<span>Error: {loadingState.error}</span>
-		</div>
-	</div>
-{:else if imageFiles.length === 0}
-	<div class="flex h-96 items-center justify-center">
-		<div class="text-center">
-			<p class="text-lg">No images found in directory</p>
-			<p class="text-sm text-gray-500">{directoryPath}</p>
-		</div>
-	</div>
-{:else}
-	<!-- 進捗表示 -->
-	{#if loadingState.isProcessing}
-		<div class="mb-4 rounded-lg bg-base-200 p-4">
-			<div class="mb-2 flex items-center justify-between">
-				<span class="text-sm font-medium">Loading thumbnails...</span>
-				<span class="text-sm">{loadingState.loadedCount} / {loadingState.totalCount}</span>
-			</div>
-			<progress
-				class="progress w-full progress-primary"
-				value={loadingState.loadedCount}
-				max={loadingState.totalCount}
-			></progress>
-		</div>
-	{/if}
+<!-- サムネイルグリッド -->
+<div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8">
+	{#each imageFiles as imagePath (imagePath)}
+		{@const thumbnail = thumbnailStore.getThumbnail(imagePath)}
+		{@const thumbnailUrl = thumbnail.thumbnailValue}
+		{@const isSelected = selectedImages.has(imagePath)}
+		{@const isLoading = !thumbnailUrl}
 
-	<!-- サムネイルグリッド -->
-	<div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8">
-		{#each filteredImageFiles as imagePath (imagePath)}
-			{@const thumbnailUrl = thumbnailService.getThumbnail(imagePath)}
-			{@const isSelected = selectedImages.has(imagePath)}
-			{@const metadata = imageMetadataStore.getMetadata(imagePath)}
-			{@const isLoading = !thumbnailUrl && loadingState.isProcessing}
+		{@const metadata = imageMetadataStore.getMetadata(imagePath)}
 
-			<ImageThumbnail
-				{imagePath}
-				{thumbnailUrl}
-				{metadata}
-				{isSelected}
-				{isLoading}
-				onImageClick={onImageSelect}
-				{onToggleSelection}
-			/>
-		{/each}
-	</div>
+		<ImageThumbnail
+			{imagePath}
+			{thumbnailUrl}
+			{metadata}
+			{isSelected}
+			{isLoading}
+			onImageClick={onImageSelect}
+			{onToggleSelection}
+		/>
+	{/each}
+</div>
 
-	<!-- フィルタ結果の表示 -->
-	{#if filteredImageFiles.length !== imageFiles.length}
-		<div class="mt-4 text-center text-sm text-gray-500">
-			Showing {filteredImageFiles.length} of {imageFiles.length} images
-		</div>
-	{/if}
-{/if}
+<!-- 画像数表示 -->
+<div class="mt-4 text-center text-sm text-gray-500">
+	{imageFiles.length} images
+</div>

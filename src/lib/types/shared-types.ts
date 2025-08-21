@@ -43,7 +43,6 @@ export type SdParameters = {
 // 対応ファイル: src-tauri/src/png_handler.rs
 // ==========================================
 
-
 // ==========================================
 // 画像メタデータ情報（軽量版）
 // 対応ファイル: src-tauri/src/image_info.rs

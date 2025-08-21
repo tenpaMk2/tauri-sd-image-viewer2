@@ -3,45 +3,45 @@
 	import { invoke } from '@tauri-apps/api/core';
 	import { basename } from '@tauri-apps/api/path';
 	import { platform } from '@tauri-apps/plugin-os';
+	import FilterPanel from './FilterPanel.svelte';
+	import type { TagAggregationResult } from './services/tag-aggregation-service';
+	import { appStore } from './stores/app-store.svelte';
 	import { showSuccessToast } from './stores/toast.svelte';
 	import ThumbnailGrid from './ThumbnailGrid.svelte';
-	import FilterPanel from './FilterPanel.svelte';
 	import { deleteSelectedImages as performDelete } from './utils/delete-images';
-	import type { TagAggregationResult } from './services/tag-aggregation-service';
 
 	const {
-		selectedDirectory,
 		handleBackToWelcome,
 		openDirectoryDialog,
-		handleImageSelect
+		handleImageSelect,
+		loadImageFiles
 	}: {
-		selectedDirectory: string;
 		handleBackToWelcome: () => void;
 		openDirectoryDialog: () => void;
 		handleImageSelect: (imagePath: string) => void;
+		loadImageFiles: () => Promise<void>;
 	} = $props();
+
+	// app-storeから直接状態を取得（リアクティブ）
+	const selectedDirectory = $derived(appStore.state.selectedDirectory!);
+	const imageFiles = $derived(appStore.state.imageFiles);
+	const imageLoadingState = $derived(appStore.state.imageLoadingState);
+	const imageFileLoadError = $derived(appStore.state.imageFileLoadError);
 
 	let selectedImages = $state<Set<string>>(new Set());
 	let refreshTrigger = $state<number>(0);
-	let imageFiles = $state<string[]>([]);
 	let filteredImageCount = $state<number>(0);
-	let totalImageCount = $state<number>(0);
+	// totalImageCountは直接imageFiles.lengthから取得
+	const totalImageCount = $derived(imageFiles.length);
 	let isMacOS = $state<boolean>(false);
 	let lastSelectedIndex = $state<number>(-1); // Shift+Click用の基点インデックス
 	let showFilterPanel = $state<boolean>(false);
 	let tagData = $state<TagAggregationResult | null>(null);
 	let showOptionsModal = $state<boolean>(false);
 
-	// ThumbnailGridから画像ファイル一覧を受け取る
-	const handleImageFilesLoaded = (files: string[]) => {
-		imageFiles = files;
-		totalImageCount = files.length;
-	};
-
 	// フィルタリング結果を受け取る
 	const handleFilteredImagesUpdate = (filtered: number, total: number) => {
 		filteredImageCount = filtered;
-		totalImageCount = total;
 	};
 
 	// タグデータを受け取る
@@ -65,7 +65,8 @@
 			await invoke('clear_thumbnail_cache');
 			showSuccessToast('Thumbnail cache cleared');
 			showOptionsModal = false;
-			refreshTrigger = Date.now(); // グリッドを再表示
+			// app-storeから画像ファイルを再読み込み
+			await loadImageFiles();
 		} catch (error) {
 			console.error('Failed to clear cache: ' + error);
 		}
@@ -129,7 +130,8 @@
 		try {
 			await performDelete(selectedImages);
 			selectedImages = new Set();
-			refreshTrigger = Date.now();
+			// app-storeから画像ファイルを再読み込み
+			await loadImageFiles();
 		} catch (err) {
 			// エラーはperformDelete内で処理済み
 		}
@@ -192,11 +194,7 @@
 
 		<div class="flex items-center gap-2">
 			<!-- Options Button -->
-			<button
-				class="btn btn-ghost btn-sm"
-				onclick={toggleOptionsModal}
-				title="Options"
-			>
+			<button class="btn btn-ghost btn-sm" onclick={toggleOptionsModal} title="Options">
 				<Icon icon="lucide:settings" class="h-4 w-4" />
 			</button>
 
@@ -242,16 +240,50 @@
 
 	<!-- Grid View -->
 	<div class="flex-1">
-		<ThumbnailGrid
-			directoryPath={selectedDirectory}
-			onImageSelect={handleImageSelect}
-			{selectedImages}
-			onToggleSelection={toggleImageSelection}
-			{refreshTrigger}
-			onImageFilesLoaded={handleImageFilesLoaded}
-			onFilteredImagesUpdate={handleFilteredImagesUpdate}
-			onTagDataLoaded={handleTagDataLoaded}
-		/>
+		{#if imageLoadingState === 'loading'}
+			<div class="flex h-96 items-center justify-center">
+				<div class="flex items-center space-x-2">
+					<span class="loading loading-md loading-spinner"></span>
+					<span>Loading image files...</span>
+				</div>
+			</div>
+		{:else if imageFileLoadError}
+			<div class="flex h-96 items-center justify-center">
+				<div class="alert max-w-md alert-error">
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						class="h-6 w-6 shrink-0 stroke-current"
+						fill="none"
+						viewBox="0 0 24 24"
+					>
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+						/>
+					</svg>
+					<span>Error: {imageFileLoadError}</span>
+				</div>
+			</div>
+		{:else if imageLoadingState === 'loaded' && imageFiles.length === 0}
+			<div class="flex h-96 items-center justify-center">
+				<div class="text-center">
+					<p class="text-lg">No images found in directory</p>
+				</div>
+			</div>
+		{:else if imageLoadingState === 'loaded' && imageFiles.length > 0}
+			<!-- ファイルリストが確定している場合のみThumbnailGridを表示 -->
+			<ThumbnailGrid
+				{imageFiles}
+				onImageSelect={handleImageSelect}
+				{selectedImages}
+				onToggleSelection={toggleImageSelection}
+				{refreshTrigger}
+				onFilteredImagesUpdate={handleFilteredImagesUpdate}
+				onTagDataLoaded={handleTagDataLoaded}
+			/>
+		{/if}
 	</div>
 </div>
 
@@ -286,20 +318,17 @@
 
 <!-- Options Modal -->
 {#if showOptionsModal}
-	<div class="modal modal-open">
+	<div class="modal-open modal">
 		<div class="modal-box">
-			<h3 class="text-lg font-bold mb-4">Options</h3>
-			
+			<h3 class="mb-4 text-lg font-bold">Options</h3>
+
 			<div class="space-y-4">
 				<div class="flex items-center justify-between">
 					<div>
 						<div class="font-medium">Clear Thumbnail Cache</div>
 						<div class="text-sm opacity-70">Remove all cached thumbnails to free up disk space</div>
 					</div>
-					<button
-						class="btn btn-outline btn-sm"
-						onclick={clearCache}
-					>
+					<button class="btn btn-outline btn-sm" onclick={clearCache}>
 						<Icon icon="lucide:trash-2" class="h-4 w-4" />
 						Clear
 					</button>

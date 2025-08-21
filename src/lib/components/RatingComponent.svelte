@@ -10,12 +10,11 @@
 	// リアクティブなメタデータオブジェクト取得
 	const metadata = $derived(imageMetadataStore.getMetadata(imagePath));
 
-	// リアクティブな値を取得  
+	// リアクティブな値を取得
 	const currentRating = $derived(metadata.ratingValue);
 
 	let isRatingHovered = $state(false);
 	let hoveredRating = $state(0);
-
 
 	const onmouseleave = () => {
 		isRatingHovered = false;

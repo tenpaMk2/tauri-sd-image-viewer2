@@ -6,26 +6,29 @@
 	import { appStore } from '$lib/stores/app-store.svelte';
 	import { getCurrentWebview } from '@tauri-apps/api/webview';
 	import { onMount } from 'svelte';
-	const state = $derived(appStore.state);
 	const { actions } = appStore;
 
 	// デバッグ用: 状態変更を監視
 	$effect(() => {
 		console.log(
 			'🔍 App state changed: viewMode=' +
-				state.viewMode +
+				appStore.state.viewMode +
 				' selectedImagePath=' +
-				(state.selectedImagePath ? state.selectedImagePath.split('/').pop() : 'null') +
+				(appStore.state.selectedImagePath
+					? appStore.state.selectedImagePath.split('/').pop()
+					: 'null') +
 				' selectedDirectory=' +
-				(state.selectedDirectory ? state.selectedDirectory.split('/').pop() : 'null')
+				(appStore.state.selectedDirectory
+					? appStore.state.selectedDirectory.split('/').pop()
+					: 'null')
 		);
 		console.log(
 			'🔍 Current view condition check: isViewerMode=' +
-				(state.viewMode === 'viewer') +
+				(appStore.state.viewMode === 'viewer') +
 				' hasSelectedImagePath=' +
-				!!state.selectedImagePath +
+				!!appStore.state.selectedImagePath +
 				' shouldShowViewer=' +
-				!!(state.viewMode === 'viewer' && state.selectedImagePath)
+				!!(appStore.state.viewMode === 'viewer' && appStore.state.selectedImagePath)
 		);
 	});
 
@@ -60,24 +63,24 @@
 
 <div class="min-h-screen bg-base-100">
 	<main class="h-screen">
-		{#if state.viewMode === 'welcome'}
+		{#if appStore.state.viewMode === 'welcome'}
 			<WelcomeScreen
 				openFileDialog={actions.openFileDialog}
 				openDirectoryDialog={actions.openDirectoryDialog}
 			/>
-		{:else if state.viewMode === 'grid' && state.selectedDirectory}
+		{:else if appStore.state.viewMode === 'grid' && appStore.state.selectedDirectory}
 			<GridPage
-				selectedDirectory={state.selectedDirectory}
 				handleBackToWelcome={actions.handleBackToWelcome}
 				openDirectoryDialog={actions.openDirectoryDialog}
 				handleImageSelect={actions.handleImageSelect}
+				loadImageFiles={actions.loadImageFiles}
 			/>
-		{:else if state.viewMode === 'viewer' && state.selectedImagePath}
+		{:else if appStore.state.viewMode === 'viewer' && appStore.state.selectedImagePath}
 			<ViewerPage
-				imagePath={state.selectedImagePath}
+				imagePath={appStore.state.selectedImagePath}
 				onImageChange={actions.handleImageChange}
 				openFileDialog={actions.openFileDialog}
-				onSwitchToGrid={state.selectedDirectory ? actions.handleSwitchToGrid : undefined}
+				onSwitchToGrid={appStore.state.selectedDirectory ? actions.handleSwitchToGrid : undefined}
 			/>
 		{/if}
 	</main>

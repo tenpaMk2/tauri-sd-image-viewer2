@@ -5,7 +5,6 @@
 
 import { imageMetadataStore } from '../stores/image-metadata-store.svelte';
 import type { SdTag } from '../types/shared-types';
-import type { ThumbnailService } from './thumbnail-service.svelte';
 
 export type TagCount = {
 	name: string;
@@ -21,11 +20,10 @@ export type TagAggregationResult = {
 };
 
 export class TagAggregationService {
-	private thumbnailService: ThumbnailService;
 	private imageTagsCache = new Map<string, Set<string>>(); // imagePath -> normalized tags set
 
-	constructor(thumbnailService: ThumbnailService) {
-		this.thumbnailService = thumbnailService;
+	constructor() {
+		// コンストラクタでの初期化は不要
 	}
 
 	/**

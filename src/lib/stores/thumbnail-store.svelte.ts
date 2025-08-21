@@ -1,5 +1,5 @@
 import { Channel, invoke } from '@tauri-apps/api/core';
-import { imageFileAccessQueueService } from '../services/image-file-access-queue-service.svelte';
+import { thumbnailQueue } from '../services/image-file-access-queue-service.svelte';
 
 /**
  * サムネイルロード状態
@@ -41,7 +41,7 @@ export class ReactiveImageThumbnail {
 		}
 
 		// キューサービス経由でロード処理を開始
-		this.loadPromise = imageFileAccessQueueService.enqueueThumbnail(this.imagePath).then(() => {
+		this.loadPromise = thumbnailQueue.enqueue(this.imagePath).then(() => {
 			this.loadPromise = undefined; // ロード完了時にPromiseをクリア
 		});
 

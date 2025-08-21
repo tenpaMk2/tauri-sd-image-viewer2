@@ -1,33 +1,22 @@
 import { imageMetadataStore } from '../stores/image-metadata-store.svelte';
 import { thumbnailStore } from '../stores/thumbnail-store.svelte';
 
-type TaskType = 'thumbnail' | 'metadata';
-type Priority = 'high' | 'medium' | 'low';
-
 type QueueTask = {
 	imagePath: string;
-	taskType: TaskType;
-	priority: Priority;
 	handler: () => Promise<void>;
 };
 
 /**
- * 画像ファイルアクセス統合キュー管理サービス
- * サムネイル生成とメタデータ読み込みを優先度付きで処理する
+ * 画像ファイルアクセス基底キュー管理クラス
  */
-export class ImageFileAccessQueueService {
-	private queues: Map<Priority, QueueTask[]> = new Map([
-		['high', []],
-		['medium', []],
-		['low', []]
-	]);
-
-	private processing = false;
-	private maxConcurrent = 5; // 全体の同時実行数
-	private activeJobs = new Set<Promise<void>>();
+abstract class BaseImageFileAccessQueue {
+	protected queue: QueueTask[] = [];
+	protected processing = false;
+	protected maxConcurrent = 3;
+	protected activeJobs = new Set<Promise<void>>();
 
 	// 進行中のロード処理を管理（パスごとにresolve関数を保持）
-	private pendingResolvers = new Map<
+	protected pendingResolvers = new Map<
 		string,
 		{
 			resolve: () => void;
@@ -36,59 +25,37 @@ export class ImageFileAccessQueueService {
 	>();
 
 	/**
-	 * サムネイル生成をキューに追加（高優先度）
+	 * タスクをキューに追加してPromiseを返す
 	 */
-	async enqueueThumbnail(imagePath: string): Promise<void> {
-		return this.enqueue(imagePath, 'thumbnail', 'high');
-	}
-
-	/**
-	 * メタデータ読み込みをキューに追加（中優先度）
-	 */
-	async enqueueMetadata(imagePath: string): Promise<void> {
-		return this.enqueue(imagePath, 'metadata', 'medium');
-	}
-
-	/**
-	 * 画像ファイルアクセスタスクをキューに追加してPromiseを返す
-	 */
-	private async enqueue(imagePath: string, taskType: TaskType, priority: Priority): Promise<void> {
-		const taskKey = `${imagePath}:${taskType}`;
-
+	async enqueue(imagePath: string): Promise<void> {
 		// すでにロード済みの場合は即座に完了
-		if (this.isAlreadyLoaded(imagePath, taskType)) {
+		if (this.isAlreadyLoaded(imagePath)) {
 			return;
 		}
 
 		// すでに同じタスクが進行中の場合は、そのPromiseに相乗り
-		if (this.pendingResolvers.has(taskKey)) {
+		if (this.pendingResolvers.has(imagePath)) {
 			return new Promise<void>((resolve, reject) => {
-				const resolvers = this.pendingResolvers.get(taskKey)!;
+				const resolvers = this.pendingResolvers.get(imagePath)!;
 				resolvers.push({ resolve, reject });
 			});
 		}
 
 		// 新しいPromiseを作成
 		const promise = new Promise<void>((resolve, reject) => {
-			this.pendingResolvers.set(taskKey, [{ resolve, reject }]);
+			this.pendingResolvers.set(imagePath, [{ resolve, reject }]);
 		});
 
 		// キューに追加
 		const task: QueueTask = {
 			imagePath,
-			taskType,
-			priority,
-			handler: () => this.executeTask(imagePath, taskType)
+			handler: () => this.executeTask(imagePath)
 		};
 
-		const queue = this.queues.get(priority)!;
-		if (!queue.some((t) => t.imagePath === imagePath && t.taskType === taskType)) {
-			queue.push(task);
-			const queueSizes = this.getQueueSizeByPriority();
+		if (!this.queue.some((t) => t.imagePath === imagePath)) {
+			this.queue.push(task);
 			console.log(
-				`📋 ${taskType.charAt(0).toUpperCase() + taskType.slice(1)} queued (${priority}): ` +
-					imagePath.split('/').pop() +
-					` | Queue sizes - High: ${queueSizes.high}, Medium: ${queueSizes.medium}, Low: ${queueSizes.low}, Active: ${this.activeJobs.size}`
+				`📋 ${this.getTaskTypeName()} queued: ${imagePath.split('/').pop()} | Queue size: ${this.queue.length}, Active: ${this.activeJobs.size}/${this.maxConcurrent}`
 			);
 
 			// 処理を開始
@@ -99,41 +66,19 @@ export class ImageFileAccessQueueService {
 	}
 
 	/**
-	 * 既にロード済みかどうかチェック
-	 * queued状態以上を「処理中/完了」とみなして重複処理を防ぐ
-	 */
-	private isAlreadyLoaded(imagePath: string, taskType: TaskType): boolean {
-		if (taskType === 'thumbnail') {
-			const thumbnail = thumbnailStore.getThumbnail(imagePath);
-			const isProcessingOrLoaded = ['queued', 'loading', 'loaded'].includes(
-				thumbnail.loadingStatus
-			);
-			console.log(
-				`🔍 isAlreadyLoaded check for thumbnail: ${imagePath.split('/').pop()} - Status: ${thumbnail.loadingStatus}, IsProcessingOrLoaded: ${isProcessingOrLoaded}`
-			);
-			return isProcessingOrLoaded;
-		} else {
-			const metadata = imageMetadataStore.getMetadata(imagePath);
-			const isProcessingOrLoaded = ['queued', 'loading', 'loaded'].includes(metadata.loadingStatus);
-			console.log(
-				`🔍 isAlreadyLoaded check for metadata: ${imagePath.split('/').pop()} - Status: ${metadata.loadingStatus}, IsProcessingOrLoaded: ${isProcessingOrLoaded}`
-			);
-			return isProcessingOrLoaded;
-		}
-	}
-
-	/**
-	 * キューの処理を開始（優先度順）
+	 * キューの処理を開始
 	 */
 	private async processQueue(): Promise<void> {
 		if (this.processing) return;
 		this.processing = true;
 
-		while (this.hasAnyTask() || this.activeJobs.size > 0) {
+		while (this.queue.length > 0 || this.activeJobs.size > 0) {
 			// 最大同時実行数に達していない場合、新しいジョブを開始
-			while (this.activeJobs.size < this.maxConcurrent) {
-				const task = this.getNextTask();
-				if (!task) break;
+			while (this.activeJobs.size < this.maxConcurrent && this.queue.length > 0) {
+				const task = this.queue.shift()!;
+				console.log(
+					`▶️ Processing ${this.getTaskTypeName()}: ${task.imagePath.split('/').pop()} | Queue remaining: ${this.queue.length}, Active: ${this.activeJobs.size + 1}/${this.maxConcurrent}`
+				);
 
 				const job = this.executeQueueTask(task);
 				this.activeJobs.add(job);
@@ -141,6 +86,9 @@ export class ImageFileAccessQueueService {
 				// ジョブ完了時にアクティブジョブから削除
 				job.finally(() => {
 					this.activeJobs.delete(job);
+					console.log(
+						`✅ Completed ${this.getTaskTypeName()}: ${task.imagePath.split('/').pop()} | Active jobs remaining: ${this.activeJobs.size}`
+					);
 				});
 			}
 
@@ -151,42 +99,7 @@ export class ImageFileAccessQueueService {
 		}
 
 		this.processing = false;
-		console.log('✅ Image file access queue processing completed');
-	}
-
-	/**
-	 * 優先度順で次のタスクを取得
-	 */
-	private getNextTask(): QueueTask | null {
-		const priorities: Priority[] = ['high', 'medium', 'low'];
-
-		for (const priority of priorities) {
-			const queue = this.queues.get(priority)!;
-			if (queue.length > 0) {
-				const task = queue.shift()!;
-				const queueSizes = this.getQueueSizeByPriority();
-				console.log(
-					`▶️ Selected task: ${task.taskType} (${task.priority}) for ${task.imagePath.split('/').pop()} | Remaining - High: ${queueSizes.high}, Medium: ${queueSizes.medium}, Low: ${queueSizes.low}`
-				);
-				return task;
-			}
-		}
-
-		return null;
-	}
-
-	/**
-	 * 任意のキューにタスクが存在するかチェック
-	 */
-	private hasAnyTask(): boolean {
-		return Array.from(this.queues.values()).some((queue) => queue.length > 0);
-	}
-
-	/**
-	 * 全キューの合計サイズを取得
-	 */
-	private getTotalQueueSize(): number {
-		return Array.from(this.queues.values()).reduce((sum, queue) => sum + queue.length, 0);
+		console.log(`✅ ${this.getTaskTypeName()} queue processing completed`);
 	}
 
 	/**
@@ -197,7 +110,7 @@ export class ImageFileAccessQueueService {
 			await task.handler();
 		} catch (error) {
 			console.error(
-				`❌ Task execution failed: ${task.imagePath.split('/').pop()} (${task.taskType})`,
+				`❌ ${this.getTaskTypeName()} execution failed: ${task.imagePath.split('/').pop()}`,
 				error
 			);
 			throw error;
@@ -207,57 +120,38 @@ export class ImageFileAccessQueueService {
 	/**
 	 * 実際のタスク実行
 	 */
-	private async executeTask(imagePath: string, taskType: TaskType): Promise<void> {
-		const taskKey = `${imagePath}:${taskType}`;
-
+	private async executeTask(imagePath: string): Promise<void> {
 		try {
-			console.log(`🔄 Loading ${taskType} from queue: ${imagePath.split('/').pop()}`);
+			console.log(`🔄 Loading ${this.getTaskTypeName()}: ${imagePath.split('/').pop()}`);
 
-			// ステータスを'loading'に更新
-			if (taskType === 'thumbnail') {
-				const thumbnail = thumbnailStore.getThumbnail(imagePath);
-				thumbnail.loadingStatus = 'loading';
-				await thumbnail.load();
-				thumbnail.loadingStatus = 'loaded';
-			} else {
-				const metadata = imageMetadataStore.getMetadata(imagePath);
-				metadata.loadingStatus = 'loading';
-				await metadata.load();
-				metadata.loadingStatus = 'loaded';
-			}
+			// ステータスを'loading'に更新し、実際のロード処理を実行
+			await this.performLoad(imagePath);
 
-			console.log(`✅ Completed ${taskType} load: ${imagePath.split('/').pop()}`);
+			console.log(`✅ Completed ${this.getTaskTypeName()} load: ${imagePath.split('/').pop()}`);
 
 			// 成功時にすべてのPromiseをresolve
-			const resolvers = this.pendingResolvers.get(taskKey);
+			const resolvers = this.pendingResolvers.get(imagePath);
 			if (resolvers) {
 				for (const resolver of resolvers) {
 					resolver.resolve();
 				}
-				this.pendingResolvers.delete(taskKey);
+				this.pendingResolvers.delete(imagePath);
 			}
 		} catch (error) {
 			console.error(
-				`❌ ${taskType.charAt(0).toUpperCase() + taskType.slice(1)} load failed from queue: ` +
-					`${imagePath.split('/').pop()} ${error}`
+				`❌ ${this.getTaskTypeName()} load failed: ${imagePath.split('/').pop()} ${error}`
 			);
 
 			// エラー時にステータスを'error'に設定
-			if (taskType === 'thumbnail') {
-				const thumbnail = thumbnailStore.getThumbnail(imagePath);
-				thumbnail.loadingStatus = 'error';
-			} else {
-				const metadata = imageMetadataStore.getMetadata(imagePath);
-				metadata.loadingStatus = 'error';
-			}
+			this.setErrorStatus(imagePath);
 
 			// エラー時にすべてのPromiseをreject
-			const resolvers = this.pendingResolvers.get(taskKey);
+			const resolvers = this.pendingResolvers.get(imagePath);
 			if (resolvers) {
 				for (const resolver of resolvers) {
 					resolver.reject(error);
 				}
-				this.pendingResolvers.delete(taskKey);
+				this.pendingResolvers.delete(imagePath);
 			}
 		}
 	}
@@ -267,26 +161,24 @@ export class ImageFileAccessQueueService {
 	 */
 	clear(): void {
 		// 未完了のPromiseをreject
-		for (const [taskKey, resolvers] of this.pendingResolvers) {
+		for (const [imagePath, resolvers] of this.pendingResolvers) {
 			for (const resolver of resolvers) {
 				resolver.reject(new Error('Queue cleared'));
 			}
 		}
 		this.pendingResolvers.clear();
 
-		// すべてのキューをクリア
-		for (const queue of this.queues.values()) {
-			queue.length = 0;
-		}
+		// キューをクリア
+		this.queue.length = 0;
 
-		console.log('🗑️ Image file access queue cleared');
+		console.log(`🗑️ ${this.getTaskTypeName()} queue cleared`);
 	}
 
 	/**
 	 * 現在のキューサイズを取得
 	 */
 	get queueSize(): number {
-		return this.getTotalQueueSize();
+		return this.queue.length;
 	}
 
 	/**
@@ -303,19 +195,75 @@ export class ImageFileAccessQueueService {
 		this.maxConcurrent = Math.max(1, maxConcurrent);
 	}
 
-	/**
-	 * 優先度別のキューサイズを取得
-	 */
-	getQueueSizeByPriority(): Record<Priority, number> {
-		return {
-			high: this.queues.get('high')!.length,
-			medium: this.queues.get('medium')!.length,
-			low: this.queues.get('low')!.length
-		};
+	// 抽象メソッド - 各サブクラスで実装
+	protected abstract isAlreadyLoaded(imagePath: string): boolean;
+	protected abstract performLoad(imagePath: string): Promise<void>;
+	protected abstract setErrorStatus(imagePath: string): void;
+	protected abstract getTaskTypeName(): string;
+}
+
+/**
+ * サムネイル生成専用キュー
+ */
+class ThumbnailQueue extends BaseImageFileAccessQueue {
+	protected isAlreadyLoaded(imagePath: string): boolean {
+		const thumbnail = thumbnailStore.getThumbnail(imagePath);
+		const isProcessingOrLoaded = ['queued', 'loading', 'loaded'].includes(thumbnail.loadingStatus);
+		console.log(
+			`🔍 Thumbnail isAlreadyLoaded check: ${imagePath.split('/').pop()} - Status: ${thumbnail.loadingStatus}, IsProcessingOrLoaded: ${isProcessingOrLoaded}`
+		);
+		return isProcessingOrLoaded;
+	}
+
+	protected async performLoad(imagePath: string): Promise<void> {
+		const thumbnail = thumbnailStore.getThumbnail(imagePath);
+		thumbnail.loadingStatus = 'loading';
+		await thumbnail.load();
+		thumbnail.loadingStatus = 'loaded';
+	}
+
+	protected setErrorStatus(imagePath: string): void {
+		const thumbnail = thumbnailStore.getThumbnail(imagePath);
+		thumbnail.loadingStatus = 'error';
+	}
+
+	protected getTaskTypeName(): string {
+		return 'thumbnail';
 	}
 }
 
 /**
- * グローバルインスタンス
+ * メタデータ読み込み専用キュー
  */
-export const imageFileAccessQueueService = new ImageFileAccessQueueService();
+class MetadataQueue extends BaseImageFileAccessQueue {
+	protected isAlreadyLoaded(imagePath: string): boolean {
+		const metadata = imageMetadataStore.getMetadata(imagePath);
+		const isProcessingOrLoaded = ['queued', 'loading', 'loaded'].includes(metadata.loadingStatus);
+		console.log(
+			`🔍 Metadata isAlreadyLoaded check: ${imagePath.split('/').pop()} - Status: ${metadata.loadingStatus}, IsProcessingOrLoaded: ${isProcessingOrLoaded}`
+		);
+		return isProcessingOrLoaded;
+	}
+
+	protected async performLoad(imagePath: string): Promise<void> {
+		const metadata = imageMetadataStore.getMetadata(imagePath);
+		metadata.loadingStatus = 'loading';
+		await metadata.load();
+		metadata.loadingStatus = 'loaded';
+	}
+
+	protected setErrorStatus(imagePath: string): void {
+		const metadata = imageMetadataStore.getMetadata(imagePath);
+		metadata.loadingStatus = 'error';
+	}
+
+	protected getTaskTypeName(): string {
+		return 'metadata';
+	}
+}
+
+/**
+ * グローバルキューインスタンス
+ */
+export const thumbnailQueue = new ThumbnailQueue();
+export const metadataQueue = new MetadataQueue();

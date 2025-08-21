@@ -1,5 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
-import { imageFileAccessQueueService } from '../services/image-file-access-queue-service.svelte';
+import { metadataQueue } from '../services/image-file-access-queue-service.svelte';
 import type { ImageMetadataInfo, SdParameters } from '../types/shared-types';
 
 /**
@@ -110,7 +110,7 @@ export class ReactiveImageMetadata {
 		this.loadingStatus = 'queued';
 
 		// キューサービス経由でロード処理を開始
-		this.loadPromise = imageFileAccessQueueService.enqueueMetadata(this.imagePath).then(() => {
+		this.loadPromise = metadataQueue.enqueue(this.imagePath).then(() => {
 			this.loadPromise = undefined; // ロード完了時にPromiseをクリア
 		});
 

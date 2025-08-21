@@ -8,7 +8,7 @@
 	import { metadataQueue, thumbnailQueue } from './services/image-file-access-queue-service.svelte';
 	import { appStore } from './stores/app-store.svelte';
 	import { gridStore } from './stores/grid-store.svelte';
-	import { tagStore } from './stores/tag-store.svelte';
+	import { createTagStore } from './stores/tag-store.svelte';
 	import { thumbnailStore } from './stores/thumbnail-store.svelte';
 	import { showSuccessToast } from './stores/toast.svelte';
 	import ThumbnailGrid from './ThumbnailGrid.svelte';
@@ -45,19 +45,9 @@
 	// ローカル状態
 	let isMacOS = $state<boolean>(false);
 
-	// tagStoreから状態を取得
+	// タグストアを作成（imageFilesから自動的に派生）
+	const tagStore = createTagStore(() => imageFiles);
 	const tagData = $derived(tagStore.state.tagData);
-
-	// 画像ファイルが変更されたときにタグデータを読み込み
-	$effect(() => {
-		if (0 < imageFiles.length) {
-			console.log('副作用: タグ集計開始', imageFiles.length);
-			// SDタグ集計を開始
-			tagStore.actions.loadTagData(imageFiles);
-		} else {
-			tagStore.actions.clearTagData();
-		}
-	});
 
 	// フィルターパネルの表示切り替え
 	const toggleFilterPanel = () => {

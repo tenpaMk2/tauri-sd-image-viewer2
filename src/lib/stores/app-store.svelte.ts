@@ -2,6 +2,7 @@ import { navigationService } from '$lib/services/navigation-service.svelte';
 import { open } from '@tauri-apps/plugin-dialog';
 import { getImageFiles } from '../image/image-loader';
 import { getDirectoryFromPath, isDirectory, isImageFile } from '../image/utils';
+import { metadataQueue, thumbnailQueue } from '../services/image-file-access-queue-service.svelte';
 import type { ViewMode } from '../ui/types';
 import { imageMetadataStore } from './image-metadata-store.svelte';
 import { thumbnailStore } from './thumbnail-store.svelte';
@@ -217,10 +218,10 @@ const openDirectoryDialog = async (): Promise<void> => {
 		console.log('📁 openDirectoryDialog: 選択結果', selected);
 
 		if (selected && typeof selected === 'string') {
-			console.log('✅ openDirectoryDialog: 有効なディレクトリが選択された', selected);
-
-			// 古いデータをクリア
-			console.log('🗑️ openDirectoryDialog: 古いデータをクリア');
+			// 古いデータとキューをクリア
+			console.log('🗑️ openDirectoryDialog: 古いデータとキューをクリア');
+			thumbnailQueue.clear();
+			metadataQueue.clear();
 			imageMetadataStore.clearAll();
 			thumbnailStore.clearAll();
 			clearImageFiles();
@@ -281,7 +282,7 @@ const handleSwitchToGrid = async (): Promise<void> => {
 		cleanupViewerState();
 	}
 
-	// グリッドモードに戻る時は、前のキューが動いていても継続させる
+	// グリッドモードに戻る
 	appState.viewMode = 'grid';
 };
 
@@ -300,12 +301,26 @@ const handleBackToGrid = async (): Promise<void> => {
 	// Rating書き込み処理を待機（クラッシュ防止）
 	await imageMetadataStore.waitForAllRatingWrites();
 
+	// Viewerモードから離れる際のクリーンアップ
+	if (appState.viewMode === 'viewer') {
+		cleanupViewerState();
+	}
+
 	appState.viewMode = 'grid';
 };
 
 const handleBackToWelcome = async (): Promise<void> => {
 	// Rating書き込み処理を待機（クラッシュ防止）
 	await imageMetadataStore.waitForAllRatingWrites();
+
+	// Viewerモードから離れる際のクリーンアップ
+	if (appState.viewMode === 'viewer') {
+		cleanupViewerState();
+	}
+
+	// キューをクリアして不要な処理を停止
+	thumbnailQueue.clear();
+	metadataQueue.clear();
 
 	// すべてをクリア
 	clearImageFiles();
@@ -324,7 +339,9 @@ const handleDroppedPaths = async (paths: string[]): Promise<void> => {
 
 	try {
 		if (await isDirectory(firstPath)) {
-			// 古いデータをクリア
+			// 古いデータとキューをクリア
+			thumbnailQueue.clear();
+			metadataQueue.clear();
 			imageMetadataStore.clearAll();
 			thumbnailStore.clearAll();
 			clearImageFiles();

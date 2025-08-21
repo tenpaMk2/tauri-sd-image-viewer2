@@ -3,10 +3,13 @@
 	import { invoke } from '@tauri-apps/api/core';
 	import { basename } from '@tauri-apps/api/path';
 	import { platform } from '@tauri-apps/plugin-os';
+	import { onDestroy } from 'svelte';
 	import FilterPanel from './FilterPanel.svelte';
+	import { metadataQueue, thumbnailQueue } from './services/image-file-access-queue-service.svelte';
 	import { appStore } from './stores/app-store.svelte';
 	import { gridStore } from './stores/grid-store.svelte';
 	import { tagStore } from './stores/tag-store.svelte';
+	import { thumbnailStore } from './stores/thumbnail-store.svelte';
 	import { showSuccessToast } from './stores/toast.svelte';
 	import ThumbnailGrid from './ThumbnailGrid.svelte';
 	import { deleteSelectedImages as performDelete } from './utils/delete-images';
@@ -131,6 +134,18 @@
 		};
 
 		checkPlatform();
+	});
+
+	// コンポーネント破棄時のクリーンアップ
+	onDestroy(() => {
+		console.log('🗑️ GridPage: Component destroying, clearing queues and unused thumbnails');
+
+		// キューをクリアして不要な処理を停止
+		thumbnailQueue.clear();
+		metadataQueue.clear();
+
+		// 不要なサムネイルを解放
+		thumbnailStore.clearUnused(imageFiles);
 	});
 </script>
 

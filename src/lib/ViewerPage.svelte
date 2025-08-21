@@ -2,11 +2,13 @@
 	import { navigationService } from '$lib/services/navigation-service.svelte';
 	import { invoke } from '@tauri-apps/api/core';
 	import { platform } from '@tauri-apps/plugin-os';
-	import { onMount } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 	import type { Attachment } from 'svelte/attachments';
 	import ImageCanvas from './ImageCanvas.svelte';
 	import MetadataPanel from './MetadataPanel.svelte';
+	import { metadataQueue, thumbnailQueue } from './services/image-file-access-queue-service.svelte';
 	import { appStore } from './stores/app-store.svelte';
+	import { thumbnailStore } from './stores/thumbnail-store.svelte';
 	import { showInfoToast, showSuccessToast } from './stores/toast.svelte';
 	import ViewerUIOverlay from './ViewerUIOverlay.svelte';
 
@@ -134,6 +136,20 @@
 			actions.resetUITimer();
 		};
 	};
+
+	// コンポーネント破棄時のクリーンアップ
+	onDestroy(() => {
+		console.log('🗑️ ViewerPage: Component destroying, clearing queues and unused thumbnails');
+
+		// キューをクリアして不要な処理を停止
+		thumbnailQueue.clear();
+		metadataQueue.clear();
+
+		// Viewerで使用していた画像以外のサムネイルを解放
+		// 現在の画像ファイルリストがあれば保持、なければ空配列で全クリア
+		const currentImageFiles = appStore.state.imageFiles || [];
+		thumbnailStore.clearUnused(currentImageFiles);
+	});
 
 	console.log('🖼️ ViewerPage initialized with Svelte 5 patterns');
 </script>

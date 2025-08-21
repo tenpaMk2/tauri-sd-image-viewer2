@@ -5,6 +5,9 @@ export type TagState = {
 	tagData: TagAggregationResult | null;
 	isLoading: boolean;
 	error: string | null;
+	tagAggregationService: TagAggregationService;
+	_lastImageFilesLength: number;
+	_lastImageFilesHash: string;
 };
 
 // タグ集計サービスのインスタンス
@@ -14,20 +17,20 @@ const tagAggregationService = new TagAggregationService();
 export type TagStore = {
 	readonly state: TagState;
 	readonly actions: {
-		// 将来的に追加される可能性のあるアクション
-		refresh?: () => Promise<void>;
-		clear?: () => void;
+		loadTags: (imageFiles: string[]) => Promise<void>;
+		clear: () => void;
 	};
 };
 
 // 画像ファイルパスのリストを受け取ってタグストアを作成する関数
-export const createTagStore = (getImageFiles: () => string[]): TagStore => {
+export const createTagStore = (): TagStore => {
 	// 関連する状態をオブジェクトにまとめて管理（Svelte 5推奨パターン）
-	let state = $state({
+	let state = $state<TagState>({
 		// パブリック状態
 		isLoading: false,
 		error: null as string | null,
 		tagData: null as TagAggregationResult | null,
+		tagAggregationService: tagAggregationService,
 
 		// プライベート状態（内部実装用、アンダースコア接頭辞）
 		_lastImageFilesLength: 0,
@@ -39,37 +42,46 @@ export const createTagStore = (getImageFiles: () => string[]): TagStore => {
 		return files.join('|');
 	};
 
-	// 画像ファイルの変更を監視してタグデータを更新
-	$effect(() => {
-		const imageFiles = getImageFiles();
-		const currentHash = calculateHash(imageFiles);
+	// 現在の非同期処理をキャンセルするためのコントローラー
+	let currentAbortController: AbortController | null = null;
 
-		// 変更がない場合は何もしない
-		if (currentHash === state._lastImageFilesHash) {
-			return;
-		}
+	const actions = {
+		/**
+		 * タグデータを明示的にロード
+		 */
+		async loadTags(imageFiles: string[]): Promise<void> {
+			const currentHash = calculateHash(imageFiles);
 
-		state._lastImageFilesHash = currentHash;
-		state._lastImageFilesLength = imageFiles.length;
+			// 変更がない場合は何もしない
+			if (currentHash === state._lastImageFilesHash) {
+				return;
+			}
 
-		// 空の場合はクリア
-		if (imageFiles.length === 0) {
-			state.tagData = null;
-			state.isLoading = false;
+			// 前の処理をキャンセル
+			if (currentAbortController) {
+				currentAbortController.abort();
+			}
+
+			state._lastImageFilesHash = currentHash;
+			state._lastImageFilesLength = imageFiles.length;
+
+			// 空の場合はクリア
+			if (imageFiles.length === 0) {
+				state.tagData = null;
+				state.isLoading = false;
+				state.error = null;
+				return;
+			}
+
+			// 新しいAbortControllerを作成
+			currentAbortController = new AbortController();
+			const abortController = currentAbortController;
+
+			// タグ集計を実行
+			console.log('Tag aggregation started for ' + imageFiles.length + ' images');
+			state.isLoading = true;
 			state.error = null;
-			return;
-		}
 
-		// AbortControllerで非同期処理をキャンセル可能にする
-		const abortController = new AbortController();
-
-		// タグ集計を実行
-		console.log('タグ集計開始: ' + imageFiles.length + '個の画像');
-		state.isLoading = true;
-		state.error = null;
-
-		// 非同期処理を実行（競合状態を避けるため）
-		(async () => {
 			try {
 				const result = await tagAggregationService.aggregateTagsFromFiles(imageFiles);
 
@@ -78,7 +90,7 @@ export const createTagStore = (getImageFiles: () => string[]): TagStore => {
 					return;
 				}
 
-				console.log('タグ集計完了: ' + result.allTags.length + '個のタグ');
+				console.log('Tag aggregation completed: ' + result.uniqueTagNames.length + ' unique tags');
 				state.tagData = result;
 			} catch (err) {
 				// Abortされていないかチェック
@@ -86,7 +98,7 @@ export const createTagStore = (getImageFiles: () => string[]): TagStore => {
 					return;
 				}
 
-				console.error('タグ集計エラー: ' + err);
+				console.error('Tag aggregation error: ' + err);
 				state.error = err instanceof Error ? err.message : String(err);
 				state.tagData = null;
 			} finally {
@@ -95,18 +107,28 @@ export const createTagStore = (getImageFiles: () => string[]): TagStore => {
 					state.isLoading = false;
 				}
 			}
-		})();
+		},
 
-		// クリーンアップ関数を返す（$effectの公式推奨パターン）
-		return () => {
-			abortController.abort();
-		};
-	});
+		/**
+		 * タグデータをクリア
+		 */
+		clear(): void {
+			// 進行中の処理をキャンセル
+			if (currentAbortController) {
+				currentAbortController.abort();
+				currentAbortController = null;
+			}
+
+			state.tagData = null;
+			state.isLoading = false;
+			state.error = null;
+			state._lastImageFilesLength = 0;
+			state._lastImageFilesHash = '';
+		}
+	};
 
 	return {
-		state: state as TagState, // 型アサーションで内部プロパティを隠蔽
-		actions: {
-			// 将来的にアクションを追加する場合はここに
-		}
+		state,
+		actions
 	} as const;
 };

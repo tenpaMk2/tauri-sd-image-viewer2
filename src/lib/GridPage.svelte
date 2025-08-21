@@ -7,7 +7,9 @@
 	import FilterPanel from './FilterPanel.svelte';
 	import { metadataQueue, thumbnailQueue } from './services/image-file-access-queue-service.svelte';
 	import { appStore } from './stores/app-store.svelte';
+	import { filterStore } from './stores/filter-store.svelte';
 	import { gridStore } from './stores/grid-store.svelte';
+	import { imageMetadataStore } from './stores/image-metadata-store.svelte';
 	import { createTagStore } from './stores/tag-store.svelte';
 	import { thumbnailStore } from './stores/thumbnail-store.svelte';
 	import { showSuccessToast } from './stores/toast.svelte';
@@ -37,17 +39,42 @@
 	const showFilterPanel = $derived(gridStore.state.showFilterPanel);
 	const showOptionsModal = $derived(gridStore.state.showOptionsModal);
 
-	// totalImageCountは直接imageFiles.lengthから取得
-	const totalImageCount = $derived(imageFiles.length);
-	// フィルタリング結果（現在はフィルタなしなので画像ファイル数と同じ）
-	const filteredImageCount = $derived(imageFiles.length);
+	// filterStoreから状態を取得
+	const filterState = $derived(filterStore.state);
 
-	// ローカル状態
-	let isMacOS = $state<boolean>(false);
-
-	// タグストアを作成（imageFilesから自動的に派生）
-	const tagStore = createTagStore(() => imageFiles);
+	// タグストアを作成
+	const tagStore = createTagStore();
 	const tagData = $derived(tagStore.state.tagData);
+
+	// 画像ファイルが変更されたらタグデータをロード
+	$effect(() => {
+		if (imageFiles.length > 0) {
+			tagStore.actions.loadTags(imageFiles);
+		} else {
+			tagStore.actions.clear();
+		}
+	});
+
+	// フィルタリングされた画像リスト（フィルタ適用前のimageFiles.lengthと比較用）
+	const totalImageCount = $derived(imageFiles.length);
+
+	// フィルタリングされた画像リスト
+	const filteredImageFiles = $derived.by(() => {
+		if (imageFiles.length === 0) return [];
+
+		// レーティングマップを同期的に取得
+		const ratingsMap = imageMetadataStore.getRatingsMapSync(imageFiles);
+
+		// フィルタを適用
+		return filterStore.filterImages(imageFiles, ratingsMap, tagStore.state.tagAggregationService);
+	});
+
+	const filteredImageCount = $derived(filteredImageFiles.length);
+
+	// ローカル状態をオブジェクトにまとめて宣言
+	let localState = $state({
+		isMacOS: false
+	});
 
 	// フィルターパネルの表示切り替え
 	const toggleFilterPanel = () => {
@@ -116,10 +143,10 @@
 		const checkPlatform = async () => {
 			try {
 				const currentPlatform = await platform();
-				isMacOS = currentPlatform === 'macos';
+				localState.isMacOS = currentPlatform === 'macos';
 			} catch (error) {
 				console.error('Failed to detect platform: ' + error);
-				isMacOS = false;
+				localState.isMacOS = false;
 			}
 		};
 
@@ -208,7 +235,12 @@
 
 	<!-- Filter Panel -->
 	{#if showFilterPanel}
-		<FilterPanel totalImages={totalImageCount} filteredImages={filteredImageCount} {tagData} />
+		<FilterPanel
+			isExpanded={showFilterPanel}
+			totalImages={totalImageCount}
+			filteredImages={filteredImageCount}
+			{tagData}
+		/>
 	{/if}
 
 	<!-- Grid View -->
@@ -248,7 +280,7 @@
 		{:else if imageLoadingState === 'loaded' && 0 < imageFiles.length}
 			<!-- ファイルリストが確定している場合のみThumbnailGridを表示 -->
 			<ThumbnailGrid
-				{imageFiles}
+				imageFiles={filteredImageFiles}
 				onImageSelect={handleImageSelect}
 				{selectedImages}
 				onToggleSelection={toggleImageSelection}

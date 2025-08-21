@@ -35,7 +35,7 @@ export class TagAggregationService {
 		// キャッシュをクリア
 		this.imageTagsCache.clear();
 
-		console.log(`タグ集計開始: ${imagePaths.length}個の画像`);
+		console.log(`Tag aggregation started for ${imagePaths.length} images`);
 
 		// 各画像ファイルからSDパラメータを取得してタグを集計
 		let successCount = 0;
@@ -83,8 +83,10 @@ export class TagAggregationService {
 			}
 		}
 
-		console.log(`タグ集計完了: 成功 ${successCount}個, エラー ${errorCount}個`);
-		return this.processAggregationResult(tagCounts);
+		console.log(`Tag aggregation completed: success ${successCount}, errors ${errorCount}`);
+		const result = this.processAggregationResult(tagCounts);
+		console.log(`Result: ${result.uniqueTagNames.length} unique tags found`);
+		return result;
 	};
 
 	/**

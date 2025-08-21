@@ -99,11 +99,11 @@ const createFilterStore = () => {
 
 			switch (state.ratingComparison) {
 				case 'gte':
-					return state.targetRating >= normalizedRating;
+					return normalizedRating >= state.targetRating;
 				case 'eq':
-					return state.targetRating === normalizedRating;
+					return normalizedRating === state.targetRating;
 				case 'lte':
-					return state.targetRating <= normalizedRating;
+					return normalizedRating <= state.targetRating;
 				default:
 					return true;
 			}

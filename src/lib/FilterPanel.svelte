@@ -1,7 +1,7 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte';
-	import { filterStore, type RatingComparison } from './stores/filter-store.svelte';
 	import type { TagAggregationResult } from './services/tag-aggregation-service';
+	import { filterStore, type RatingComparison } from './stores/filter-store.svelte';
 
 	const {
 		isExpanded = false,
@@ -15,42 +15,50 @@
 		tagData?: TagAggregationResult | null;
 	} = $props();
 
-	let selectedRating = $state(filterStore.state.targetRating);
-	let selectedComparison = $state(filterStore.state.ratingComparison);
-	let patternValue = $state(filterStore.state.filenamePattern);
-	let selectedTags = $state(filterStore.state.selectedTags);
+	let selectedRating = $derived(filterStore.state.targetRating);
+	let selectedComparison = $derived(filterStore.state.ratingComparison);
+	let patternValue = $derived(filterStore.state.filenamePattern);
+	let selectedTags = $derived(filterStore.state.selectedTags);
 	let tagInput = $state('');
 	let showHelpModal = $state(false);
+	let showTagDropdown = $state(false);
+
+	// Filtered tag suggestions based on input
+	const filteredTagSuggestions = $derived.by(() => {
+		if (!tagData?.uniqueTagNames || tagInput.length < 1) return [];
+
+		const inputLower = tagInput.toLowerCase();
+		return tagData.uniqueTagNames
+			.filter(
+				(tag) => tag.toLowerCase().includes(inputLower) && !selectedTags.includes(tag.toLowerCase())
+			)
+			.slice(0, 10); // Limit suggestions
+	});
 
 	// Handle star rating selection
 	const handleStarClick = (rating: number) => {
 		// 現在選択中の星を再度クリックしたら星0になる
-		selectedRating = selectedRating === rating ? 0 : rating;
-		updateRatingFilter();
+		const newRating = selectedRating === rating ? 0 : rating;
+		filterStore.updateRatingFilter(newRating, selectedComparison);
 	};
 
 	// Handle comparison operator change
 	const handleComparisonChange = (event: Event) => {
 		const target = event.target as HTMLSelectElement;
-		selectedComparison = target.value as RatingComparison;
-		updateRatingFilter();
-	};
-
-	// Update rating filter
-	const updateRatingFilter = () => {
-		filterStore.updateRatingFilter(selectedRating, selectedComparison);
+		const newComparison = target.value as RatingComparison;
+		filterStore.updateRatingFilter(selectedRating, newComparison);
 	};
 
 	// Handle pattern input changes with debouncing
 	let patternTimeout: number | undefined;
 	const handlePatternChange = (event: Event) => {
 		const target = event.target as HTMLInputElement;
-		patternValue = target.value;
+		const inputValue = target.value;
 
 		// Debounce pattern updates
 		clearTimeout(patternTimeout);
 		patternTimeout = setTimeout(() => {
-			filterStore.updateFilenamePattern(patternValue);
+			filterStore.updateFilenamePattern(inputValue);
 		}, 300);
 	};
 
@@ -65,23 +73,27 @@
 		if (event instanceof KeyboardEvent && event.key !== 'Enter') return;
 
 		const tagName = tagInput.trim();
-		if (tagName && tagData?.uniqueTagNames.includes(tagName.toLowerCase())) {
-			filterStore.addTag(tagName);
-			selectedTags = filterStore.state.selectedTags;
-			tagInput = '';
+
+		if (tagName && tagData?.uniqueTagNames) {
+			// 大文字小文字を区別しない検索
+			const lowerTagName = tagName.toLowerCase();
+			const foundTag = tagData.uniqueTagNames.find((tag) => tag.toLowerCase() === lowerTagName);
+
+			if (foundTag) {
+				filterStore.addTag(foundTag);
+				tagInput = '';
+			}
 		}
 	};
 
 	// Handle tag removal
 	const removeTag = (tagName: string) => {
 		filterStore.removeTag(tagName);
-		selectedTags = filterStore.state.selectedTags;
 	};
 
 	// Clear all tags
 	const clearAllTags = () => {
 		filterStore.clearAllTags();
-		selectedTags = filterStore.state.selectedTags;
 	};
 
 	// Show help modal
@@ -152,7 +164,8 @@
 					onkeydown={handleTagInputSubmit}
 					disabled={tagData && tagData.uniqueTagNames.length === 0}
 				/>
-				{#if tagData && tagData.uniqueTagNames.length > 0}
+				<!-- Simplified datalist condition -->
+				{#if tagData && tagData.uniqueTagNames && tagData.uniqueTagNames.length > 0}
 					<datalist id="sd-tags">
 						{#each tagData.uniqueTagNames as tagName}
 							<option value={tagName}>{tagName}</option>
@@ -173,7 +186,7 @@
 						<div class="badge gap-1 badge-sm badge-primary">
 							{tagName}
 							<button
-								class="btn h-3 h-auto min-h-0 w-3 p-0 btn-ghost btn-xs"
+								class="btn h-3 min-h-0 w-3 p-0 btn-ghost btn-xs"
 								onclick={() => removeTag(tagName)}
 								title="Remove tag"
 							>

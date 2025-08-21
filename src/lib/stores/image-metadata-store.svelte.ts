@@ -35,23 +35,13 @@ export class ReactiveImageMetadata {
 		this.imagePath = imagePath;
 	}
 
-	/**
-	 * ロード状態のチェック用ゲッター（互換性のため）
-	 */
-	get isLoaded(): boolean {
-		return this.loadingStatus === 'loaded';
-	}
-
-	get isLoading(): boolean {
-		return this.loadingStatus === 'loading';
-	}
 
 	/**
 	 * メタデータの読み込み（一度だけ実行される）
 	 */
 	private async ensureLoaded(): Promise<void> {
 		// 既にロード済みの場合は何もしない
-		if (this.isLoaded) {
+		if (this.loadingStatus === 'loaded') {
 			return;
 		}
 
@@ -141,6 +131,7 @@ export class ReactiveImageMetadata {
 
 	/**
 	 * メタデータの実際のロード処理（キューサービスから呼ばれる）
+	 * @internal キューサービス専用メソッド - 直接呼び出し禁止
 	 */
 	async load(): Promise<void> {
 		try {
@@ -222,8 +213,7 @@ export class ReactiveImageMetadata {
 		return {
 			imagePath: this.imagePath,
 			rating: this.rating,
-			isLoaded: this.isLoaded,
-			isLoading: this.isLoading,
+			loadingStatus: this.loadingStatus,
 			loadError: this.loadError
 		};
 	}
@@ -246,7 +236,7 @@ class ImageMetadataStore {
 			this.metadataMap.set(imagePath, metadata);
 
 			// 新しいインスタンス作成時に自動的にロードを開始
-			if (metadata.loadingStatus === 'unloaded' && !metadata.isLoading) {
+			if (metadata.loadingStatus === 'unloaded') {
 				metadata.load().catch((error: unknown) => {
 					console.error(
 						'Failed to auto-load metadata for ' + imagePath.split('/').pop() + ': ' + error
@@ -265,7 +255,7 @@ class ImageMetadataStore {
 
 		const loadPromises = imagePaths.map((imagePath) => {
 			const metadata = this.getMetadata(imagePath);
-			if (!metadata.isLoaded && !metadata.isLoading) {
+			if (metadata.loadingStatus === 'unloaded') {
 				return metadata.load();
 			}
 			return Promise.resolve();
@@ -303,33 +293,11 @@ class ImageMetadataStore {
 	}
 
 	/**
-	 * 現在のキャッシュサイズ取得
-	 */
-	get cacheSize(): number {
-		return this.metadataMap.size;
-	}
-
-	/**
 	 * Rating書き込み処理を待機
 	 */
 	async waitForAllRatingWrites(): Promise<void> {
 		// 現在の実装では即座に完了（必要に応じて実装を追加）
 		return;
-	}
-
-	/**
-	 * デバッグ用の状態取得
-	 */
-	get debugInfo() {
-		const entries = Array.from(this.metadataMap.entries()).map(([path, metadata]) => ({
-			path: path.split('/').pop(),
-			...metadata.debugInfo
-		}));
-
-		return {
-			cacheSize: this.cacheSize,
-			entries
-		};
 	}
 }
 
@@ -337,10 +305,3 @@ class ImageMetadataStore {
  * グローバルインスタンス
  */
 export const imageMetadataStore = new ImageMetadataStore();
-
-/**
- * 開発用: グローバルに公開
- */
-if (typeof window !== 'undefined') {
-	(window as any).imageMetadataStore = imageMetadataStore;
-}

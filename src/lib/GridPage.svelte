@@ -29,7 +29,6 @@
 	const imageFileLoadError = $derived(appStore.state.imageFileLoadError);
 
 	let selectedImages = $state<Set<string>>(new Set());
-	let refreshTrigger = $state<number>(0);
 	let filteredImageCount = $state<number>(0);
 	// totalImageCountは直接imageFiles.lengthから取得
 	const totalImageCount = $derived(imageFiles.length);
@@ -272,14 +271,13 @@
 					<p class="text-lg">No images found in directory</p>
 				</div>
 			</div>
-		{:else if imageLoadingState === 'loaded' && imageFiles.length > 0}
+		{:else if imageLoadingState === 'loaded' && 0 < imageFiles.length}
 			<!-- ファイルリストが確定している場合のみThumbnailGridを表示 -->
 			<ThumbnailGrid
 				{imageFiles}
 				onImageSelect={handleImageSelect}
 				{selectedImages}
 				onToggleSelection={toggleImageSelection}
-				{refreshTrigger}
 				onFilteredImagesUpdate={handleFilteredImagesUpdate}
 				onTagDataLoaded={handleTagDataLoaded}
 			/>

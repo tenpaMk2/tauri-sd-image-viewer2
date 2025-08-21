@@ -1,24 +1,23 @@
 <script lang="ts">
 	import RatingComponent from './components/RatingComponent.svelte';
-	import type { ReactiveImageMetadata } from './stores/image-metadata-store.svelte';
+	import { thumbnailStore } from './stores/thumbnail-store.svelte';
 
 	const {
 		imagePath,
-		thumbnailUrl,
-		metadata,
 		isSelected = false,
-		isLoading = false,
 		onImageClick,
 		onToggleSelection
 	}: {
 		imagePath: string;
-		thumbnailUrl?: string;
-		metadata: ReactiveImageMetadata;
 		isSelected?: boolean;
-		isLoading?: boolean;
 		onImageClick: (imagePath: string) => void;
 		onToggleSelection?: (imagePath: string, shiftKey?: boolean, metaKey?: boolean) => void;
 	} = $props();
+
+	// $derivedでサムネイルを管理
+	const thumbnail = $derived(thumbnailStore.getThumbnail(imagePath));
+	const thumbnailUrl = $derived(thumbnail.thumbnailUrlValue);
+	const loadingStatus = $derived(thumbnail.loadingStatus);
 
 	const handleClick = (event?: MouseEvent): void => {
 		if (onToggleSelection) {
@@ -42,24 +41,26 @@
 		onkeydown={(e) => e.key === 'Enter' && handleClick()}
 		aria-label="Select image (double-click to open)"
 	>
-		{#if thumbnailUrl}
-			<div class="relative flex h-full w-full items-center justify-center p-1">
-				<img
-					src={thumbnailUrl}
-					alt="thumbnail"
-					class="h-full w-full rounded object-contain"
-					loading="lazy"
-				/>
-			</div>
-		{:else if isLoading}
+		{#if loadingStatus === 'loaded'}
+			{#if thumbnailUrl}
+				<div class="relative flex h-full w-full items-center justify-center p-1">
+					<img
+						src={thumbnailUrl}
+						alt="thumbnail"
+						class="h-full w-full rounded object-contain"
+						loading="lazy"
+					/>
+				</div>
+			{:else}
+				<div class="flex h-full flex-col items-center justify-center bg-base-300/20">
+					<div class="mb-1 text-2xl opacity-30">📷</div>
+					<div class="text-xs text-base-content/50">No Image</div>
+				</div>
+			{/if}
+		{:else}
 			<div class="flex h-full flex-col items-center justify-center bg-base-300/30">
 				<div class="loading mb-2 loading-sm loading-spinner"></div>
 				<div class="text-xs text-base-content/50">Loading...</div>
-			</div>
-		{:else}
-			<div class="flex h-full flex-col items-center justify-center bg-base-300/20">
-				<div class="mb-1 text-2xl opacity-30">📷</div>
-				<div class="text-xs text-base-content/50">No Image</div>
 			</div>
 		{/if}
 	</button>

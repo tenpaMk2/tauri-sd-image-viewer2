@@ -11,7 +11,6 @@
 		onImageSelect,
 		selectedImages = new Set(),
 		onToggleSelection,
-		refreshTrigger = 0,
 		onFilteredImagesUpdate,
 		onTagDataLoaded
 	}: {
@@ -19,7 +18,6 @@
 		onImageSelect: (imagePath: string) => void;
 		selectedImages?: Set<string>;
 		onToggleSelection?: (imagePath: string, shiftKey?: boolean, metaKey?: boolean) => void;
-		refreshTrigger?: number;
 		onFilteredImagesUpdate?: (filteredCount: number, totalCount: number) => void;
 		onTagDataLoaded?: (tagData: TagAggregationResult) => void;
 	} = $props();
@@ -71,19 +69,9 @@
 <!-- サムネイルグリッド -->
 <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8">
 	{#each imageFiles as imagePath (imagePath)}
-		{@const thumbnail = thumbnailStore.getThumbnail(imagePath)}
-		{@const thumbnailUrl = thumbnail.thumbnailValue}
-		{@const isSelected = selectedImages.has(imagePath)}
-		{@const isLoading = !thumbnailUrl}
-
-		{@const metadata = imageMetadataStore.getMetadata(imagePath)}
-
 		<ImageThumbnail
 			{imagePath}
-			{thumbnailUrl}
-			{metadata}
-			{isSelected}
-			{isLoading}
+			isSelected={selectedImages.has(imagePath)}
 			onImageClick={onImageSelect}
 			{onToggleSelection}
 		/>

@@ -25,7 +25,7 @@ export class ThumbnailQueueService {
 	async enqueue(imagePath: string): Promise<void> {
 		// すでに生成済みの場合は即座に完了
 		const thumbnail = thumbnailStore.getThumbnail(imagePath);
-		if (thumbnail.isLoaded) {
+		if (thumbnail.loadingStatus === 'loaded') {
 			return;
 		}
 

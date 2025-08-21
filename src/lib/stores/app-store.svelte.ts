@@ -182,7 +182,7 @@ const openFileDialog = async (): Promise<void> => {
 			// リアクティブメタデータの事前読み込み
 			const reactiveMetadata = imageMetadataStore.getMetadata(selected);
 			console.log('📊 Reactive metadata created');
-			if (!reactiveMetadata.isLoaded && !reactiveMetadata.isLoading) {
+			if (reactiveMetadata.loadingStatus === 'unloaded') {
 				console.log('🔄 Loading metadata...');
 				await reactiveMetadata.load();
 				console.log('✅ Metadata loaded');
@@ -257,7 +257,7 @@ const openDirectoryDialog = async (): Promise<void> => {
 const updateSelectedImage = async (imagePath: string): Promise<void> => {
 	// リアクティブメタデータの事前読み込み
 	const reactiveMetadata = imageMetadataStore.getMetadata(imagePath);
-	if (!reactiveMetadata.isLoaded && !reactiveMetadata.isLoading) {
+	if (reactiveMetadata.loadingStatus === 'unloaded') {
 		await reactiveMetadata.load();
 	}
 
@@ -337,7 +337,7 @@ const handleDroppedPaths = async (paths: string[]): Promise<void> => {
 		} else if (isImageFile(firstPath)) {
 			// リアクティブメタデータの事前読み込み
 			const reactiveMetadata = imageMetadataStore.getMetadata(firstPath);
-			if (!reactiveMetadata.isLoaded && !reactiveMetadata.isLoading) {
+			if (reactiveMetadata.loadingStatus === 'unloaded') {
 				await reactiveMetadata.load();
 			}
 			const selectedDirectory = await getDirectoryFromPath(firstPath);

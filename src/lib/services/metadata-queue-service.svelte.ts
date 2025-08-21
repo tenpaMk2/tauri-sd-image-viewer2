@@ -25,7 +25,7 @@ export class MetadataQueueService {
 	async enqueue(imagePath: string): Promise<void> {
 		// すでにロード済みの場合は即座に完了
 		const metadata = imageMetadataStore.getMetadata(imagePath);
-		if (metadata.isLoaded) {
+		if (metadata.loadingStatus === 'loaded') {
 			return;
 		}
 

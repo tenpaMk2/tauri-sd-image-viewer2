@@ -27,22 +27,11 @@ export class ReactiveImageThumbnail {
 	}
 
 	/**
-	 * ロード状態のチェック用ゲッター（互換性のため）
-	 */
-	get isLoaded(): boolean {
-		return this.loadingStatus === 'loaded';
-	}
-
-	get isLoading(): boolean {
-		return this.loadingStatus === 'loading';
-	}
-
-	/**
 	 * サムネイルの読み込み（一度だけ実行される）
 	 */
-	private async ensureLoaded(): Promise<void> {
+	async ensureLoaded(): Promise<void> {
 		// 既にロード済みの場合は何もしない
-		if (this.isLoaded) {
+		if (this.loadingStatus === 'loaded') {
 			return;
 		}
 
@@ -79,15 +68,16 @@ export class ReactiveImageThumbnail {
 	}
 
 	/**
-	 * サムネイルURLを同期的に取得（リアクティブ、自動ロードなし）
+	 * サムネイルURLを同期的に取得（リアクティブ、自動ロード付き）
 	 */
-	get thumbnailValue(): string | undefined {
+	get thumbnailUrlValue(): string | undefined {
+		this.triggerAutoLoad();
 		return this.thumbnailUrl;
 	}
 
-
 	/**
 	 * サムネイルの実際のロード処理（キューサービスから呼ばれる）
+	 * @internal キューサービス専用メソッド - 直接呼び出し禁止
 	 */
 	async load(): Promise<void> {
 		try {
@@ -135,48 +125,6 @@ export class ReactiveImageThumbnail {
 			throw error; // エラーを再スロー
 		}
 	}
-
-	/**
-	 * サムネイルの強制リロード
-	 */
-	async reload(): Promise<void> {
-		// すべての$stateをundefinedにしてリセット
-		if (this.thumbnailUrl) {
-			this.safeRevokeUrl(this.thumbnailUrl);
-		}
-		this.thumbnailUrl = undefined;
-		this.loadError = undefined;
-		this.loadPromise = undefined;
-		this.loadingStatus = 'unloaded';
-
-		await this.ensureLoaded();
-	}
-
-	/**
-	 * BlobURLを安全に解放
-	 */
-	private safeRevokeUrl(url: string): void {
-		try {
-			if (url && url.startsWith('blob:')) {
-				URL.revokeObjectURL(url);
-			}
-		} catch (error) {
-			console.warn('Thumbnail URL revoke failed:', url, error);
-		}
-	}
-
-	/**
-	 * デバッグ用の状態取得
-	 */
-	get debugInfo() {
-		return {
-			imagePath: this.imagePath,
-			thumbnailUrl: this.thumbnailUrl,
-			isLoaded: this.isLoaded,
-			isLoading: this.isLoading,
-			loadError: this.loadError
-		};
-	}
 }
 
 /**
@@ -196,8 +144,8 @@ class ImageThumbnailStore {
 			this.thumbnailMap.set(imagePath, thumbnail);
 
 			// 新しいインスタンス作成時に自動的にロードを開始
-			if (thumbnail.loadingStatus === 'unloaded' && !thumbnail.isLoading) {
-				thumbnail.load().catch((error: unknown) => {
+			if (thumbnail.loadingStatus === 'unloaded') {
+				thumbnail.ensureLoaded().catch((error: unknown) => {
 					console.error(
 						'Failed to auto-load thumbnail for ' + imagePath.split('/').pop() + ': ' + error
 					);
@@ -215,8 +163,8 @@ class ImageThumbnailStore {
 
 		const loadPromises = imagePaths.map((imagePath) => {
 			const thumbnail = this.getThumbnail(imagePath);
-			if (!thumbnail.isLoaded && !thumbnail.isLoading) {
-				return thumbnail.load();
+			if (thumbnail.loadingStatus === 'unloaded') {
+				return thumbnail.ensureLoaded();
 			}
 			return Promise.resolve();
 		});
@@ -269,38 +217,9 @@ class ImageThumbnailStore {
 		this.thumbnailMap.clear();
 		console.log('🗑️ All thumbnails cleared');
 	}
-
-	/**
-	 * 現在のキャッシュサイズ取得
-	 */
-	get cacheSize(): number {
-		return this.thumbnailMap.size;
-	}
-
-	/**
-	 * デバッグ用の状態取得
-	 */
-	get debugInfo() {
-		const entries = Array.from(this.thumbnailMap.entries()).map(([path, thumbnail]) => ({
-			path: path.split('/').pop(),
-			...thumbnail.debugInfo
-		}));
-
-		return {
-			cacheSize: this.cacheSize,
-			entries
-		};
-	}
 }
 
 /**
  * グローバルインスタンス
  */
 export const thumbnailStore = new ImageThumbnailStore();
-
-/**
- * 開発用: グローバルに公開
- */
-if (typeof window !== 'undefined') {
-	(window as any).thumbnailStore = thumbnailStore;
-}

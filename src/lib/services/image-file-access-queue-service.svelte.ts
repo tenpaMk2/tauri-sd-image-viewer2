@@ -12,7 +12,7 @@ type QueueTask = {
 abstract class BaseImageFileAccessQueue {
 	protected queue: QueueTask[] = [];
 	protected processing = false;
-	protected maxConcurrent = 3;
+	protected maxConcurrent = 10;
 	protected activeJobs = new Set<Promise<void>>();
 
 	// 進行中のロード処理を管理（パスごとにresolve関数を保持）

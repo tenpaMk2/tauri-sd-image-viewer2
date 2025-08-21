@@ -1,8 +1,6 @@
 <script lang="ts">
 	import { onDestroy } from 'svelte';
 	import ImageThumbnail from './ImageThumbnail.svelte';
-	import type { TagAggregationResult } from './services/tag-aggregation-service';
-	import { TagAggregationService } from './services/tag-aggregation-service';
 	import { imageMetadataStore } from './stores/image-metadata-store.svelte';
 	import { thumbnailStore } from './stores/thumbnail-store.svelte';
 
@@ -10,52 +8,13 @@
 		imageFiles,
 		onImageSelect,
 		selectedImages = new Set(),
-		onToggleSelection,
-		onFilteredImagesUpdate,
-		onTagDataLoaded
+		onToggleSelection
 	}: {
 		imageFiles: string[];
 		onImageSelect: (imagePath: string) => void;
 		selectedImages?: Set<string>;
 		onToggleSelection?: (imagePath: string, shiftKey?: boolean, metaKey?: boolean) => void;
-		onFilteredImagesUpdate?: (filteredCount: number, totalCount: number) => void;
-		onTagDataLoaded?: (tagData: TagAggregationResult) => void;
 	} = $props();
-
-	// サービスインスタンス
-	const tagAggregationService = new TagAggregationService();
-
-	// SDタグデータを集計
-	const loadTagData = async () => {
-		console.log('=== SDタグ集計開始 ===');
-
-		try {
-			const tagData = await tagAggregationService.aggregateTagsFromFiles(imageFiles);
-			console.log('SDタグ集計完了: ' + tagData.allTags.length + '個のタグ');
-
-			// 親コンポーネントにタグデータを通知
-			if (onTagDataLoaded) {
-				onTagDataLoaded(tagData);
-			}
-		} catch (err) {
-			console.error('SDタグ集計エラー: ' + err);
-		}
-	};
-
-	// 副作用：ファイルリストが確定したときの後続処理
-	$effect(() => {
-		if (imageFiles.length > 0) {
-			console.log('副作用: 後続処理開始', imageFiles.length);
-
-			// 親コンポーネントに通知
-			if (onFilteredImagesUpdate) {
-				onFilteredImagesUpdate(imageFiles.length, imageFiles.length); // フィルタなしで全件
-			}
-
-			// SDタグ集計のみ開始（サムネイルはオンデマンド）
-			setTimeout(() => loadTagData(), 0);
-		}
-	});
 
 	// クリーンアップ
 	onDestroy(() => {

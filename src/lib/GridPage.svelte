@@ -4,8 +4,9 @@
 	import { basename } from '@tauri-apps/api/path';
 	import { platform } from '@tauri-apps/plugin-os';
 	import FilterPanel from './FilterPanel.svelte';
-	import type { TagAggregationResult } from './services/tag-aggregation-service';
 	import { appStore } from './stores/app-store.svelte';
+	import { gridStore } from './stores/grid-store.svelte';
+	import { tagStore } from './stores/tag-store.svelte';
 	import { showSuccessToast } from './stores/toast.svelte';
 	import ThumbnailGrid from './ThumbnailGrid.svelte';
 	import { deleteSelectedImages as performDelete } from './utils/delete-images';
@@ -28,34 +29,41 @@
 	const imageLoadingState = $derived(appStore.state.imageLoadingState);
 	const imageFileLoadError = $derived(appStore.state.imageFileLoadError);
 
-	let selectedImages = $state<Set<string>>(new Set());
-	let filteredImageCount = $state<number>(0);
+	// gridStoreから状態を取得
+	const selectedImages = $derived(gridStore.state.selectedImages);
+	const showFilterPanel = $derived(gridStore.state.showFilterPanel);
+	const showOptionsModal = $derived(gridStore.state.showOptionsModal);
+
 	// totalImageCountは直接imageFiles.lengthから取得
 	const totalImageCount = $derived(imageFiles.length);
+	// フィルタリング結果（現在はフィルタなしなので画像ファイル数と同じ）
+	const filteredImageCount = $derived(imageFiles.length);
+
+	// ローカル状態
 	let isMacOS = $state<boolean>(false);
-	let lastSelectedIndex = $state<number>(-1); // Shift+Click用の基点インデックス
-	let showFilterPanel = $state<boolean>(false);
-	let tagData = $state<TagAggregationResult | null>(null);
-	let showOptionsModal = $state<boolean>(false);
 
-	// フィルタリング結果を受け取る
-	const handleFilteredImagesUpdate = (filtered: number, total: number) => {
-		filteredImageCount = filtered;
-	};
+	// tagStoreから状態を取得
+	const tagData = $derived(tagStore.state.tagData);
 
-	// タグデータを受け取る
-	const handleTagDataLoaded = (data: TagAggregationResult) => {
-		tagData = data;
-	};
+	// 画像ファイルが変更されたときにタグデータを読み込み
+	$effect(() => {
+		if (0 < imageFiles.length) {
+			console.log('副作用: タグ集計開始', imageFiles.length);
+			// SDタグ集計を開始
+			tagStore.actions.loadTagData(imageFiles);
+		} else {
+			tagStore.actions.clearTagData();
+		}
+	});
 
 	// フィルターパネルの表示切り替え
 	const toggleFilterPanel = () => {
-		showFilterPanel = !showFilterPanel;
+		gridStore.actions.toggleFilterPanel();
 	};
 
 	// オプションモーダルの表示切り替え
 	const toggleOptionsModal = () => {
-		showOptionsModal = !showOptionsModal;
+		gridStore.actions.toggleOptionsModal();
 	};
 
 	// キャッシュ削除
@@ -63,7 +71,7 @@
 		try {
 			await invoke('clear_thumbnail_cache');
 			showSuccessToast('Thumbnail cache cleared');
-			showOptionsModal = false;
+			gridStore.actions.closeOptionsModal();
 			// app-storeから画像ファイルを再読み込み
 			await loadImageFiles();
 		} catch (error) {
@@ -77,58 +85,19 @@
 		shiftKey: boolean = false,
 		metaKey: boolean = false
 	) => {
-		const currentIndex = imageFiles.indexOf(imagePath);
-
-		if (shiftKey && lastSelectedIndex !== -1) {
-			// Shift+Click: 範囲選択
-			const startIndex = Math.min(lastSelectedIndex, currentIndex);
-			const endIndex = Math.max(lastSelectedIndex, currentIndex);
-
-			const newSelection = new Set(selectedImages);
-			for (let i = startIndex; i <= endIndex; i++) {
-				newSelection.add(imageFiles[i]);
-			}
-			selectedImages = newSelection;
-		} else if (metaKey) {
-			// Cmd+Click (macOS) または Ctrl+Click (Windows/Linux): 複数選択
-			const newSelection = new Set(selectedImages);
-			if (selectedImages.has(imagePath)) {
-				// 既に選択されている場合は選択解除
-				newSelection.delete(imagePath);
-			} else {
-				// 新しく選択に追加
-				newSelection.add(imagePath);
-				lastSelectedIndex = currentIndex;
-			}
-			selectedImages = newSelection;
-		} else {
-			// 通常クリック: 単独選択（既存選択をクリア）
-			if (selectedImages.has(imagePath)) {
-				// 既に選択されている場合は選択解除
-				selectedImages = new Set();
-				lastSelectedIndex = -1;
-			} else {
-				// 新しく選択（他の選択はクリア）
-				selectedImages = new Set([imagePath]);
-				lastSelectedIndex = currentIndex;
-			}
-		}
+		gridStore.actions.toggleImageSelection(imagePath, imageFiles, shiftKey, metaKey);
 	};
 
 	// 全選択/全選択解除
 	const toggleSelectAll = () => {
-		if (selectedImages.size === imageFiles.length) {
-			selectedImages = new Set();
-		} else {
-			selectedImages = new Set(imageFiles);
-		}
+		gridStore.actions.toggleSelectAll(imageFiles);
 	};
 
 	// 選択画像削除
 	const deleteSelectedImages = async () => {
 		try {
 			await performDelete(selectedImages);
-			selectedImages = new Set();
+			gridStore.actions.clearSelection();
 			// app-storeから画像ファイルを再読み込み
 			await loadImageFiles();
 		} catch (err) {
@@ -278,8 +247,6 @@
 				onImageSelect={handleImageSelect}
 				{selectedImages}
 				onToggleSelection={toggleImageSelection}
-				onFilteredImagesUpdate={handleFilteredImagesUpdate}
-				onTagDataLoaded={handleTagDataLoaded}
 			/>
 		{/if}
 	</div>

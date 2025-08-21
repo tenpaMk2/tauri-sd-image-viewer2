@@ -1,10 +1,10 @@
 import { Channel, invoke } from '@tauri-apps/api/core';
-import { thumbnailQueueService } from '../services/thumbnail-queue-service.svelte';
+import { imageFileAccessQueueService } from '../services/image-file-access-queue-service.svelte';
 
 /**
  * サムネイルロード状態
  */
-type LoadingStatus = 'unloaded' | 'loading' | 'loaded';
+type LoadingStatus = 'unloaded' | 'queued' | 'loading' | 'loaded' | 'error';
 
 /**
  * リアクティブな画像サムネイル（Promiseベース）
@@ -15,7 +15,7 @@ export class ReactiveImageThumbnail {
 	// サムネイルURL（$stateで管理、undefinedは未ロード状態）
 	thumbnailUrl = $state<string | undefined>(undefined);
 
-	// ロード状態管理
+	// ロード状態管理（publicにアクセス可能）
 	loadingStatus = $state<LoadingStatus>('unloaded');
 	loadError = $state<string | undefined>(undefined);
 
@@ -41,7 +41,7 @@ export class ReactiveImageThumbnail {
 		}
 
 		// キューサービス経由でロード処理を開始
-		this.loadPromise = thumbnailQueueService.enqueue(this.imagePath).then(() => {
+		this.loadPromise = imageFileAccessQueueService.enqueueThumbnail(this.imagePath).then(() => {
 			this.loadPromise = undefined; // ロード完了時にPromiseをクリア
 		});
 
@@ -53,13 +53,18 @@ export class ReactiveImageThumbnail {
 	 */
 	private triggerAutoLoad(): void {
 		if (this.loadingStatus === 'unloaded') {
-			this.loadingStatus = 'loading';
+			console.log(`📋 Setting thumbnail status to queued: ${this.imagePath.split('/').pop()}`);
+			this.loadingStatus = 'queued'; // キューに追加済み状態
 			this.ensureLoaded()
 				.then(() => {
-					this.loadingStatus = 'loaded';
+					console.log(`✅ Thumbnail ensureLoaded completed: ${this.imagePath.split('/').pop()}`);
+					// loadingStatusはexecuteTask内で'loaded'に設定される
 				})
 				.catch((error) => {
-					this.loadingStatus = 'unloaded';
+					console.error(
+						`❌ Thumbnail ensureLoaded failed, setting status to error: ${this.imagePath.split('/').pop()} - ${error}`
+					);
+					this.loadingStatus = 'error';
 					console.error(
 						'❌ Auto-load failed for thumbnail: ' + this.imagePath.split('/').pop() + ' ' + error
 					);

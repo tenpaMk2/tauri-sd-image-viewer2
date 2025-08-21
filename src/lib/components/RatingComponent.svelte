@@ -7,11 +7,8 @@
 
 	const { imagePath }: Props = $props();
 
-	// リアクティブなメタデータオブジェクト取得
-	const metadata = $derived(imageMetadataStore.getMetadata(imagePath));
-
-	// リアクティブな値を取得
-	const currentRating = $derived(metadata.ratingValue);
+	// リアクティブなメタデータオブジェクト取得（Store側で自動ロード）
+	const metadata = imageMetadataStore.getMetadata(imagePath);
 
 	let isRatingHovered = $state(false);
 	let hoveredRating = $state(0);
@@ -32,7 +29,7 @@
 
 		try {
 			// 同じ星をクリックした場合は0に戻す、そうでなければ新しいRating値を設定
-			const newRating = (currentRating ?? 0) === clickedRating ? 0 : clickedRating;
+			const newRating = (metadata.rating ?? 0) === clickedRating ? 0 : clickedRating;
 
 			await metadata.updateRating(newRating);
 		} catch (error) {
@@ -50,8 +47,8 @@
 >
 	{#if metadata.loadingStatus === 'loaded'}
 		<!-- DaisyUI Rating表示 -->
-		{@const displayRating = isRatingHovered ? hoveredRating : (currentRating ?? 0)}
-		<div class="rating-xs rating" title={`Rating: ${currentRating || 0}/5 (click to change)`}>
+		{@const displayRating = isRatingHovered ? hoveredRating : (metadata.rating ?? 0)}
+		<div class="rating-xs rating" title={`Rating: ${metadata.rating || 0}/5 (click to change)`}>
 			{#each Array(5) as _, i}
 				<input
 					type="radio"
@@ -68,11 +65,33 @@
 				/>
 			{/each}
 		</div>
-	{:else}
-		<!-- メタデータロード中のスピナー -->
+	{:else if metadata.loadingStatus === 'loading'}
+		<!-- メタデータ処理中のスピナー -->
 		<div class="flex items-center gap-1 rounded bg-black/50 px-2 py-1">
 			<span class="loading loading-xs loading-spinner text-white"></span>
 			<span class="text-xs text-white">Loading...</span>
+		</div>
+	{:else if metadata.loadingStatus === 'queued'}
+		<!-- メタデータキュー待ちの表示 -->
+		<div class="flex items-center gap-1 rounded bg-black/50 px-2 py-1">
+			<span class="loading loading-xs loading-spinner text-white opacity-50"></span>
+			<span class="text-xs text-white">Queue...</span>
+		</div>
+	{:else if metadata.loadingStatus === 'error'}
+		<!-- エラー状態の表示 -->
+		<div class="flex items-center gap-1 rounded bg-red-600/50 px-2 py-1">
+			<span class="text-xs text-white">Error</span>
+		</div>
+	{:else if metadata.loadingStatus === 'unloaded'}
+		<!-- unloaded状態は初期化中のため非表示 -->
+		<div class="flex items-center gap-1 rounded bg-black/50 px-2 py-1">
+			<span class="loading loading-xs loading-spinner text-white opacity-30"></span>
+			<span class="text-xs text-white opacity-30">Init...</span>
+		</div>
+	{:else}
+		<!-- 予期しない状態 -->
+		<div class="flex items-center gap-1 rounded bg-orange-600/50 px-2 py-1">
+			<span class="text-xs text-white opacity-75">-</span>
 		</div>
 	{/if}
 </div>

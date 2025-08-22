@@ -7,7 +7,7 @@
 	import ImageCanvas from './ImageCanvas.svelte';
 	import MetadataPanel from './MetadataPanel.svelte';
 	import { appStore } from './stores/app-store.svelte';
-	import { imageMetadataStore } from './stores/image-metadata-store.svelte';
+	import { metadataRegistry } from './stores/metadata-registry.svelte';
 	import { thumbnailStore } from './stores/thumbnail-store.svelte';
 	import { showInfoToast, showSuccessToast } from './stores/toast.svelte';
 	import ViewerUIOverlay from './ViewerUIOverlay.svelte';
@@ -144,7 +144,7 @@
 		);
 
 		// キューを停止して不要な処理を停止
-		imageMetadataStore.actions.stopQueue();
+		metadataRegistry.stopQueue();
 		thumbnailStore.actions.stopQueue();
 
 		// Viewerで使用していた画像以外のサムネイルを解放

@@ -1,23 +1,23 @@
 <script lang="ts">
-	import { imageMetadataStore } from '../../stores/image-metadata-store.svelte';
+	import { metadataRegistry } from '../../stores/metadata-registry.svelte';
 
 	type Props = {
 		imagePath: string;
 	};
 	const { imagePath }: Props = $props();
 
-	// メタデータアイテムを取得（$stateオブジェクトなので$derivedは不要）
-	const metadata = imageMetadataStore.actions.getMetadataItem(imagePath);
+	// メタデータストアを取得（$stateオブジェクトなので$derivedは不要）
+	const store = metadataRegistry.getStore(imagePath);
+	const metadata = store.state;
 
 	// コンポーネントマウント時に明示的にロード開始
 	$effect(() => {
 		if (metadata.loadingStatus === 'unloaded') {
-			imageMetadataStore.actions.ensureLoaded(imagePath).catch((error) => {
+			store.actions.ensureLoaded().catch((error) => {
 				console.error('Failed to load metadata for ' + imagePath.split('/').pop() + ': ' + error);
 			});
 		}
 	});
-
 </script>
 
 <div class="rounded-lg bg-base-300 p-3">

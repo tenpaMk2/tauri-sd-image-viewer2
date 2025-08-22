@@ -8,7 +8,7 @@
 	import { appStore } from './stores/app-store.svelte';
 	import { filterStore } from './stores/filter-store.svelte';
 	import { gridStore } from './stores/grid-store.svelte';
-	import { imageMetadataStore } from './stores/image-metadata-store.svelte';
+	import { metadataRegistry } from './stores/metadata-registry.svelte';
 	import { tagStore } from './stores/tag-store.svelte';
 	import { thumbnailStore } from './stores/thumbnail-store.svelte';
 	import { showSuccessToast } from './stores/toast.svelte';
@@ -38,8 +38,8 @@
 	const showFilterPanel = $derived(gridStore.state.showFilterPanel);
 	const showOptionsModal = $derived(gridStore.state.showOptionsModal);
 
-	// filterStoreから状態を取得
-	const filterState = $derived(filterStore.state);
+	// filterStoreから状態を取得（使用されていないため削除）
+	// const filterState = $derived(filterStore.state);
 
 	// タグストアから状態を取得
 	const tagData = $derived(tagStore.state.tagData);
@@ -61,7 +61,7 @@
 		if (imageFiles.length === 0) return [];
 
 		// レーティングマップを同期的に取得
-		const ratingsMap = imageMetadataStore.actions.getRatingsMapSync(imageFiles);
+		const ratingsMap = metadataRegistry.getRatingsMapSync(imageFiles);
 
 		// フィルタを適用
 		return filterStore.actions.filterImages(
@@ -162,7 +162,7 @@
 		);
 
 		// キューを停止して不要な処理を停止
-		imageMetadataStore.actions.stopQueue();
+		metadataRegistry.stopQueue();
 		thumbnailStore.actions.stopQueue();
 
 		// 不要なサムネイルを解放

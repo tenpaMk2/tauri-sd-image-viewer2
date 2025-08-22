@@ -1,5 +1,5 @@
 type QueueTask = {
-	imagePath: string;
+	id: string;
 	handler: (abortSignal: AbortSignal) => Promise<void>;
 	abortController: AbortController;
 };
@@ -11,7 +11,7 @@ export class BaseQueue {
 	protected queue: QueueTask[] = [];
 	protected processing = false;
 	protected maxConcurrent = 10;
-	protected activeJobs = new Set<Promise<void>>();
+	protected activeJobs = new Map<string, { promise: Promise<void>, task: QueueTask }>(); // 統合管理
 	protected stopped = false;
 
 	// 進行中のロード処理を管理（パスごとにresolve関数を保持）
@@ -27,7 +27,7 @@ export class BaseQueue {
 	 * タスクをキューに追加してPromiseを返す
 	 */
 	async enqueue(
-		imagePath: string,
+		id: string,
 		handler: (abortSignal: AbortSignal) => Promise<void>,
 		taskTypeName: string
 	): Promise<void> {
@@ -37,16 +37,16 @@ export class BaseQueue {
 		}
 
 		// 進行中のロード処理に参加
-		if (this.pendingResolvers.has(imagePath)) {
+		if (this.pendingResolvers.has(id)) {
 			return new Promise<void>((resolve, reject) => {
-				const resolvers = this.pendingResolvers.get(imagePath)!;
+				const resolvers = this.pendingResolvers.get(id)!;
 				resolvers.push({ resolve, reject });
 			});
 		}
 
 		// 新しいPromiseを作成
 		const promise = new Promise<void>((resolve, reject) => {
-			this.pendingResolvers.set(imagePath, [{ resolve, reject }]);
+			this.pendingResolvers.set(id, [{ resolve, reject }]);
 		});
 
 		// AbortControllerを作成
@@ -54,15 +54,15 @@ export class BaseQueue {
 
 		// キューに追加
 		const task: QueueTask = {
-			imagePath,
+			id,
 			handler,
 			abortController
 		};
 
-		if (!this.queue.some((t) => t.imagePath === imagePath)) {
+		if (!this.queue.some((t) => t.id === id)) {
 			this.queue.push(task);
 			console.log(
-				`📋 ${taskTypeName} queued: ${imagePath.split('/').pop()} | Queue size: ${this.queue.length}, Active: ${this.activeJobs.size}/${this.maxConcurrent}`
+				`📋 ${taskTypeName} queued: ${id.split('/').pop()} | Queue size: ${this.queue.length}, Active: ${this.activeJobs.size}/${this.maxConcurrent}`
 			);
 
 			// 処理を開始
@@ -84,24 +84,25 @@ export class BaseQueue {
 			while (this.activeJobs.size < this.maxConcurrent && this.queue.length > 0 && !this.stopped) {
 				const task = this.queue.shift()!;
 				console.log(
-					`▶️ Processing ${taskTypeName}: ${task.imagePath.split('/').pop()} | Queue remaining: ${this.queue.length}, Active: ${this.activeJobs.size + 1}/${this.maxConcurrent}`
+					`▶️ Processing ${taskTypeName}: ${task.id.split('/').pop()} | Queue remaining: ${this.queue.length}, Active: ${this.activeJobs.size + 1}/${this.maxConcurrent}`
 				);
 
 				const job = this.executeQueueTask(task, taskTypeName);
-				this.activeJobs.add(job);
+				this.activeJobs.set(task.id, { promise: job, task });
 
 				// ジョブ完了時にアクティブジョブから削除
 				job.finally(() => {
-					this.activeJobs.delete(job);
+					this.activeJobs.delete(task.id);
 					console.log(
-						`✅ Completed ${taskTypeName}: ${task.imagePath.split('/').pop()} | Active jobs remaining: ${this.activeJobs.size}`
+						`✅ Completed ${taskTypeName}: ${task.id.split('/').pop()} | Active jobs remaining: ${this.activeJobs.size}`
 					);
 				});
 			}
 
 			// 少なくとも1つのジョブが完了するまで待機
 			if (this.activeJobs.size > 0 && !this.stopped) {
-				await Promise.race(Array.from(this.activeJobs));
+				const promises = Array.from(this.activeJobs.values()).map(job => job.promise);
+				await Promise.race(promises);
 			}
 		}
 
@@ -114,10 +115,10 @@ export class BaseQueue {
 	 */
 	private async executeQueueTask(task: QueueTask, taskTypeName: string): Promise<void> {
 		try {
-			await this.executeTask(task.imagePath, task.handler, task.abortController.signal, taskTypeName);
+			await this.executeTask(task.id, task.handler, task.abortController.signal, taskTypeName);
 		} catch (error) {
 			console.error(
-				`❌ ${taskTypeName} execution failed: ${task.imagePath.split('/').pop()} ${error}`
+				`❌ ${taskTypeName} execution failed: ${task.id.split('/').pop()} ${error}`
 			);
 			throw error;
 		}
@@ -127,7 +128,7 @@ export class BaseQueue {
 	 * 実際のタスク実行
 	 */
 	private async executeTask(
-		imagePath: string,
+		id: string,
 		handler: (abortSignal: AbortSignal) => Promise<void>,
 		abortSignal: AbortSignal,
 		taskTypeName: string
@@ -138,31 +139,43 @@ export class BaseQueue {
 				throw new Error('Task aborted');
 			}
 
-			console.log(`🔄 Loading ${taskTypeName}: ${imagePath.split('/').pop()}`);
+			console.log(`🔄 Loading ${taskTypeName}: ${id.split('/').pop()}`);
 
-			// 実際のロード処理を実行
+			// 実際のロード処理を実行（Rust側処理含む、停止不可）
 			await handler(abortSignal);
 
-			console.log(`✅ Completed ${taskTypeName} load: ${imagePath.split('/').pop()}`);
+			// 完了後に停止状態を再チェック（Rust処理後の防御）
+			if (this.stopped || abortSignal.aborted) {
+				console.log(`🛑 ${taskTypeName} ignored after completion (queue stopped): ${id.split('/').pop()}`);
+				return; // 結果を無視
+			}
 
-			// 成功時にすべてのPromiseをresolve
-			const resolvers = this.pendingResolvers.get(imagePath);
+			console.log(`✅ Completed ${taskTypeName} load: ${id.split('/').pop()}`);
+
+			// 成功時にすべてのPromiseをresolve（停止されていない場合のみ）
+			const resolvers = this.pendingResolvers.get(id);
 			if (resolvers) {
 				for (const resolver of resolvers) {
 					resolver.resolve();
 				}
-				this.pendingResolvers.delete(imagePath);
+				this.pendingResolvers.delete(id);
 			}
 		} catch (error) {
-			console.error(`❌ ${taskTypeName} load failed: ${imagePath.split('/').pop()} ${error}`);
+			console.error(`❌ ${taskTypeName} load failed: ${id.split('/').pop()} ${error}`);
 
-			// エラー時にすべてのPromiseをreject
-			const resolvers = this.pendingResolvers.get(imagePath);
+			// エラー時も停止状態をチェック
+			if (this.stopped) {
+				console.log(`🛑 ${taskTypeName} error ignored (queue stopped): ${id.split('/').pop()}`);
+				return; // エラーも無視
+			}
+
+			// エラー時にすべてのPromiseをreject（停止されていない場合のみ）
+			const resolvers = this.pendingResolvers.get(id);
 			if (resolvers) {
 				for (const resolver of resolvers) {
 					resolver.reject(error);
 				}
-				this.pendingResolvers.delete(imagePath);
+				this.pendingResolvers.delete(id);
 			}
 		}
 	}
@@ -195,12 +208,17 @@ export class BaseQueue {
 		// 処理中のフラグをリセット
 		this.processing = false;
 
-		// キューにあるタスクのAbortControllerを全て中断
+		// キューにあるタスク（未実行）のAbortControllerを全て中断
 		for (const task of this.queue) {
 			task.abortController.abort();
 		}
 
-		// 未完了のPromiseをreject
+		// 実行中タスクのAbortControllerも中断（Rust側は止まらないが、フラグは設定）
+		for (const { task } of this.activeJobs.values()) {
+			task.abortController.abort();
+		}
+
+		// 未完了のPromiseを即座にreject
 		for (const [, resolvers] of this.pendingResolvers) {
 			for (const resolver of resolvers) {
 				resolver.reject(new Error('Queue stopped'));

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { imageMetadataStore } from '$lib/stores/image-metadata-store.svelte';
+	import { metadataRegistry } from '$lib/stores/metadata-registry.svelte';
 
 	type Props = {
 		imagePath: string;
@@ -7,13 +7,14 @@
 
 	const { imagePath }: Props = $props();
 
-	// メタデータアイテムを取得（$stateオブジェクトなので$derivedは不要）
-	const metadata = imageMetadataStore.actions.getMetadataItem(imagePath);
+	// メタデータストアを取得（$stateオブジェクトなので$derivedは不要）
+	const store = metadataRegistry.getStore(imagePath);
+	const metadata = store.state;
 
 	// コンポーネントマウント時に明示的にロード開始
 	$effect(() => {
 		if (metadata.loadingStatus === 'unloaded') {
-			imageMetadataStore.actions.ensureLoaded(imagePath).catch((error) => {
+			store.actions.ensureLoaded().catch((error) => {
 				console.error('Failed to load metadata for ' + imagePath.split('/').pop() + ': ' + error);
 			});
 		}
@@ -40,7 +41,7 @@
 			// 同じ星をクリックした場合は0に戻す、そうでなければ新しいRating値を設定
 			const newRating = (metadata.rating ?? 0) === clickedRating ? 0 : clickedRating;
 
-			await imageMetadataStore.actions.updateRating(imagePath, newRating);
+			await store.actions.updateRating(newRating);
 		} catch (error) {
 			console.error('Failed to update rating for ' + imagePath.split('/').pop() + ': ' + error);
 		}
@@ -54,7 +55,25 @@
 	aria-label="Image Rating"
 	{onmouseleave}
 >
-	{#if metadata.loadingStatus === 'loaded'}
+	{#if metadata.loadingStatus === 'unloaded'}
+		<!-- unloaded状態は初期化中のため非表示 -->
+		<div class="flex items-center gap-1 rounded bg-black/50 px-2 py-1">
+			<span class="loading loading-xs loading-spinner text-white opacity-30"></span>
+			<span class="text-xs text-white opacity-30">Init...</span>
+		</div>
+	{:else if metadata.loadingStatus === 'queued'}
+		<!-- メタデータキュー待ちの表示 -->
+		<div class="flex items-center gap-1 rounded bg-black/50 px-2 py-1">
+			<span class="loading loading-xs loading-spinner text-white opacity-50"></span>
+			<span class="text-xs text-white">Queue...</span>
+		</div>
+	{:else if metadata.loadingStatus === 'loading'}
+		<!-- メタデータ処理中のスピナー -->
+		<div class="flex items-center gap-1 rounded bg-black/50 px-2 py-1">
+			<span class="loading loading-xs loading-spinner text-white"></span>
+			<span class="text-xs text-white">Loading...</span>
+		</div>
+	{:else if metadata.loadingStatus === 'loaded'}
 		<!-- DaisyUI Rating表示 -->
 		{@const displayRating = isRatingHovered ? hoveredRating : (metadata.rating ?? 0)}
 		<div class="rating-xs rating" title={`Rating: ${metadata.rating || 0}/5 (click to change)`}>
@@ -74,28 +93,10 @@
 				/>
 			{/each}
 		</div>
-	{:else if metadata.loadingStatus === 'loading'}
-		<!-- メタデータ処理中のスピナー -->
-		<div class="flex items-center gap-1 rounded bg-black/50 px-2 py-1">
-			<span class="loading loading-xs loading-spinner text-white"></span>
-			<span class="text-xs text-white">Loading...</span>
-		</div>
-	{:else if metadata.loadingStatus === 'queued'}
-		<!-- メタデータキュー待ちの表示 -->
-		<div class="flex items-center gap-1 rounded bg-black/50 px-2 py-1">
-			<span class="loading loading-xs loading-spinner text-white opacity-50"></span>
-			<span class="text-xs text-white">Queue...</span>
-		</div>
 	{:else if metadata.loadingStatus === 'error'}
 		<!-- エラー状態の表示 -->
 		<div class="flex items-center gap-1 rounded bg-red-600/50 px-2 py-1">
 			<span class="text-xs text-white">Error</span>
-		</div>
-	{:else if metadata.loadingStatus === 'unloaded'}
-		<!-- unloaded状態は初期化中のため非表示 -->
-		<div class="flex items-center gap-1 rounded bg-black/50 px-2 py-1">
-			<span class="loading loading-xs loading-spinner text-white opacity-30"></span>
-			<span class="text-xs text-white opacity-30">Init...</span>
 		</div>
 	{:else}
 		<!-- 予期しない状態 -->

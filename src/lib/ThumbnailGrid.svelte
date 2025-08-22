@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onDestroy } from 'svelte';
 	import ImageThumbnail from './ImageThumbnail.svelte';
-	import { imageMetadataStore } from './stores/image-metadata-store.svelte';
+	import { metadataRegistry } from './stores/metadata-registry.svelte';
 	import { thumbnailStore } from './stores/thumbnail-store.svelte';
 
 	const {
@@ -19,7 +19,7 @@
 	// クリーンアップ
 	onDestroy(() => {
 		// 未使用メタデータをクリア
-		imageMetadataStore.actions.clearUnused([]);
+		metadataRegistry.clearUnused([]);
 		// 未使用サムネイルをクリア
 		thumbnailStore.actions.clearUnused([]);
 	});

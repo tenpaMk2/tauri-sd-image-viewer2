@@ -1,6 +1,6 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte';
-	import { imageMetadataStore } from '../../stores/image-metadata-store.svelte';
+	import { metadataRegistry } from '../../stores/metadata-registry.svelte';
 	import { showSuccessToast } from '../../stores/toast.svelte';
 	import { formatSdTags } from '../../utils/image-utils';
 	import { copyToClipboard } from '../../utils/ui-utils';
@@ -11,18 +11,18 @@
 
 	const { imagePath }: Props = $props();
 
-	// メタデータアイテムを取得（$stateオブジェクトなので$derivedは不要）
-	const metadata = imageMetadataStore.actions.getMetadataItem(imagePath);
+	// メタデータストアを取得（$stateオブジェクトなので$derivedは不要）
+	const store = metadataRegistry.getStore(imagePath);
+	const metadata = store.state;
 
 	// コンポーネントマウント時に明示的にロード開始
 	$effect(() => {
 		if (metadata.loadingStatus === 'unloaded') {
-			imageMetadataStore.actions.ensureLoaded(imagePath).catch((error) => {
+			store.actions.ensureLoaded().catch((error) => {
 				console.error('Failed to load metadata for ' + imagePath.split('/').pop() + ': ' + error);
 			});
 		}
 	});
-
 </script>
 
 {#if metadata.loadingStatus === 'loaded'}
@@ -50,7 +50,9 @@
 							<button
 								class="btn btn-ghost btn-xs"
 								onclick={async () => {
-									await copyToClipboard(formatSdTags(metadata.sdParameters?.positive_sd_tags ?? []));
+									await copyToClipboard(
+										formatSdTags(metadata.sdParameters?.positive_sd_tags ?? [])
+									);
 									showSuccessToast('Positive prompt copied to clipboard');
 								}}
 								title="Copy positive prompt"
@@ -76,7 +78,9 @@
 							<button
 								class="btn btn-ghost btn-xs"
 								onclick={async () => {
-									await copyToClipboard(formatSdTags(metadata.sdParameters?.negative_sd_tags ?? []));
+									await copyToClipboard(
+										formatSdTags(metadata.sdParameters?.negative_sd_tags ?? [])
+									);
 									showSuccessToast('Negative prompt copied to clipboard');
 								}}
 								title="Copy negative prompt"

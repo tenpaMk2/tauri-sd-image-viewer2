@@ -3,7 +3,7 @@
  * ディレクトリ内の全画像からSDタグを抽出・集計する
  */
 
-import { imageMetadataStore } from '../stores/image-metadata-store.svelte';
+import { metadataRegistry } from '../stores/metadata-registry.svelte';
 import type { SdTag } from '../types/shared-types';
 
 export type TagCount = {
@@ -44,13 +44,13 @@ export class TagAggregationService {
 		for (const imagePath of imagePaths) {
 			try {
 				// メタデータストアから取得
-				const metadata = imageMetadataStore.actions.getMetadataItem(imagePath);
+				const store = metadataRegistry.getStore(imagePath);
 				// ロード完了を待つ
-				if (metadata.loadingStatus !== 'loaded') {
-					await imageMetadataStore.actions.ensureLoaded(imagePath);
+				if (store.state.loadingStatus !== 'loaded') {
+					await store.actions.ensureLoaded();
 				}
 
-				const sdParameters = metadata.sdParameters;
+				const sdParameters = store.state.sdParameters;
 
 				if (sdParameters) {
 					// タグ情報をキャッシュに保存
@@ -192,14 +192,14 @@ export class TagAggregationService {
 		}
 
 		try {
-			const metadata = imageMetadataStore.actions.getMetadataItem(imagePath);
+			const store = metadataRegistry.getStore(imagePath);
 
 			// SDパラメータを取得（ロード完了を待つ）
-			if (metadata.loadingStatus !== 'loaded') {
-				await imageMetadataStore.actions.ensureLoaded(imagePath);
+			if (store.state.loadingStatus !== 'loaded') {
+				await store.actions.ensureLoaded();
 			}
 
-			const sdParameters = metadata.sdParameters;
+			const sdParameters = store.state.sdParameters;
 			if (!sdParameters) return false;
 
 			// 正規化されたタグ名の配列を作成（positive + negative）

@@ -6,7 +6,7 @@ import { thumbnailQueue } from './thumbnail-queue';
  */
 type LoadingStatus = 'unloaded' | 'queued' | 'loading' | 'loaded' | 'error';
 
-export type ThumbnailState = {
+type MutableThumbnailState = {
 	thumbnailUrl: string | undefined;
 	loadingStatus: LoadingStatus;
 	loadError: string | undefined;
@@ -14,6 +14,8 @@ export type ThumbnailState = {
 	// 内部管理用（外部からは触らない）
 	_isDestroyed: boolean;
 };
+
+export type ThumbnailState = Readonly<MutableThumbnailState>;
 
 export type ThumbnailActions = {
 	_load: (abortSignal: AbortSignal) => Promise<void>;
@@ -30,7 +32,7 @@ export type ThumbnailStore = {
  * 個別画像のサムネイルストアを作成
  */
 export const createThumbnailStore = (imagePath: string): ThumbnailStore => {
-	const state = $state<ThumbnailState>({
+	const state = $state<MutableThumbnailState>({
 		thumbnailUrl: undefined,
 		loadingStatus: 'unloaded',
 		loadError: undefined,
@@ -198,5 +200,5 @@ export const createThumbnailStore = (imagePath: string): ThumbnailStore => {
 		}
 	};
 
-	return { state, actions };
+	return { state: state as ThumbnailState, actions };
 };

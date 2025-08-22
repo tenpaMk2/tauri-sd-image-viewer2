@@ -7,7 +7,7 @@ import { metadataQueue } from './metadata-queue';
  */
 type LoadingStatus = 'unloaded' | 'queued' | 'loading' | 'loaded' | 'error';
 
-export type MetadataState = {
+type MutableMetadataState = {
 	// 基本情報（undefinedは未ロード状態）
 	filename: string | undefined;
 	width: number | undefined;
@@ -24,6 +24,8 @@ export type MetadataState = {
 	// 内部管理用（外部からは触らない）
 	_isDestroyed: boolean;
 };
+
+export type MetadataState = Readonly<MutableMetadataState>;
 
 export type MetadataActions = {
 	_load: (abortSignal: AbortSignal) => Promise<void>;
@@ -43,7 +45,7 @@ export type MetadataStore = {
  * 個別画像のメタデータストアを作成
  */
 export const createMetadataStore = (imagePath: string): MetadataStore => {
-	const state = $state<MetadataState>({
+	const state = $state<MutableMetadataState>({
 		filename: undefined,
 		width: undefined,
 		height: undefined,
@@ -200,5 +202,5 @@ export const createMetadataStore = (imagePath: string): MetadataStore => {
 		}
 	};
 
-	return { state, actions };
+	return { state: state as MetadataState, actions };
 };

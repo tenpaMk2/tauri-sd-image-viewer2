@@ -58,13 +58,13 @@
 	{#if metadata.loadingStatus === 'unloaded'}
 		<!-- unloaded状態は初期化中のため非表示 -->
 		<div class="flex items-center gap-1 rounded bg-black/50 px-2 py-1">
-			<span class="loading loading-xs loading-spinner text-white opacity-30"></span>
+			<span class="loading loading-xs loading-ball text-white opacity-30"></span>
 			<span class="text-xs text-white opacity-30">Init...</span>
 		</div>
 	{:else if metadata.loadingStatus === 'queued'}
 		<!-- メタデータキュー待ちの表示 -->
 		<div class="flex items-center gap-1 rounded bg-black/50 px-2 py-1">
-			<span class="loading loading-xs loading-spinner text-white opacity-50"></span>
+			<span class="loading loading-xs loading-ring text-white opacity-50"></span>
 			<span class="text-xs text-white">Queue...</span>
 		</div>
 	{:else if metadata.loadingStatus === 'loading'}

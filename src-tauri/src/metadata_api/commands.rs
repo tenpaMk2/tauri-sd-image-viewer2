@@ -80,17 +80,18 @@ pub async fn write_xmp_image_rating(
 
 #[cfg(test)]
 mod tests {
+    use log::{debug, info};
     use std::fs;
 
     #[test]
     fn test_write_xmp_rating_integration() {
-        println!("🧪 Testing XMP rating write");
+        debug!("Testing XMP rating write");
 
         // Read test PNG file
         let test_file = "../test-rating.png";
         let original_data = fs::read(test_file).expect("Failed to read test PNG file");
 
-        println!("📁 Original PNG size: {} bytes", original_data.len());
+        debug!("Original PNG size: {} bytes", original_data.len());
 
         // Test the XMP pipeline components directly (synchronous version)
         let current_data = fs::read(test_file).expect("Failed to read test file");
@@ -106,7 +107,7 @@ mod tests {
         let processed_data = std::fs::read(&temp_file).expect("Failed to read processed file");
         std::fs::remove_file(&temp_file).ok(); // Clean up
 
-        println!("📁 Processed PNG size: {} bytes", processed_data.len());
+        debug!("Processed PNG size: {} bytes", processed_data.len());
         assert_ne!(
             original_data.len(),
             processed_data.len(),
@@ -115,26 +116,26 @@ mod tests {
 
         // Check for iTXt (XMP) chunks only
         let chunks_info = analyze_png_chunks(&processed_data);
-        println!("📦 PNG chunks found: {:?}", chunks_info);
+        debug!("PNG chunks found: {:?}", chunks_info);
 
         assert!(chunks_info.has_itxt_xmp, "Should have iTXt XMP chunk");
 
-        println!("✅ XMP integration test passed - XMP chunk present");
+        info!("XMP integration test passed - XMP chunk present");
     }
 
     #[test]
     fn test_xmp_toolkit_rating_roundtrip() {
-        println!("🧪 Testing XMP Toolkit rating roundtrip with real test image");
+        debug!("Testing XMP Toolkit rating roundtrip with real test image");
 
         // Use the actual test image provided
         let test_file = "../1dot-red-vanilla.png";
         let original_data = fs::read(test_file).expect("Failed to read test PNG file");
 
-        println!("📁 Original PNG size: {} bytes", original_data.len());
+        debug!("Original PNG size: {} bytes", original_data.len());
 
         // Test rating values 1-5 (skip 0 for now)
         for rating in 1..=5 {
-            println!("🎯 Testing rating: {}", rating);
+            debug!("Testing rating: {}", rating);
 
             // Write rating using unified API
             let temp_file = format!("{}.test_rating_{}", test_file, rating);
@@ -144,11 +145,11 @@ mod tests {
                 .expect("XMP rating write should succeed");
 
             let processed_data = std::fs::read(&temp_file).expect("Failed to read processed file");
-            println!("📁 Processed PNG size: {} bytes", processed_data.len());
+            debug!("Processed PNG size: {} bytes", processed_data.len());
 
             // Verify rating using direct file reading
             if let Some(read_rating) = super::xmp_handler::extract_rating_from_file(&temp_file) {
-                println!("⭐ Direct file read rating: {}", read_rating);
+                debug!("Direct file read rating: {}", read_rating);
                 assert_eq!(
                     read_rating, rating,
                     "Rating roundtrip failed for rating {}",
@@ -156,7 +157,7 @@ mod tests {
                 );
             } else {
                 if rating == 0 {
-                    println!("🔍 Debug rating 0 - no XMP found (expected)");
+                    debug!("Debug rating 0 - no XMP found (expected)");
                 } else {
                     panic!("Failed to read rating {} using direct file method", rating);
                 }
@@ -166,12 +167,12 @@ mod tests {
             std::fs::remove_file(&temp_file).ok();
         }
 
-        println!("✅ XMP Toolkit roundtrip test passed for all ratings 0-5");
+        info!("XMP Toolkit roundtrip test passed for all ratings 0-5");
     }
 
     #[test]
     fn test_unified_api_integration() {
-        println!("🧪 Testing Unified API integration");
+        debug!("Testing Unified API integration");
 
         let test_file = "../1dot-red-vanilla.png";
         let original_data = fs::read(test_file).expect("Failed to read test PNG file");
@@ -189,7 +190,7 @@ mod tests {
 
         // Read back using direct file API
         if let Some(read_rating) = super::xmp_handler::extract_rating_from_file(&temp_file) {
-            println!("⭐ Read back rating: {}", read_rating);
+            debug!("Read back rating: {}", read_rating);
             assert_eq!(read_rating, test_rating, "Direct file API rating mismatch");
         } else {
             panic!("Failed to read rating using direct file API");
@@ -198,7 +199,7 @@ mod tests {
         // Clean up
         std::fs::remove_file(&temp_file).ok();
 
-        println!("✅ Unified API integration test passed");
+        info!("Unified API integration test passed");
     }
 
     #[derive(Debug)]

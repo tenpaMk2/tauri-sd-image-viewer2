@@ -1,3 +1,4 @@
+use log::{error, info, warn};
 use super::image_metadata::ImageMetadata;
 use crate::image_file_lock_service::ImageFileLockService;
 use serde::{Deserialize, Serialize};
@@ -39,8 +40,8 @@ impl MetadataCache {
             HashMap::new()
         };
 
-        println!(
-            "📂 メタデータキャッシュ初期化: {} entries loaded",
+        info!(
+            "Metadata cache initialized: {} entries loaded",
             memory_cache.len()
         );
 
@@ -106,7 +107,7 @@ impl MetadataCache {
         let file_metadata = match file_metadata_result {
             Ok(metadata) => metadata,
             Err(e) => {
-                eprintln!("{}", e);
+                error!("{}", e);
                 return;
             }
         };
@@ -123,8 +124,8 @@ impl MetadataCache {
         let mut cache = self.memory_cache.lock().unwrap();
         cache.insert(file_path.clone(), entry);
 
-        println!(
-            "💾 キャッシュに保存: {} (total: {} entries)",
+        info!(
+            "Stored in cache: {} (total: {} entries)",
             file_path.split('/').last().unwrap_or(""),
             cache.len()
         );
@@ -134,7 +135,7 @@ impl MetadataCache {
         let cache = self.memory_cache.lock().unwrap();
 
         if cache.is_empty() {
-            println!("📝 キャッシュが空のため、ディスク保存をスキップ");
+            info!("Cache is empty, skipping disk save");
             return Ok(());
         }
 
@@ -152,8 +153,8 @@ impl MetadataCache {
         fs::write(&self.cache_file_path, json_data)
             .map_err(|e| format!("Cache file write error: {}", e))?;
 
-        println!(
-            "💾 終了時キャッシュ保存完了: {} entries → {}",
+        info!(
+            "Shutdown cache save completed: {} entries -> {}",
             cache.len(),
             self.cache_file_path.display()
         );
@@ -168,25 +169,25 @@ impl MetadataCache {
         let cache_data: HashMap<String, CacheEntry> = match serde_json::from_str(&content) {
             Ok(data) => data,
             Err(e) => {
-                eprintln!("⚠️  Cache file parse error: {}", e);
-                eprintln!("🗑️  Corrupted cache file detected, creating backup and starting fresh");
+                error!("Cache file parse error: {}", e);
+                warn!("Corrupted cache file detected, creating backup and starting fresh");
                 
                 // Create backup by renaming corrupted file
                 let backup_path = path.with_extension("json.backup");
                 if let Err(rename_err) = fs::rename(path, &backup_path) {
-                    eprintln!("⚠️  Failed to create backup: {}", rename_err);
+                    warn!("Failed to create backup: {}", rename_err);
                     // fallback: try to remove the corrupted file
                     if let Err(remove_err) = fs::remove_file(path) {
-                        eprintln!("⚠️  Failed to remove corrupted cache file: {}", remove_err);
+                        warn!("Failed to remove corrupted cache file: {}", remove_err);
                     } else {
-                        println!("🗑️  Corrupted cache file removed");
+                        info!("Corrupted cache file removed");
                     }
                 } else {
-                    println!("💾 Corrupted cache renamed to: {}", backup_path.display());
+                    info!("Corrupted cache renamed to: {}", backup_path.display());
                 }
                 
                 // Return empty cache to continue operation
-                println!("🔄 Starting with empty cache");
+                info!("Starting with empty cache");
                 return Ok(HashMap::new());
             }
         };
@@ -206,8 +207,8 @@ impl MetadataCache {
                 let keep = entry.cached_at > cutoff_timestamp;
 
                 if !keep {
-                    println!(
-                        "🗑️ Removed cache entry: {} (age: {} days, cached_at: {}, cutoff: {})",
+                    info!(
+                        "Removed cache entry: {} (age: {} days, cached_at: {}, cutoff: {})",
                         file_path.split('/').last().unwrap_or(""),
                         age_days,
                         entry.cached_at,
@@ -220,8 +221,8 @@ impl MetadataCache {
             .collect();
 
         let removed_count = original_count - filtered.len();
-        println!(
-            "📂 Disk cache loaded: {} entries (removed {} old entries)",
+        info!(
+            "Disk cache loaded: {} entries (removed {} old entries)",
             filtered.len(),
             removed_count
         );

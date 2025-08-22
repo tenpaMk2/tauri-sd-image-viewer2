@@ -1,5 +1,6 @@
 #[cfg(target_os = "macos")]
 use {
+    log::info,
     objc2::rc::{autoreleasepool, Retained},
     objc2::runtime::ProtocolObject,
     objc2::{msg_send, ClassType},
@@ -9,6 +10,7 @@ use {
 
 #[cfg(target_os = "windows")]
 use {
+    log::info,
     std::os::windows::ffi::OsStrExt,
     windows::{
         Win32::Foundation::{BOOL, HANDLE, HWND},
@@ -25,8 +27,8 @@ use {
 pub fn set_clipboard_files(paths: Vec<String>) -> Result<(), String> {
     // メモリ管理のためautoreleasepool内で処理
     autoreleasepool(|_| {
-        println!(
-            "クリップボード操作を開始: {} 個のファイルパスを処理",
+        info!(
+            "Starting clipboard operation: processing {} file paths",
             paths.len()
         );
 
@@ -65,7 +67,7 @@ pub fn set_clipboard_files(paths: Vec<String>) -> Result<(), String> {
         };
 
         if url_array {
-            println!("クリップボードへの書き込みが完了しました");
+            info!("Clipboard write operation completed");
             Ok(())
         } else {
             Err("クリップボードへの書き込みに失敗しました".to_string())
@@ -79,7 +81,7 @@ pub fn set_clipboard_files(paths: Vec<String>) -> Result<(), String> {
 pub fn set_clipboard_files(paths: Vec<String>) -> Result<(), String> {
     use std::path::Path;
 
-    println!(
+    info!(
         "Starting clipboard operation: processing {} file paths",
         paths.len()
     );
@@ -180,7 +182,7 @@ pub fn set_clipboard_files(paths: Vec<String>) -> Result<(), String> {
                 return Err("Failed to set clipboard data".to_string());
             }
 
-            println!("Successfully copied files to clipboard");
+            info!("Successfully copied files to clipboard");
             Ok(())
         }
     })();

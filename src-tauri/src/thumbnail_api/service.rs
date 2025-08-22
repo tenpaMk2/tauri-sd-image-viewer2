@@ -1,6 +1,7 @@
+use log::{info, warn};
 use super::ThumbnailGeneratorConfig;
 use super::generator::ThumbnailGenerator;
-use crate::common::log_with_timestamp;
+use crate::common::log_with_file_context;
 use crate::image_file_lock_service::ImageFileLockService;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -31,19 +32,19 @@ impl AsyncThumbnailService {
     ) -> Result<Self, String> {
         // Create cache directory if needed
         if !cache_dir.exists() {
-            println!(
-                "📁 Creating thumbnail cache directory: {}",
+            info!(
+                "Creating thumbnail cache directory: {}",
                 cache_dir.display()
             );
             fs::create_dir_all(&cache_dir).map_err(|e| {
-                println!(
-                    "❌ Failed to create thumbnail cache directory: {} - {}",
+                warn!(
+                    "Failed to create thumbnail cache directory: {} - {}",
                     cache_dir.display(),
                     e
                 );
                 format!("Failed to create thumbnail cache directory: {}", e)
             })?;
-            println!("✅ Thumbnail cache directory created successfully");
+            info!("Thumbnail cache directory created successfully");
         }
 
         let generator = ThumbnailGenerator::new(generator_config);
@@ -61,30 +62,23 @@ impl AsyncThumbnailService {
     ) -> Result<AsyncThumbnailResult, String> {
         let cache_filename = self.generate_cache_filename(&image_path);
 
-        log_with_timestamp(&image_path, "Judge thumbnail regeneration 🟢");
         // Check if thumbnail should be regenerated
         if !self
             .should_regenerate_thumbnail(&cache_filename, &image_path, &app_handle)
             .await
         {
-            log_with_timestamp(&image_path, "Judge thumbnail regeneration 🟥");
-
-            log_with_timestamp(&image_path, "Loading thumbnail from cache 🟢");
             // Load from cache
             if let Ok(thumbnail_data) = self
                 .load_thumbnail_from_cache(&cache_filename, &app_handle)
                 .await
             {
-                log_with_timestamp(&image_path, "Loading thumbnail from cache 🟥");
+                log_with_file_context(&image_path, "Loaded from cache");
                 return Ok(AsyncThumbnailResult {
                     original_path: image_path,
                     thumbnail_data,
                 });
             }
         }
-        log_with_timestamp(&image_path, "Judge thumbnail regeneration 🟥");
-
-        log_with_timestamp(&image_path, "Lock 🟢");
 
         // Get file lock service from app state
         let mutex = app_handle.state::<AsyncMutex<ImageFileLockService>>();
@@ -93,10 +87,6 @@ impl AsyncThumbnailService {
         // Get path-specific mutex
         let path_mutex = image_file_lock_service.get_or_create_path_mutex(&image_path);
         drop(image_file_lock_service); // Release service lock immediately
-
-        log_with_timestamp(&image_path, "Lock 🟥");
-
-        log_with_timestamp(&image_path, "File processing 🟢");
         // Execute file operation with exclusive access
         let thumbnail_data = ImageFileLockService::with_exclusive_file_access(
             path_mutex,
@@ -108,7 +98,7 @@ impl AsyncThumbnailService {
         )
         .await?;
 
-        log_with_timestamp(&image_path, "File processing 🟥");
+        log_with_file_context(&image_path, "Generated thumbnail");
 
         // Save to cache asynchronously (don't await to speed up response)
         let cache_dir_clone = self.cache_dir.clone();
@@ -124,7 +114,7 @@ impl AsyncThumbnailService {
             )
             .await
             {
-                println!("⚠️ Failed to save thumbnail to cache: {}", e);
+                warn!("Failed to save thumbnail to cache: {}", e);
             }
         });
 
@@ -266,8 +256,8 @@ impl AsyncThumbnailService {
                     .await
                     .map_err(|e| format!("Failed to save thumbnail to cache: {}", e))?;
 
-                println!(
-                    "✅ Thumbnail saved to cache: {} ({}bytes)",
+                info!(
+                    "Thumbnail saved to cache: {} ({}bytes)",
                     cache_filename_clone,
                     thumbnail_data_clone.len()
                 );

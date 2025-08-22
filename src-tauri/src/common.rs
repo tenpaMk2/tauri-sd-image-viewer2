@@ -1,4 +1,4 @@
-use chrono::Local;
+use log::info;
 use std::fmt;
 
 /// アプリケーション共通のエラー型
@@ -74,24 +74,21 @@ pub fn detect_mime_type_from_path(path: &str) -> String {
     }
 }
 
-/// Timestamp付きロギング関数
+/// Log message with file context
 ///
-/// # 引数
-/// * `identifier` - 最大30文字のログ識別子（超過時は末尾3文字を...に置換）
-/// * `message` - ログメッセージ
+/// # Arguments
+/// * `file_path` - File path to extract filename from
+/// * `message` - Log message
 ///
-/// # フォーマット
-/// [YYYY-MM-DD HH:MM:SS.mmm] [identifier] message
-pub fn log_with_timestamp(file_path: &str, message: &str) {
-    let now = Local::now();
-    let timestamp = now.format("%Y-%m-%d %H:%M:%S%.3f");
-
+/// # Format
+/// [filename] message (filename is truncated to max 30 chars if needed)
+pub fn log_with_file_context(file_path: &str, message: &str) {
     let file_name = std::path::Path::new(file_path)
         .file_name()
         .and_then(|name| name.to_str())
         .unwrap_or(file_path);
 
-    let truncated_identifier = if file_name.chars().count() <= 30 {
+    let truncated_filename = if file_name.chars().count() <= 30 {
         file_name.to_string()
     } else {
         let mut result = String::new();
@@ -105,5 +102,5 @@ pub fn log_with_timestamp(file_path: &str, message: &str) {
         format!("{}...", result)
     };
 
-    println!("[{}] [{}] {}", timestamp, truncated_identifier, message);
+    info!("[{}] {}", truncated_filename, message);
 }

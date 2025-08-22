@@ -1,5 +1,3 @@
-use crate::common::log_with_timestamp;
-
 use super::ThumbnailGeneratorConfig;
 use image::{GenericImageView, imageops::FilterType};
 use tokio::fs::File;
@@ -18,7 +16,6 @@ impl ThumbnailGenerator {
 
     /// Generate thumbnail from file path asynchronously
     pub async fn generate_from_path(&self, image_path: &str) -> Result<Vec<u8>, String> {
-        log_with_timestamp(&image_path, "Reading 🟢");
 
         // Read file asynchronously
         let mut file = File::open(image_path)
@@ -30,7 +27,6 @@ impl ThumbnailGenerator {
             .await
             .map_err(|e| format!("Failed to read file {}: {}", image_path, e))?;
 
-        log_with_timestamp(&image_path, "Reading 🟥");
 
         // Process image in blocking task
         let config = self.config.clone();
@@ -48,17 +44,11 @@ impl ThumbnailGenerator {
     fn process_image_buffer(
         buffer: Vec<u8>,
         config: ThumbnailGeneratorConfig,
-        image_path: String,
+        _image_path: String,
     ) -> Result<Vec<u8>, String> {
-        log_with_timestamp(&image_path, "Load from memory 🟢");
-
         // Load image from memory
         let img = image::load_from_memory(&buffer)
             .map_err(|e| format!("Failed to load image from memory: {}", e))?;
-
-        log_with_timestamp(&image_path, "Load from memory 🟥");
-
-        log_with_timestamp(&image_path, "Processing 🟢");
 
         // Generate thumbnail with progressive resize
         let thumbnail = Self::resize_image_optimized(img, config.size);
@@ -73,7 +63,6 @@ impl ThumbnailGenerator {
         let webp_memory = encoder.encode(config.quality as f32);
         let webp_data = webp_memory.to_vec();
 
-        log_with_timestamp(&image_path, "Processing 🟥");
 
         Ok(webp_data)
     }

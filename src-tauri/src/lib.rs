@@ -4,6 +4,7 @@ mod image_file_lock_service;
 mod metadata_api;
 mod thumbnail_api;
 
+use log::{error, info};
 use tauri::Manager;
 use tokio::sync::Mutex as AsyncMutex;
 
@@ -54,7 +55,7 @@ pub fn run() {
                 match metadata_api::cache::MetadataCache::new(metadata_disk_cache_file_path) {
                     Ok(cache) => cache,
                     Err(e) => {
-                        eprintln!("MetadataCacheの初期化に失敗: {}", e);
+                        error!("Failed to initialize MetadataCache: {}", e);
                         return Err(e.into());
                     }
                 };
@@ -74,14 +75,14 @@ pub fn run() {
     // アプリ終了時処理でキャッシュを保存
     app.run(move |app_handle, event| {
         if let tauri::RunEvent::ExitRequested { .. } = event {
-            println!("🔄 アプリケーション終了処理開始");
+            info!("Application shutdown process started");
 
             // Tauri Stateからメタデータキャッシュを取得
             let cache = app_handle.state::<metadata_api::cache::MetadataCache>();
 
             // キャッシュをディスクに保存
             if let Err(e) = cache.save_on_shutdown() {
-                eprintln!("❌ 終了時キャッシュ保存エラー: {}", e);
+                error!("Cache save error during shutdown: {}", e);
             }
         }
     });

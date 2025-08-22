@@ -5,7 +5,6 @@
 	import { platform } from '@tauri-apps/plugin-os';
 	import { onDestroy } from 'svelte';
 	import FilterPanel from './FilterPanel.svelte';
-	import { metadataQueue, thumbnailQueue } from './services/image-file-access-queue-service.svelte';
 	import { appStore } from './stores/app-store.svelte';
 	import { filterStore } from './stores/filter-store.svelte';
 	import { gridStore } from './stores/grid-store.svelte';
@@ -161,8 +160,7 @@
 		console.log('🗑️ GridPage: Component destroying, clearing queues and unused thumbnails');
 
 		// キューをクリアして不要な処理を停止
-		thumbnailQueue.clear();
-		metadataQueue.clear();
+		// キューはストア内で管理されているため、ストアのclearAllを呼び出すことでクリアされる
 
 		// 不要なサムネイルを解放
 		thumbnailStore.actions.clearUnused(imageFiles);

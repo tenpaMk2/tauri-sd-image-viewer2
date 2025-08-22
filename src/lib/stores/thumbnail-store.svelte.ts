@@ -1,5 +1,5 @@
 import { Channel, invoke } from '@tauri-apps/api/core';
-import { thumbnailQueue } from '../services/image-file-access-queue-service.svelte';
+import { BaseQueue } from '../utils/base-queue';
 
 /**
  * サムネイルロード状態
@@ -15,6 +15,9 @@ type ThumbnailItemState = {
 
 // 通常のMapを使用し、valueを$stateでリアクティブ管理
 const thumbnailMap = new Map<string, ThumbnailItemState>();
+
+// サムネイル専用キューインスタンス
+const thumbnailQueue = new BaseQueue();
 
 /**
  * サムネイルの読み込み（一度だけ実行される）
@@ -36,13 +39,14 @@ const ensureLoaded = async (imagePath: string): Promise<void> => {
 	item.loadingStatus = 'queued';
 
 	// キューサービス経由でロード処理を開始
-	item.loadPromise = thumbnailQueue.enqueue(imagePath).then(() => {
-		item.loadPromise = undefined; // ロード完了時にPromiseをクリア
-	});
+	item.loadPromise = thumbnailQueue
+		.enqueue(imagePath, () => loadThumbnail(imagePath), 'thumbnail')
+		.then(() => {
+			item.loadPromise = undefined; // ロード完了時にPromiseをクリア
+		});
 
 	return item.loadPromise;
 };
-
 
 /**
  * サムネイルアイテムを取得（なければ作成）
@@ -59,7 +63,6 @@ const getThumbnailItem = (imagePath: string): ThumbnailItemState => {
 	}
 	return thumbnailMap.get(imagePath)!;
 };
-
 
 /**
  * サムネイルの実際のロード処理（キューサービスから呼ばれる）
@@ -174,6 +177,9 @@ const clearUnused = (currentImagePaths: string[]): void => {
  * 全サムネイルをクリア
  */
 const clearAll = (): void => {
+	// キューをクリア
+	thumbnailQueue.clear('thumbnail');
+
 	// 全てのBlobURLを解放
 	for (const [, item] of thumbnailMap) {
 		if (item.thumbnailUrl) {
@@ -196,6 +202,27 @@ const reset = (): void => {
 	clearAll();
 };
 
+/**
+ * キューサイズを取得
+ */
+const getQueueSize = (): number => {
+	return thumbnailQueue.queueSize;
+};
+
+/**
+ * アクティブジョブ数を取得
+ */
+const getActiveJobCount = (): number => {
+	return thumbnailQueue.activeJobCount;
+};
+
+/**
+ * 最大同時実行数を設定
+ */
+const setMaxConcurrent = (maxConcurrent: number): void => {
+	thumbnailQueue.setMaxConcurrent(maxConcurrent);
+};
+
 export const thumbnailStore = {
 	actions: {
 		getThumbnailItem,
@@ -204,6 +231,10 @@ export const thumbnailStore = {
 		preloadThumbnails,
 		clearUnused,
 		clearAll,
-		reset
+		reset,
+		// キュー管理用
+		getQueueSize,
+		getActiveJobCount,
+		setMaxConcurrent
 	}
 };

@@ -2,7 +2,6 @@ import { navigationService } from '$lib/services/navigation-service.svelte';
 import { open } from '@tauri-apps/plugin-dialog';
 import { getImageFiles } from '../image/image-loader';
 import { getDirectoryFromPath, isDirectory, isImageFile } from '../image/utils';
-import { metadataQueue, thumbnailQueue } from '../services/image-file-access-queue-service.svelte';
 import type { ViewMode } from '../ui/types';
 import { filterStore } from './filter-store.svelte';
 import { gridStore } from './grid-store.svelte';
@@ -223,8 +222,6 @@ const openDirectoryDialog = async (): Promise<void> => {
 		if (selected && typeof selected === 'string') {
 			// 古いデータとキューをクリア
 			console.log('🗑️ openDirectoryDialog: 古いデータとキューをクリア');
-			thumbnailQueue.clear();
-			metadataQueue.clear();
 			imageMetadataStore.actions.clearAll();
 			thumbnailStore.actions.clearAll();
 			clearImageFiles();
@@ -329,9 +326,7 @@ const handleBackToWelcome = async (): Promise<void> => {
 		cleanupViewerState();
 	}
 
-	// キューをクリアして不要な処理を停止
-	thumbnailQueue.clear();
-	metadataQueue.clear();
+	// 不要な処理を停止するためにストアをクリア
 
 	// すべてをクリア
 	clearImageFiles();
@@ -356,8 +351,6 @@ const handleDroppedPaths = async (paths: string[]): Promise<void> => {
 	try {
 		if (await isDirectory(firstPath)) {
 			// 古いデータとキューをクリア
-			thumbnailQueue.clear();
-			metadataQueue.clear();
 			imageMetadataStore.actions.clearAll();
 			thumbnailStore.actions.clearAll();
 			clearImageFiles();

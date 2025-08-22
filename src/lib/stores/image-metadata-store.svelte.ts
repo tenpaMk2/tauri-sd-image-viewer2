@@ -1,5 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
-import { metadataQueue } from '../services/image-file-access-queue-service.svelte';
+import { BaseQueue } from '../utils/base-queue';
 import type { ImageMetadataInfo, SdParameters } from '../types/shared-types';
 
 /**
@@ -25,6 +25,9 @@ type MetadataItemState = {
 
 // 通常のMapを使用し、valueを$stateでリアクティブ管理
 const metadataMap = new Map<string, MetadataItemState>();
+
+// メタデータ専用キューインスタンス
+const metadataQueue = new BaseQueue();
 
 /**
  * メタデータアイテムを取得（なければ作成）
@@ -68,7 +71,11 @@ const ensureLoaded = async (imagePath: string): Promise<void> => {
 	item.loadingStatus = 'queued';
 
 	// キューサービス経由でロード処理を開始
-	item.loadPromise = metadataQueue.enqueue(imagePath).then(() => {
+	item.loadPromise = metadataQueue.enqueue(
+		imagePath,
+		() => loadMetadata(imagePath),
+		'metadata'
+	).then(() => {
 		item.loadPromise = undefined; // ロード完了時にPromiseをクリア
 	});
 
@@ -184,6 +191,7 @@ const clearUnused = (currentImagePaths: string[]): void => {
  * 全メタデータをクリア
  */
 const clearAll = (): void => {
+	metadataQueue.clear('metadata');
 	metadataMap.clear();
 };
 
@@ -221,6 +229,27 @@ const waitForAllRatingWrites = async (): Promise<void> => {
 const reset = (): void => {
 	// 全メタデータをクリア（clearAll()がmetadataMap.clear()を呼ぶ）
 	clearAll();
+};
+
+/**
+ * キューサイズを取得
+ */
+const getQueueSize = (): number => {
+	return metadataQueue.queueSize;
+};
+
+/**
+ * アクティブジョブ数を取得
+ */
+const getActiveJobCount = (): number => {
+	return metadataQueue.activeJobCount;
+};
+
+/**
+ * 最大同時実行数を設定
+ */
+const setMaxConcurrent = (maxConcurrent: number): void => {
+	metadataQueue.setMaxConcurrent(maxConcurrent);
 };
 
 // プロパティアクセス用のヘルパー関数
@@ -285,6 +314,10 @@ export const imageMetadataStore = {
 		getMimeType,
 		getSdParameters,
 		getLoadingStatus,
-		getLoadError
+		getLoadError,
+		// キュー管理用
+		getQueueSize,
+		getActiveJobCount,
+		setMaxConcurrent
 	}
 };

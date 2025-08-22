@@ -44,7 +44,7 @@
 	// プラットフォーム判定（一回だけ実行）
 	onMount(async () => {
 		try {
-			const platformName = await platform();
+			const platformName = platform();
 			isMacOs = platformName === 'macos';
 		} catch (error) {
 			console.error('Failed to get platform: ' + error);

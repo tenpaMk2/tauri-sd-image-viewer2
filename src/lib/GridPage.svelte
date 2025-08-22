@@ -144,7 +144,7 @@
 	$effect(() => {
 		const checkPlatform = async () => {
 			try {
-				const currentPlatform = await platform();
+				const currentPlatform = platform();
 				localState.isMacOS = currentPlatform === 'macos';
 			} catch (error) {
 				console.error('Failed to detect platform: ' + error);

@@ -1,7 +1,7 @@
 import type { TagAggregationResult } from '../services/tag-aggregation-service';
 import { TagAggregationService } from '../services/tag-aggregation-service';
 
-export type TagState = {
+type MutableTagState = {
 	tagData: TagAggregationResult | null;
 	isLoading: boolean;
 	error: string | null;
@@ -10,125 +10,116 @@ export type TagState = {
 	_lastImageFilesHash: string;
 };
 
+export type TagState = Readonly<MutableTagState>;
+
 // タグ集計サービスのインスタンス
 const tagAggregationService = new TagAggregationService();
 
-// タグストアの型定義を明確化
-export type TagStore = {
-	readonly state: TagState;
-	readonly actions: {
-		loadTags: (imageFiles: string[]) => Promise<void>;
-		clear: () => void;
-	};
+// 関連する状態をオブジェクトにまとめて管理（Svelte 5推奨パターン）
+let state = $state<MutableTagState>({
+	// パブリック状態
+	isLoading: false,
+	error: null as string | null,
+	tagData: null as TagAggregationResult | null,
+	tagAggregationService: tagAggregationService,
+
+	// プライベート状態（内部実装用、アンダースコア接頭辞）
+	_lastImageFilesLength: 0,
+	_lastImageFilesHash: ''
+});
+
+// 画像ファイルリストのハッシュを計算する簡単な関数
+const calculateHash = (files: string[]): string => {
+	return files.join('|');
 };
 
-// 画像ファイルパスのリストを受け取ってタグストアを作成する関数
-export const createTagStore = (): TagStore => {
-	// 関連する状態をオブジェクトにまとめて管理（Svelte 5推奨パターン）
-	let state = $state<TagState>({
-		// パブリック状態
-		isLoading: false,
-		error: null as string | null,
-		tagData: null as TagAggregationResult | null,
-		tagAggregationService: tagAggregationService,
+// 現在の非同期処理をキャンセルするためのコントローラー
+let currentAbortController: AbortController | null = null;
 
-		// プライベート状態（内部実装用、アンダースコア接頭辞）
-		_lastImageFilesLength: 0,
-		_lastImageFilesHash: ''
-	});
+const loadTags = async (imageFiles: string[]): Promise<void> => {
+	const currentHash = calculateHash(imageFiles);
 
-	// 画像ファイルリストのハッシュを計算する簡単な関数
-	const calculateHash = (files: string[]): string => {
-		return files.join('|');
-	};
+	// 変更がない場合は何もしない
+	if (currentHash === state._lastImageFilesHash) {
+		return;
+	}
 
-	// 現在の非同期処理をキャンセルするためのコントローラー
-	let currentAbortController: AbortController | null = null;
+	// 前の処理をキャンセル
+	if (currentAbortController) {
+		currentAbortController.abort();
+	}
 
-	const actions = {
-		/**
-		 * タグデータを明示的にロード
-		 */
-		async loadTags(imageFiles: string[]): Promise<void> {
-			const currentHash = calculateHash(imageFiles);
+	state._lastImageFilesHash = currentHash;
+	state._lastImageFilesLength = imageFiles.length;
 
-			// 変更がない場合は何もしない
-			if (currentHash === state._lastImageFilesHash) {
-				return;
-			}
+	// 空の場合はクリア
+	if (imageFiles.length === 0) {
+		state.tagData = null;
+		state.isLoading = false;
+		state.error = null;
+		return;
+	}
 
-			// 前の処理をキャンセル
-			if (currentAbortController) {
-				currentAbortController.abort();
-			}
+	// 新しいAbortControllerを作成
+	currentAbortController = new AbortController();
+	const abortController = currentAbortController;
 
-			state._lastImageFilesHash = currentHash;
-			state._lastImageFilesLength = imageFiles.length;
+	// タグ集計を実行
+	console.log('Tag aggregation started for ' + imageFiles.length + ' images');
+	state.isLoading = true;
+	state.error = null;
 
-			// 空の場合はクリア
-			if (imageFiles.length === 0) {
-				state.tagData = null;
-				state.isLoading = false;
-				state.error = null;
-				return;
-			}
+	try {
+		const result = await tagAggregationService.aggregateTagsFromFiles(imageFiles);
 
-			// 新しいAbortControllerを作成
-			currentAbortController = new AbortController();
-			const abortController = currentAbortController;
-
-			// タグ集計を実行
-			console.log('Tag aggregation started for ' + imageFiles.length + ' images');
-			state.isLoading = true;
-			state.error = null;
-
-			try {
-				const result = await tagAggregationService.aggregateTagsFromFiles(imageFiles);
-
-				// Abortされていないかチェック
-				if (abortController.signal.aborted) {
-					return;
-				}
-
-				console.log('Tag aggregation completed: ' + result.uniqueTagNames.length + ' unique tags');
-				state.tagData = result;
-			} catch (err) {
-				// Abortされていないかチェック
-				if (abortController.signal.aborted) {
-					return;
-				}
-
-				console.error('Tag aggregation error: ' + err);
-				state.error = err instanceof Error ? err.message : String(err);
-				state.tagData = null;
-			} finally {
-				// Abortされていないかチェック
-				if (!abortController.signal.aborted) {
-					state.isLoading = false;
-				}
-			}
-		},
-
-		/**
-		 * タグデータをクリア
-		 */
-		clear(): void {
-			// 進行中の処理をキャンセル
-			if (currentAbortController) {
-				currentAbortController.abort();
-				currentAbortController = null;
-			}
-
-			state.tagData = null;
-			state.isLoading = false;
-			state.error = null;
-			state._lastImageFilesLength = 0;
-			state._lastImageFilesHash = '';
+		// Abortされていないかチェック
+		if (abortController.signal.aborted) {
+			return;
 		}
-	};
 
-	return {
-		state,
-		actions
-	} as const;
+		console.log('Tag aggregation completed: ' + result.uniqueTagNames.length + ' unique tags');
+		state.tagData = result;
+	} catch (err) {
+		// Abortされていないかチェック
+		if (abortController.signal.aborted) {
+			return;
+		}
+
+		console.error('Tag aggregation error: ' + err);
+		state.error = err instanceof Error ? err.message : String(err);
+		state.tagData = null;
+	} finally {
+		// Abortされていないかチェック
+		if (!abortController.signal.aborted) {
+			state.isLoading = false;
+		}
+	}
+};
+
+const clear = (): void => {
+	// 進行中の処理をキャンセル
+	if (currentAbortController) {
+		currentAbortController.abort();
+		currentAbortController = null;
+	}
+
+	state.tagData = null;
+	state.isLoading = false;
+	state.error = null;
+	state._lastImageFilesLength = 0;
+	state._lastImageFilesHash = '';
+};
+
+const reset = (): void => {
+	// clearと同じ処理だが、統一性のためにreset()を追加
+	clear();
+};
+
+export const tagStore = {
+	state: state as TagState,
+	actions: {
+		loadTags,
+		clear,
+		reset
+	}
 };

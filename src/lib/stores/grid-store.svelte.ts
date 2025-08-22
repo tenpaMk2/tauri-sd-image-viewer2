@@ -1,7 +1,6 @@
 import { SvelteSet } from 'svelte/reactivity';
 
-// 画像グリッド表示専用のストア
-export type GridState = {
+type MutableGridState = {
 	selectedImages: SvelteSet<string>;
 	showFilterPanel: boolean;
 	filteredImageCount: number;
@@ -9,22 +8,18 @@ export type GridState = {
 	showOptionsModal: boolean;
 };
 
-export type GridActions = {
-	toggleImageSelection: (
-		imagePath: string,
-		imageFiles: string[],
-		shiftKey?: boolean,
-		metaKey?: boolean
-	) => void;
-	toggleSelectAll: (imageFiles: string[]) => void;
-	clearSelection: () => void;
-	toggleFilterPanel: () => void;
-	toggleOptionsModal: () => void;
-	closeOptionsModal: () => void;
-	// その他グリッド固有のアクション
+// 画像グリッド表示専用のストア
+export type GridState = Readonly<MutableGridState>;
+
+const INITIAL_GRID_STATE: MutableGridState = {
+	selectedImages: new SvelteSet(),
+	showFilterPanel: false,
+	filteredImageCount: 0,
+	lastSelectedIndex: -1,
+	showOptionsModal: false
 };
 
-let gridState: GridState = $state({
+let gridState = $state<MutableGridState>({
 	selectedImages: new SvelteSet(),
 	showFilterPanel: false,
 	filteredImageCount: 0,
@@ -102,14 +97,24 @@ const closeOptionsModal = () => {
 	gridState.showOptionsModal = false;
 };
 
+const reset = () => {
+	// 初期状態に完全リセット
+	gridState.selectedImages = new SvelteSet();
+	gridState.showFilterPanel = INITIAL_GRID_STATE.showFilterPanel;
+	gridState.filteredImageCount = INITIAL_GRID_STATE.filteredImageCount;
+	gridState.lastSelectedIndex = INITIAL_GRID_STATE.lastSelectedIndex;
+	gridState.showOptionsModal = INITIAL_GRID_STATE.showOptionsModal;
+};
+
 export const gridStore = {
-	state: gridState,
+	state: gridState as GridState,
 	actions: {
 		toggleImageSelection,
 		toggleSelectAll,
 		clearSelection,
 		toggleFilterPanel,
 		toggleOptionsModal,
-		closeOptionsModal
+		closeOptionsModal,
+		reset
 	}
 };

@@ -4,7 +4,10 @@ import { getImageFiles } from '../image/image-loader';
 import { getDirectoryFromPath, isDirectory, isImageFile } from '../image/utils';
 import { metadataQueue, thumbnailQueue } from '../services/image-file-access-queue-service.svelte';
 import type { ViewMode } from '../ui/types';
+import { filterStore } from './filter-store.svelte';
+import { gridStore } from './grid-store.svelte';
 import { imageMetadataStore } from './image-metadata-store.svelte';
+import { tagStore } from './tag-store.svelte';
 import { thumbnailStore } from './thumbnail-store.svelte';
 
 export type ImageLoadingState = 'idle' | 'loading' | 'loaded';
@@ -225,6 +228,12 @@ const openDirectoryDialog = async (): Promise<void> => {
 			imageMetadataStore.clearAll();
 			thumbnailStore.clearAll();
 			clearImageFiles();
+			
+			// 各ストアをリセット
+			console.log('🔄 openDirectoryDialog: ストアをリセット');
+			tagStore.actions.reset();
+			filterStore.actions.reset();
+			gridStore.actions.reset();
 
 			console.log('🔄 openDirectoryDialog: appStateを更新');
 			appState.selectedDirectory = selected;
@@ -326,6 +335,11 @@ const handleBackToWelcome = async (): Promise<void> => {
 	clearImageFiles();
 	imageMetadataStore.clearAll();
 	thumbnailStore.clearAll();
+	
+	// 各ストアをリセット
+	tagStore.actions.reset();
+	filterStore.actions.reset();
+	gridStore.actions.reset();
 
 	appState.viewMode = 'welcome';
 	appState.selectedImagePath = null;
@@ -345,6 +359,11 @@ const handleDroppedPaths = async (paths: string[]): Promise<void> => {
 			imageMetadataStore.clearAll();
 			thumbnailStore.clearAll();
 			clearImageFiles();
+			
+			// 各ストアをリセット
+			tagStore.actions.reset();
+			filterStore.actions.reset();
+			gridStore.actions.reset();
 
 			appState.selectedDirectory = firstPath;
 			appState.viewMode = 'grid';

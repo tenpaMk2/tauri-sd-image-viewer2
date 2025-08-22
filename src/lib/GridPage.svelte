@@ -10,7 +10,7 @@
 	import { filterStore } from './stores/filter-store.svelte';
 	import { gridStore } from './stores/grid-store.svelte';
 	import { imageMetadataStore } from './stores/image-metadata-store.svelte';
-	import { createTagStore } from './stores/tag-store.svelte';
+	import { tagStore } from './stores/tag-store.svelte';
 	import { thumbnailStore } from './stores/thumbnail-store.svelte';
 	import { showSuccessToast } from './stores/toast.svelte';
 	import ThumbnailGrid from './ThumbnailGrid.svelte';
@@ -42,8 +42,7 @@
 	// filterStoreから状態を取得
 	const filterState = $derived(filterStore.state);
 
-	// タグストアを作成
-	const tagStore = createTagStore();
+	// タグストアから状態を取得
 	const tagData = $derived(tagStore.state.tagData);
 
 	// 画像ファイルが変更されたらタグデータをロード

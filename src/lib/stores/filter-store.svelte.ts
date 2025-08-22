@@ -76,6 +76,11 @@ const clearFilters = () => {
 	state.isActive = INITIAL_FILTER_STATE.isActive;
 };
 
+const reset = () => {
+	// 初期状態に完全リセット
+	clearFilters();
+};
+
 const updateActiveState = () => {
 	// Filename pattern and SD tags affect isActive (rating is always active)
 	state.isActive = state.filenamePattern !== '' || state.selectedTags.length > 0;
@@ -169,6 +174,7 @@ export const filterStore = {
 		removeTag,
 		clearAllTags,
 		clearFilters,
+		reset,
 		filterImages,
 		getFilterSummary
 	}

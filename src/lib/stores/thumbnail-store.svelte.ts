@@ -16,7 +16,7 @@ export type ThumbnailState = {
 };
 
 export type ThumbnailActions = {
-	load: (abortSignal: AbortSignal) => Promise<void>;
+	_load: (abortSignal: AbortSignal) => Promise<void>;
 	ensureLoaded: () => Promise<void>;
 	destroy: () => void; // メモリリーク防止用
 };
@@ -60,7 +60,7 @@ export const createThumbnailStore = (imagePath: string): ThumbnailStore => {
 
 			// キューサービス経由でロード処理を開始
 			state.loadingPromise = thumbnailQueue
-				.enqueue(imagePath, (abortSignal) => actions.load(abortSignal), 'thumbnail')
+				.enqueue(imagePath, (abortSignal) => actions._load(abortSignal), 'thumbnail')
 				.then(() => {
 					// 完了時に破棄済みでなければPromiseをクリア
 					if (!state._isDestroyed) {
@@ -78,7 +78,7 @@ export const createThumbnailStore = (imagePath: string): ThumbnailStore => {
 			return state.loadingPromise;
 		},
 
-		load: async (abortSignal: AbortSignal): Promise<void> => {
+		_load: async (abortSignal: AbortSignal): Promise<void> => {
 			try {
 				// 破棄済みまたは中断チェック
 				if (state._isDestroyed || abortSignal.aborted) {

@@ -59,9 +59,9 @@
 	// フィルタリングされた画像リスト
 	const filteredImageFiles = $derived.by(() => {
 		if (imageFiles.length === 0) return [];
-
 		// レーティングマップを同期的に取得
-		const ratingsMap = metadataRegistry.getRatingsMapSync(imageFiles);
+		const ratingsMap = tagStore.state.tagAggregationService?.getRatingsMapSync(imageFiles);
+		if (!ratingsMap) return imageFiles;
 
 		// フィルタを適用
 		return filterStore.actions.filterImages(

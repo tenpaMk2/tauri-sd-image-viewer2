@@ -26,7 +26,7 @@ export type MetadataState = {
 };
 
 export type MetadataActions = {
-	load: (abortSignal: AbortSignal) => Promise<void>;
+	_load: (abortSignal: AbortSignal) => Promise<void>;
 	ensureLoaded: () => Promise<void>;
 	updateRating: (newRating: number) => Promise<boolean>;
 	reload: () => Promise<void>;
@@ -79,7 +79,7 @@ export const createMetadataStore = (imagePath: string): MetadataStore => {
 
 			// キューサービス経由でロード処理を開始
 			state.loadingPromise = metadataQueue
-				.enqueue(imagePath, (abortSignal) => actions.load(abortSignal), 'metadata')
+				.enqueue(imagePath, (abortSignal) => actions._load(abortSignal), 'metadata')
 				.then(() => {
 					// 完了時に破棄済みでなければPromiseをクリア
 					if (!state._isDestroyed) {
@@ -97,7 +97,7 @@ export const createMetadataStore = (imagePath: string): MetadataStore => {
 			return state.loadingPromise;
 		},
 
-		load: async (abortSignal: AbortSignal): Promise<void> => {
+		_load: async (abortSignal: AbortSignal): Promise<void> => {
 			try {
 				// 破棄済みまたは中断チェック
 				if (state._isDestroyed || abortSignal.aborted) {

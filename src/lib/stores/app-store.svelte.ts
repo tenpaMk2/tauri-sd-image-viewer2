@@ -282,9 +282,6 @@ const handleImageChange = async (newPath: string): Promise<void> => {
 };
 
 const handleSwitchToGrid = async (): Promise<void> => {
-	// Rating書き込み処理を待機（クラッシュ防止）
-	await metadataRegistry.waitForAllRatingWrites();
-
 	// Viewerモードから離れる際のクリーンアップ
 	if (appState.viewMode === 'viewer') {
 		cleanupViewerState();
@@ -295,9 +292,6 @@ const handleSwitchToGrid = async (): Promise<void> => {
 };
 
 const handleImageSelect = async (imagePath: string): Promise<void> => {
-	// Rating書き込み処理を待機（クラッシュ防止）
-	await metadataRegistry.waitForAllRatingWrites();
-
 	await updateSelectedImage(imagePath);
 	appState.viewMode = 'viewer';
 
@@ -306,9 +300,6 @@ const handleImageSelect = async (imagePath: string): Promise<void> => {
 };
 
 const handleBackToGrid = async (): Promise<void> => {
-	// Rating書き込み処理を待機（クラッシュ防止）
-	await metadataRegistry.waitForAllRatingWrites();
-
 	// Viewerモードから離れる際のクリーンアップ
 	if (appState.viewMode === 'viewer') {
 		cleanupViewerState();
@@ -318,9 +309,6 @@ const handleBackToGrid = async (): Promise<void> => {
 };
 
 const handleBackToWelcome = async (): Promise<void> => {
-	// Rating書き込み処理を待機（クラッシュ防止）
-	await metadataRegistry.waitForAllRatingWrites();
-
 	// Viewerモードから離れる際のクリーンアップ
 	if (appState.viewMode === 'viewer') {
 		cleanupViewerState();

@@ -14,10 +14,17 @@
 		onToggleSelection?: (imagePath: string, shiftKey?: boolean, metaKey?: boolean) => void;
 	} = $props();
 
-	// $derivedでサムネイルを管理
-	const thumbnail = $derived(thumbnailStore.getThumbnail(imagePath));
-	const thumbnailUrl = $derived(thumbnail.thumbnailUrlValue);
-	const loadingStatus = $derived(thumbnail.loadingStatus);
+	// サムネイルアイテムを取得（$stateオブジェクトなので$derivedは不要）
+	const thumbnail = thumbnailStore.actions.getThumbnailItem(imagePath);
+
+	// コンポーネントマウント時に明示的にロード開始
+	$effect(() => {
+		if (thumbnail.loadingStatus === 'unloaded') {
+			thumbnailStore.actions.ensureLoaded(imagePath).catch((error) => {
+				console.error('Failed to load thumbnail for ' + imagePath.split('/').pop() + ': ' + error);
+			});
+		}
+	});
 
 	const handleClick = (event?: MouseEvent): void => {
 		if (onToggleSelection) {
@@ -41,11 +48,11 @@
 		onkeydown={(e) => e.key === 'Enter' && handleClick()}
 		aria-label="Select image (double-click to open)"
 	>
-		{#if loadingStatus === 'loaded'}
-			{#if thumbnailUrl}
+		{#if thumbnail.loadingStatus === 'loaded'}
+			{#if thumbnail.thumbnailUrl}
 				<div class="relative flex h-full w-full items-center justify-center p-1">
 					<img
-						src={thumbnailUrl}
+						src={thumbnail.thumbnailUrl}
 						alt="thumbnail"
 						class="h-full w-full rounded object-contain"
 						loading="lazy"

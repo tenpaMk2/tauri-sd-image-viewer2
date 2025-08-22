@@ -207,23 +207,17 @@ abstract class BaseImageFileAccessQueue {
  */
 class ThumbnailQueue extends BaseImageFileAccessQueue {
 	protected isAlreadyLoaded(imagePath: string): boolean {
-		const thumbnail = thumbnailStore.getThumbnail(imagePath);
-		const isProcessingOrLoaded = ['queued', 'loading', 'loaded'].includes(thumbnail.loadingStatus);
-		console.log(
-			`🔍 Thumbnail isAlreadyLoaded check: ${imagePath.split('/').pop()} - Status: ${thumbnail.loadingStatus}, IsProcessingOrLoaded: ${isProcessingOrLoaded}`
-		);
-		return isProcessingOrLoaded;
+		const thumbnail = thumbnailStore.actions.getThumbnailItem(imagePath);
+		return thumbnail.loadingStatus === 'loaded';
 	}
 
 	protected async performLoad(imagePath: string): Promise<void> {
-		const thumbnail = thumbnailStore.getThumbnail(imagePath);
-		thumbnail.loadingStatus = 'loading';
-		await thumbnail.load();
-		thumbnail.loadingStatus = 'loaded';
+		// loadThumbnail内で状態管理を行うため、ここでは状態変更しない
+		await thumbnailStore.actions.loadThumbnail(imagePath);
 	}
 
 	protected setErrorStatus(imagePath: string): void {
-		const thumbnail = thumbnailStore.getThumbnail(imagePath);
+		const thumbnail = thumbnailStore.actions.getThumbnailItem(imagePath);
 		thumbnail.loadingStatus = 'error';
 	}
 
@@ -237,23 +231,17 @@ class ThumbnailQueue extends BaseImageFileAccessQueue {
  */
 class MetadataQueue extends BaseImageFileAccessQueue {
 	protected isAlreadyLoaded(imagePath: string): boolean {
-		const metadata = imageMetadataStore.getMetadata(imagePath);
-		const isProcessingOrLoaded = ['queued', 'loading', 'loaded'].includes(metadata.loadingStatus);
-		console.log(
-			`🔍 Metadata isAlreadyLoaded check: ${imagePath.split('/').pop()} - Status: ${metadata.loadingStatus}, IsProcessingOrLoaded: ${isProcessingOrLoaded}`
-		);
-		return isProcessingOrLoaded;
+		const metadata = imageMetadataStore.actions.getMetadataItem(imagePath);
+		return metadata.loadingStatus === 'loaded';
 	}
 
 	protected async performLoad(imagePath: string): Promise<void> {
-		const metadata = imageMetadataStore.getMetadata(imagePath);
-		metadata.loadingStatus = 'loading';
-		await metadata.load();
-		metadata.loadingStatus = 'loaded';
+		// loadMetadata内で状態管理を行うため、ここでは状態変更しない
+		await imageMetadataStore.actions.loadMetadata(imagePath);
 	}
 
 	protected setErrorStatus(imagePath: string): void {
-		const metadata = imageMetadataStore.getMetadata(imagePath);
+		const metadata = imageMetadataStore.actions.getMetadataItem(imagePath);
 		metadata.loadingStatus = 'error';
 	}
 

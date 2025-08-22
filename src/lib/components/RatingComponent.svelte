@@ -7,8 +7,17 @@
 
 	const { imagePath }: Props = $props();
 
-	// リアクティブなメタデータオブジェクト取得（Store側で自動ロード）
-	const metadata = imageMetadataStore.getMetadata(imagePath);
+	// メタデータアイテムを取得（$stateオブジェクトなので$derivedは不要）
+	const metadata = imageMetadataStore.actions.getMetadataItem(imagePath);
+
+	// コンポーネントマウント時に明示的にロード開始
+	$effect(() => {
+		if (metadata.loadingStatus === 'unloaded') {
+			imageMetadataStore.actions.ensureLoaded(imagePath).catch((error) => {
+				console.error('Failed to load metadata for ' + imagePath.split('/').pop() + ': ' + error);
+			});
+		}
+	});
 
 	let isRatingHovered = $state(false);
 	let hoveredRating = $state(0);
@@ -31,7 +40,7 @@
 			// 同じ星をクリックした場合は0に戻す、そうでなければ新しいRating値を設定
 			const newRating = (metadata.rating ?? 0) === clickedRating ? 0 : clickedRating;
 
-			await metadata.updateRating(newRating);
+			await imageMetadataStore.actions.updateRating(imagePath, newRating);
 		} catch (error) {
 			console.error('Failed to update rating for ' + imagePath.split('/').pop() + ': ' + error);
 		}

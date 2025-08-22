@@ -44,13 +44,13 @@ export class TagAggregationService {
 		for (const imagePath of imagePaths) {
 			try {
 				// メタデータストアから取得
-				const metadata = imageMetadataStore.getMetadata(imagePath);
+				const metadata = imageMetadataStore.actions.getMetadataItem(imagePath);
 				// ロード完了を待つ
 				if (metadata.loadingStatus !== 'loaded') {
-					await metadata.load();
+					await imageMetadataStore.actions.loadMetadata(imagePath);
 				}
 
-				const sdParameters = metadata.sdParametersValue;
+				const sdParameters = metadata.sdParameters;
 
 				if (sdParameters) {
 					// タグ情報をキャッシュに保存
@@ -192,14 +192,14 @@ export class TagAggregationService {
 		}
 
 		try {
-			const metadata = imageMetadataStore.getMetadata(imagePath);
+			const metadata = imageMetadataStore.actions.getMetadataItem(imagePath);
 
 			// SDパラメータを取得（ロード完了を待つ）
 			if (metadata.loadingStatus !== 'loaded') {
-				await metadata.load();
+				await imageMetadataStore.actions.loadMetadata(imagePath);
 			}
 
-			const sdParameters = metadata.sdParametersValue;
+			const sdParameters = metadata.sdParameters;
 			if (!sdParameters) return false;
 
 			// 正規化されたタグ名の配列を作成（positive + negative）

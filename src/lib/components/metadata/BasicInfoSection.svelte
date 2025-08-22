@@ -6,14 +6,18 @@
 	};
 	const { imagePath }: Props = $props();
 
-	// リアクティブなメタデータオブジェクト取得
-	const metadata = $derived(imageMetadataStore.getMetadata(imagePath));
+	// メタデータアイテムを取得（$stateオブジェクトなので$derivedは不要）
+	const metadata = imageMetadataStore.actions.getMetadataItem(imagePath);
 
-	// リアクティブな値を取得
-	const fileSize = $derived(metadata.fileSizeValue);
-	const width = $derived(metadata.widthValue);
-	const height = $derived(metadata.heightValue);
-	const mimeType = $derived(metadata.mimeTypeValue);
+	// コンポーネントマウント時に明示的にロード開始
+	$effect(() => {
+		if (metadata.loadingStatus === 'unloaded') {
+			imageMetadataStore.actions.ensureLoaded(imagePath).catch((error) => {
+				console.error('Failed to load metadata for ' + imagePath.split('/').pop() + ': ' + error);
+			});
+		}
+	});
+
 </script>
 
 <div class="rounded-lg bg-base-300 p-3">
@@ -30,7 +34,7 @@
 			<div class="text-base-content/70">Size:</div>
 			<div>
 				{#if metadata.loadingStatus === 'loaded'}
-					{fileSize ? `${Math.round(fileSize / 1024)} KB` : 'Unknown'}
+					{metadata.fileSize ? `${Math.round(metadata.fileSize / 1024)} KB` : 'Unknown'}
 				{:else}
 					Loading...
 				{/if}
@@ -41,7 +45,7 @@
 			<div class="text-base-content/70">Resolution:</div>
 			<div>
 				{#if metadata.loadingStatus === 'loaded'}
-					{width && height ? `${width} × ${height}` : 'Unknown'}
+					{metadata.width && metadata.height ? `${metadata.width} × ${metadata.height}` : 'Unknown'}
 				{:else}
 					Loading...
 				{/if}
@@ -52,7 +56,7 @@
 			<div class="text-base-content/70">Format:</div>
 			<div>
 				{#if metadata.loadingStatus === 'loaded'}
-					{mimeType || 'Unknown'}
+					{metadata.mimeType || 'Unknown'}
 				{:else}
 					Loading...
 				{/if}

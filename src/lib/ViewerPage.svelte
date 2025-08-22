@@ -148,7 +148,7 @@
 		// Viewerで使用していた画像以外のサムネイルを解放
 		// 現在の画像ファイルリストがあれば保持、なければ空配列で全クリア
 		const currentImageFiles = appStore.state.imageFiles || [];
-		thumbnailStore.clearUnused(currentImageFiles);
+		thumbnailStore.actions.clearUnused(currentImageFiles);
 	});
 
 	console.log('🖼️ ViewerPage initialized with Svelte 5 patterns');

@@ -184,11 +184,11 @@ const openFileDialog = async (): Promise<void> => {
 
 		if (selected && typeof selected === 'string') {
 			// リアクティブメタデータの事前読み込み
-			const reactiveMetadata = imageMetadataStore.getMetadata(selected);
+			const item = imageMetadataStore.actions.getMetadataItem(selected);
 			console.log('📊 Reactive metadata created');
-			if (reactiveMetadata.loadingStatus === 'unloaded') {
+			if (item.loadingStatus === 'unloaded') {
 				console.log('🔄 Loading metadata...');
-				await reactiveMetadata.load();
+				await imageMetadataStore.actions.loadMetadata(selected);
 				console.log('✅ Metadata loaded');
 			}
 			const selectedDirectory = await getDirectoryFromPath(selected);
@@ -225,15 +225,17 @@ const openDirectoryDialog = async (): Promise<void> => {
 			console.log('🗑️ openDirectoryDialog: 古いデータとキューをクリア');
 			thumbnailQueue.clear();
 			metadataQueue.clear();
-			imageMetadataStore.clearAll();
-			thumbnailStore.clearAll();
+			imageMetadataStore.actions.clearAll();
+			thumbnailStore.actions.clearAll();
 			clearImageFiles();
-			
+
 			// 各ストアをリセット
 			console.log('🔄 openDirectoryDialog: ストアをリセット');
 			tagStore.actions.reset();
 			filterStore.actions.reset();
 			gridStore.actions.reset();
+			imageMetadataStore.actions.reset();
+			thumbnailStore.actions.reset();
 
 			console.log('🔄 openDirectoryDialog: appStateを更新');
 			appState.selectedDirectory = selected;
@@ -266,9 +268,9 @@ const openDirectoryDialog = async (): Promise<void> => {
 
 const updateSelectedImage = async (imagePath: string): Promise<void> => {
 	// リアクティブメタデータの事前読み込み
-	const reactiveMetadata = imageMetadataStore.getMetadata(imagePath);
-	if (reactiveMetadata.loadingStatus === 'unloaded') {
-		await reactiveMetadata.load();
+	const item = imageMetadataStore.actions.getMetadataItem(imagePath);
+	if (item.loadingStatus === 'unloaded') {
+		await imageMetadataStore.actions.loadMetadata(imagePath);
 	}
 
 	appState.selectedImagePath = imagePath;
@@ -284,7 +286,7 @@ const handleImageChange = async (newPath: string): Promise<void> => {
 
 const handleSwitchToGrid = async (): Promise<void> => {
 	// Rating書き込み処理を待機（クラッシュ防止）
-	await imageMetadataStore.waitForAllRatingWrites();
+	await imageMetadataStore.actions.waitForAllRatingWrites();
 
 	// Viewerモードから離れる際のクリーンアップ
 	if (appState.viewMode === 'viewer') {
@@ -297,7 +299,7 @@ const handleSwitchToGrid = async (): Promise<void> => {
 
 const handleImageSelect = async (imagePath: string): Promise<void> => {
 	// Rating書き込み処理を待機（クラッシュ防止）
-	await imageMetadataStore.waitForAllRatingWrites();
+	await imageMetadataStore.actions.waitForAllRatingWrites();
 
 	await updateSelectedImage(imagePath);
 	appState.viewMode = 'viewer';
@@ -308,7 +310,7 @@ const handleImageSelect = async (imagePath: string): Promise<void> => {
 
 const handleBackToGrid = async (): Promise<void> => {
 	// Rating書き込み処理を待機（クラッシュ防止）
-	await imageMetadataStore.waitForAllRatingWrites();
+	await imageMetadataStore.actions.waitForAllRatingWrites();
 
 	// Viewerモードから離れる際のクリーンアップ
 	if (appState.viewMode === 'viewer') {
@@ -320,7 +322,7 @@ const handleBackToGrid = async (): Promise<void> => {
 
 const handleBackToWelcome = async (): Promise<void> => {
 	// Rating書き込み処理を待機（クラッシュ防止）
-	await imageMetadataStore.waitForAllRatingWrites();
+	await imageMetadataStore.actions.waitForAllRatingWrites();
 
 	// Viewerモードから離れる際のクリーンアップ
 	if (appState.viewMode === 'viewer') {
@@ -333,9 +335,9 @@ const handleBackToWelcome = async (): Promise<void> => {
 
 	// すべてをクリア
 	clearImageFiles();
-	imageMetadataStore.clearAll();
-	thumbnailStore.clearAll();
-	
+	imageMetadataStore.actions.clearAll();
+	thumbnailStore.actions.clearAll();
+
 	// 各ストアをリセット
 	tagStore.actions.reset();
 	filterStore.actions.reset();
@@ -356,14 +358,16 @@ const handleDroppedPaths = async (paths: string[]): Promise<void> => {
 			// 古いデータとキューをクリア
 			thumbnailQueue.clear();
 			metadataQueue.clear();
-			imageMetadataStore.clearAll();
-			thumbnailStore.clearAll();
+			imageMetadataStore.actions.clearAll();
+			thumbnailStore.actions.clearAll();
 			clearImageFiles();
-			
+
 			// 各ストアをリセット
 			tagStore.actions.reset();
 			filterStore.actions.reset();
 			gridStore.actions.reset();
+			imageMetadataStore.actions.reset();
+			thumbnailStore.actions.reset();
 
 			appState.selectedDirectory = firstPath;
 			appState.viewMode = 'grid';
@@ -372,9 +376,9 @@ const handleDroppedPaths = async (paths: string[]): Promise<void> => {
 			await loadImageFiles();
 		} else if (isImageFile(firstPath)) {
 			// リアクティブメタデータの事前読み込み
-			const reactiveMetadata = imageMetadataStore.getMetadata(firstPath);
-			if (reactiveMetadata.loadingStatus === 'unloaded') {
-				await reactiveMetadata.load();
+			const item = imageMetadataStore.actions.getMetadataItem(firstPath);
+			if (item.loadingStatus === 'unloaded') {
+				await imageMetadataStore.actions.loadMetadata(firstPath);
 			}
 			const selectedDirectory = await getDirectoryFromPath(firstPath);
 

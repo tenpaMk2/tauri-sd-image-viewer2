@@ -19,9 +19,9 @@
 	// クリーンアップ
 	onDestroy(() => {
 		// 未使用メタデータをクリア
-		imageMetadataStore.clearUnused([]);
+		imageMetadataStore.actions.clearUnused([]);
 		// 未使用サムネイルをクリア
-		thumbnailStore.clearUnused([]);
+		thumbnailStore.actions.clearUnused([]);
 	});
 </script>
 

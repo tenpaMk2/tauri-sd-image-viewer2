@@ -62,10 +62,14 @@
 		if (imageFiles.length === 0) return [];
 
 		// レーティングマップを同期的に取得
-		const ratingsMap = imageMetadataStore.getRatingsMapSync(imageFiles);
+		const ratingsMap = imageMetadataStore.actions.getRatingsMapSync(imageFiles);
 
 		// フィルタを適用
-		return filterStore.actions.filterImages(imageFiles, ratingsMap, tagStore.state.tagAggregationService);
+		return filterStore.actions.filterImages(
+			imageFiles,
+			ratingsMap,
+			tagStore.state.tagAggregationService
+		);
 	});
 
 	const filteredImageCount = $derived(filteredImageFiles.length);
@@ -161,7 +165,7 @@
 		metadataQueue.clear();
 
 		// 不要なサムネイルを解放
-		thumbnailStore.clearUnused(imageFiles);
+		thumbnailStore.actions.clearUnused(imageFiles);
 	});
 </script>
 

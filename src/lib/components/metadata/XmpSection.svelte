@@ -6,11 +6,18 @@
 	};
 	const { imagePath }: Props = $props();
 
-	// リアクティブなメタデータオブジェクト取得
-	const metadata = $derived(imageMetadataStore.getMetadata(imagePath));
+	// メタデータアイテムを取得（$stateオブジェクトなので$derivedは不要）
+	const metadata = imageMetadataStore.actions.getMetadataItem(imagePath);
 
-	// リアクティブな値を取得
-	const currentRating = $derived(metadata.ratingValue);
+	// コンポーネントマウント時に明示的にロード開始
+	$effect(() => {
+		if (metadata.loadingStatus === 'unloaded') {
+			imageMetadataStore.actions.ensureLoaded(imagePath).catch((error) => {
+				console.error('Failed to load metadata for ' + imagePath.split('/').pop() + ': ' + error);
+			});
+		}
+	});
+
 </script>
 
 <div class="rounded-lg bg-base-300 p-3">
@@ -21,7 +28,7 @@
 			<div class="text-base-content/70">Rating:</div>
 			<div>
 				{#if metadata.loadingStatus === 'loaded'}
-					{currentRating ?? 0}/5
+					{metadata.rating ?? 0}/5
 				{:else}
 					Loading...
 				{/if}

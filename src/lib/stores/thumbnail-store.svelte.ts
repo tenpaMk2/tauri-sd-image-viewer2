@@ -6,225 +6,204 @@ import { thumbnailQueue } from '../services/image-file-access-queue-service.svel
  */
 type LoadingStatus = 'unloaded' | 'queued' | 'loading' | 'loaded' | 'error';
 
+type ThumbnailItemState = {
+	thumbnailUrl: string | undefined;
+	loadingStatus: LoadingStatus;
+	loadError: string | undefined;
+	loadPromise: Promise<void> | undefined;
+};
+
+// 通常のMapを使用し、valueを$stateでリアクティブ管理
+const thumbnailMap = new Map<string, ThumbnailItemState>();
+
 /**
- * リアクティブな画像サムネイル（Promiseベース）
+ * サムネイルの読み込み（一度だけ実行される）
  */
-export class ReactiveImageThumbnail {
-	imagePath: string;
+const ensureLoaded = async (imagePath: string): Promise<void> => {
+	const item = getThumbnailItem(imagePath);
 
-	// サムネイルURL（$stateで管理、undefinedは未ロード状態）
-	thumbnailUrl = $state<string | undefined>(undefined);
-
-	// ロード状態管理（publicにアクセス可能）
-	loadingStatus = $state<LoadingStatus>('unloaded');
-	loadError = $state<string | undefined>(undefined);
-
-	// 内部管理用
-	private loadPromise?: Promise<void>;
-
-	constructor(imagePath: string) {
-		this.imagePath = imagePath;
+	// 既にロード済みの場合は何もしない
+	if (item.loadingStatus === 'loaded') {
+		return;
 	}
 
-	/**
-	 * サムネイルの読み込み（一度だけ実行される）
-	 */
-	async ensureLoaded(): Promise<void> {
-		// 既にロード済みの場合は何もしない
-		if (this.loadingStatus === 'loaded') {
-			return;
-		}
+	// 既にロード中の場合は既存のPromiseを待つ
+	if (item.loadPromise) {
+		return item.loadPromise;
+	}
 
-		// 既にロード中の場合は既存のPromiseを待つ
-		if (this.loadPromise) {
-			return this.loadPromise;
-		}
+	// 状態を'queued'に変更
+	item.loadingStatus = 'queued';
 
-		// キューサービス経由でロード処理を開始
-		this.loadPromise = thumbnailQueue.enqueue(this.imagePath).then(() => {
-			this.loadPromise = undefined; // ロード完了時にPromiseをクリア
+	// キューサービス経由でロード処理を開始
+	item.loadPromise = thumbnailQueue.enqueue(imagePath).then(() => {
+		item.loadPromise = undefined; // ロード完了時にPromiseをクリア
+	});
+
+	return item.loadPromise;
+};
+
+
+/**
+ * サムネイルアイテムを取得（なければ作成）
+ */
+const getThumbnailItem = (imagePath: string): ThumbnailItemState => {
+	if (!thumbnailMap.has(imagePath)) {
+		const item = $state<ThumbnailItemState>({
+			thumbnailUrl: undefined,
+			loadingStatus: 'unloaded',
+			loadError: undefined,
+			loadPromise: undefined
 		});
-
-		return this.loadPromise;
+		thumbnailMap.set(imagePath, item);
 	}
+	return thumbnailMap.get(imagePath)!;
+};
 
-	/**
-	 * 自動ロードを開始する共通処理
-	 */
-	private triggerAutoLoad(): void {
-		if (this.loadingStatus === 'unloaded') {
-			console.log(`📋 Setting thumbnail status to queued: ${this.imagePath.split('/').pop()}`);
-			this.loadingStatus = 'queued'; // キューに追加済み状態
-			this.ensureLoaded()
-				.then(() => {
-					console.log(`✅ Thumbnail ensureLoaded completed: ${this.imagePath.split('/').pop()}`);
-					// loadingStatusはexecuteTask内で'loaded'に設定される
-				})
-				.catch((error) => {
-					console.error(
-						`❌ Thumbnail ensureLoaded failed, setting status to error: ${this.imagePath.split('/').pop()} - ${error}`
-					);
-					this.loadingStatus = 'error';
-					console.error(
-						'❌ Auto-load failed for thumbnail: ' + this.imagePath.split('/').pop() + ' ' + error
-					);
-				});
-		}
-	}
 
-	/**
-	 * サムネイルURLを同期的に取得（リアクティブ、自動ロード付き）
-	 */
-	get thumbnailUrlValue(): string | undefined {
-		this.triggerAutoLoad();
-		return this.thumbnailUrl;
-	}
+/**
+ * サムネイルの実際のロード処理（キューサービスから呼ばれる）
+ * @internal キューサービス専用メソッド - 直接呼び出し禁止
+ */
+const loadThumbnail = async (imagePath: string): Promise<void> => {
+	const item = getThumbnailItem(imagePath);
 
-	/**
-	 * サムネイルの実際のロード処理（キューサービスから呼ばれる）
-	 * @internal キューサービス専用メソッド - 直接呼び出し禁止
-	 */
-	async load(): Promise<void> {
-		try {
-			console.log('🔄 Loading thumbnail: ' + this.imagePath.split('/').pop());
+	try {
+		// ロード開始時に状態を'loading'に変更
+		item.loadingStatus = 'loading';
+		console.log('🔄 Loading thumbnail: ' + imagePath.split('/').pop());
 
-			const channel = new Channel<Uint8Array>();
+		const channel = new Channel<Uint8Array>();
 
+		// onmessageをPromise化
+		const thumbnailPromise = new Promise<void>((resolve, reject) => {
 			channel.onmessage = (data) => {
 				console.log(
-					'Thumbnail data received: ' +
-						this.imagePath +
-						' data size: ' +
-						(data?.length || 'undefined')
+					'Thumbnail data received: ' + imagePath + ' data size: ' + (data?.length || 'undefined')
 				);
 				try {
 					const blob = new Blob([new Uint8Array(data)], { type: 'image/webp' });
 					const thumbnailUrl = URL.createObjectURL(blob);
 
-					console.log(
-						'Thumbnail generated successfully: ' + this.imagePath + ' URL: ' + thumbnailUrl
-					);
+					console.log('Thumbnail generated successfully: ' + imagePath + ' URL: ' + thumbnailUrl);
 
 					// リアクティブ状態を更新
-					this.thumbnailUrl = thumbnailUrl;
-					this.loadError = undefined;
+					item.thumbnailUrl = thumbnailUrl;
+					item.loadError = undefined;
+					item.loadingStatus = 'loaded';
+					resolve(); // データ受信完了時にPromise解決
 				} catch (error) {
-					console.error('Thumbnail data processing failed: ' + this.imagePath + ' ' + error);
-					this.loadError = 'Failed to process thumbnail data';
+					console.error('Thumbnail data processing failed: ' + imagePath + ' ' + error);
+					item.loadError = 'Failed to process thumbnail data';
+					item.loadingStatus = 'error';
+					reject(error);
 				}
 			};
-
-			await invoke('generate_thumbnail_async', {
-				imagePath: this.imagePath,
-				config: null,
-				channel
-			});
-
-			// ロード状態を更新
-			this.loadingStatus = 'loaded';
-
-			console.log('✅ Thumbnail loaded: ' + this.imagePath.split('/').pop());
-		} catch (error) {
-			console.error('❌ Thumbnail load failed: ' + this.imagePath.split('/').pop() + ' ' + error);
-			this.loadError = error instanceof Error ? error.message : String(error);
-			throw error; // エラーを再スロー
-		}
-	}
-}
-
-/**
- * グローバル画像サムネイルストア
- */
-class ImageThumbnailStore {
-	// 各画像のリアクティブサムネイル
-	private thumbnailMap = new Map<string, ReactiveImageThumbnail>();
-
-	/**
-	 * 画像のサムネイルストアを取得（なければ作成）
-	 */
-	getThumbnail(imagePath: string): ReactiveImageThumbnail {
-		if (!this.thumbnailMap.has(imagePath)) {
-			console.log('🆕 Creating thumbnail store: ' + imagePath.split('/').pop());
-			const thumbnail = new ReactiveImageThumbnail(imagePath);
-			this.thumbnailMap.set(imagePath, thumbnail);
-
-			// 新しいインスタンス作成時に自動的にロードを開始
-			if (thumbnail.loadingStatus === 'unloaded') {
-				thumbnail.ensureLoaded().catch((error: unknown) => {
-					console.error(
-						'Failed to auto-load thumbnail for ' + imagePath.split('/').pop() + ': ' + error
-					);
-				});
-			}
-		}
-		return this.thumbnailMap.get(imagePath)!;
-	}
-
-	/**
-	 * 複数画像のサムネイルを事前読み込み
-	 */
-	async preloadThumbnails(imagePaths: string[]): Promise<void> {
-		console.log('🔄 Preloading thumbnails for ' + imagePaths.length + ' images');
-
-		const loadPromises = imagePaths.map((imagePath) => {
-			const thumbnail = this.getThumbnail(imagePath);
-			if (thumbnail.loadingStatus === 'unloaded') {
-				return thumbnail.ensureLoaded();
-			}
-			return Promise.resolve();
 		});
 
-		await Promise.all(loadPromises);
-		console.log('✅ Thumbnail preloading completed');
+		// invokeは非同期で開始（awaitしない）
+		invoke('generate_thumbnail_async', {
+			imagePath: imagePath,
+			config: null,
+			channel
+		}).catch((error) => {
+			// invokeのエラーだけキャッチ
+			item.loadingStatus = 'error';
+			item.loadError = error instanceof Error ? error.message : String(error);
+		});
+
+		// onmessageのPromiseだけをawait
+		await thumbnailPromise;
+
+		console.log('✅ Thumbnail loaded: ' + imagePath.split('/').pop());
+	} catch (error) {
+		// エラー時の状態変更
+		item.loadingStatus = 'error';
+		console.error('❌ Thumbnail load failed: ' + imagePath.split('/').pop() + ' ' + error);
+		item.loadError = error instanceof Error ? error.message : String(error);
+		throw error; // エラーを再スロー
 	}
+};
 
-	/**
-	 * 未使用のサムネイルをクリア
-	 */
-	clearUnused(currentImagePaths: string[]): void {
-		const currentPathSet = new Set(currentImagePaths);
-		let removedCount = 0;
+/**
+ * 複数画像のサムネイルを事前読み込み
+ */
+const preloadThumbnails = async (imagePaths: string[]): Promise<void> => {
+	console.log('🔄 Preloading thumbnails for ' + imagePaths.length + ' images');
 
-		for (const [path, thumbnail] of this.thumbnailMap) {
-			if (!currentPathSet.has(path)) {
-				// BlobURLを解放
-				if (thumbnail.thumbnailUrl) {
-					try {
-						URL.revokeObjectURL(thumbnail.thumbnailUrl);
-					} catch (error) {
-						console.warn('Failed to revoke thumbnail URL:', error);
-					}
-				}
-				this.thumbnailMap.delete(path);
-				removedCount++;
-			}
+	const loadPromises = imagePaths.map((imagePath) => {
+		const item = getThumbnailItem(imagePath);
+		if (item.loadingStatus === 'unloaded') {
+			return ensureLoaded(imagePath);
 		}
+		return Promise.resolve();
+	});
 
-		if (removedCount > 0) {
-			console.log('🗑️ Cleared ' + removedCount + ' unused thumbnail entries');
-		}
-	}
+	await Promise.all(loadPromises);
+	console.log('✅ Thumbnail preloading completed');
+};
 
-	/**
-	 * 全サムネイルをクリア
-	 */
-	clearAll(): void {
-		// 全てのBlobURLを解放
-		for (const [, thumbnail] of this.thumbnailMap) {
-			if (thumbnail.thumbnailUrl) {
+/**
+ * 未使用のサムネイルをクリア
+ */
+const clearUnused = (currentImagePaths: string[]): void => {
+	const currentPathSet = new Set(currentImagePaths);
+	let removedCount = 0;
+
+	for (const [path, item] of thumbnailMap) {
+		if (!currentPathSet.has(path)) {
+			// BlobURLを解放
+			if (item.thumbnailUrl) {
 				try {
-					URL.revokeObjectURL(thumbnail.thumbnailUrl);
+					URL.revokeObjectURL(item.thumbnailUrl);
 				} catch (error) {
 					console.warn('Failed to revoke thumbnail URL:', error);
 				}
 			}
+			thumbnailMap.delete(path);
+			removedCount++;
 		}
-		this.thumbnailMap.clear();
-		console.log('🗑️ All thumbnails cleared');
 	}
-}
+
+	if (removedCount > 0) {
+		console.log('🗑️ Cleared ' + removedCount + ' unused thumbnail entries');
+	}
+};
 
 /**
- * グローバルインスタンス
+ * 全サムネイルをクリア
  */
-export const thumbnailStore = new ImageThumbnailStore();
+const clearAll = (): void => {
+	// 全てのBlobURLを解放
+	for (const [, item] of thumbnailMap) {
+		if (item.thumbnailUrl) {
+			try {
+				URL.revokeObjectURL(item.thumbnailUrl);
+			} catch (error) {
+				console.warn('Failed to revoke thumbnail URL:', error);
+			}
+		}
+	}
+	thumbnailMap.clear();
+	console.log('🗑️ All thumbnails cleared');
+};
+
+/**
+ * 初期状態にリセット
+ */
+const reset = (): void => {
+	// 全サムネイルをクリア（clearAll()がthumbnailMap.clear()を呼ぶ）
+	clearAll();
+};
+
+export const thumbnailStore = {
+	actions: {
+		getThumbnailItem,
+		loadThumbnail,
+		ensureLoaded,
+		preloadThumbnails,
+		clearUnused,
+		clearAll,
+		reset
+	}
+};

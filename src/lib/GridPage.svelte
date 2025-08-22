@@ -2,14 +2,13 @@
 	import Icon from '@iconify/svelte';
 	import { invoke } from '@tauri-apps/api/core';
 	import { basename } from '@tauri-apps/api/path';
-	import { platform } from '@tauri-apps/plugin-os';
 	import { onDestroy } from 'svelte';
 	import FilterPanel from './FilterPanel.svelte';
 	import { appStore } from './stores/app-store.svelte';
-	import { navigationStore } from './stores/navigation-store.svelte';
 	import { filterStore } from './stores/filter-store.svelte';
 	import { gridStore } from './stores/grid-store.svelte';
 	import { metadataRegistry } from './stores/metadata-registry.svelte';
+	import { navigationStore } from './stores/navigation-store.svelte';
 	import { tagStore } from './stores/tag-store.svelte';
 	import { thumbnailRegistry } from './stores/thumbnail-registry.svelte';
 	import { showSuccessToast } from './stores/toast.svelte';
@@ -73,11 +72,6 @@
 
 	const filteredImageCount = $derived(filteredImageFiles.length);
 
-	// ローカル状態をオブジェクトにまとめて宣言
-	let localState = $state({
-		isMacOS: false
-	});
-
 	// フィルターパネルの表示切り替え
 	const toggleFilterPanel = () => {
 		gridStore.actions.toggleFilterPanel();
@@ -139,21 +133,6 @@
 			console.error('Failed to copy to clipboard: ' + error);
 		}
 	};
-
-	// プラットフォーム判定の初期化
-	$effect(() => {
-		const checkPlatform = async () => {
-			try {
-				const currentPlatform = platform();
-				localState.isMacOS = currentPlatform === 'macos';
-			} catch (error) {
-				console.error('Failed to detect platform: ' + error);
-				localState.isMacOS = false;
-			}
-		};
-
-		checkPlatform();
-	});
 
 	// コンポーネント破棄時のクリーンアップ
 	onDestroy(() => {

@@ -12,7 +12,6 @@
 		onToggleAutoNavigation,
 		isAutoNavActive,
 		onCopyToClipboard,
-		isMacOS,
 		goToPrevious,
 		goToNext,
 		isNavigating
@@ -25,7 +24,6 @@
 		onToggleAutoNavigation?: () => void;
 		isAutoNavActive?: boolean;
 		onCopyToClipboard?: () => void;
-		isMacOS?: boolean;
 		goToPrevious: () => void;
 		goToNext: () => void;
 		isNavigating: boolean;
@@ -45,7 +43,6 @@
 			{isAutoNavActive}
 			isUIVisible={true}
 			{onCopyToClipboard}
-			{isMacOS}
 		/>
 	</div>
 

@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { navigationService } from '$lib/services/navigation-service.svelte';
 	import { invoke } from '@tauri-apps/api/core';
-	import { platform } from '@tauri-apps/plugin-os';
 	import { onDestroy, onMount } from 'svelte';
 	import type { Attachment } from 'svelte/attachments';
 	import ImageCanvas from './ImageCanvas.svelte';
@@ -37,19 +36,6 @@
 	const handleZoomStateChange = (zoomed: boolean) => {
 		isZoomed = zoomed;
 	};
-
-	// プラットフォーム判定
-	let isMacOs = $state(false);
-
-	// プラットフォーム判定（一回だけ実行）
-	onMount(async () => {
-		try {
-			const platformName = platform();
-			isMacOs = platformName === 'macos';
-		} catch (error) {
-			console.error('Failed to get platform: ' + error);
-		}
-	});
 
 	// navigationService初期化（imagePath依存）
 	onMount(async () => {
@@ -209,7 +195,6 @@
 						showInfoToast('Failed to copy image to clipboard');
 					}
 				}}
-				isMacOS={isMacOs}
 				goToPrevious={async () => {
 					await navigationService.navigatePrevious();
 					if (navigationService.currentFilePath) {

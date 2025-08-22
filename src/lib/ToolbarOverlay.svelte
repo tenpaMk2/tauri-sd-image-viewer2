@@ -10,8 +10,7 @@
 		onToggleAutoNavigation,
 		isAutoNavActive,
 		isUIVisible,
-		onCopyToClipboard,
-		isMacOS
+		onCopyToClipboard
 	}: {
 		openFileDialog: () => void;
 		onSwitchToGrid?: () => Promise<void>;
@@ -21,7 +20,6 @@
 		isAutoNavActive?: boolean;
 		isUIVisible?: boolean;
 		onCopyToClipboard?: () => void;
-		isMacOS?: boolean;
 	} = $props();
 </script>
 

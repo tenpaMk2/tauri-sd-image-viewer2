@@ -134,6 +134,9 @@ src-tauri/src/
   - `console.debug` , `console.log` , `console.warn` , `console.error` は文字列結合して第１引数のみを使う。
     - 第２引数は使えない。Rust側にログを転送する制限上そうなっている。
   - `invoke` でRustのAPIをコールするときは引数をlowerCamelCaseにする。
+  - **Props vs Store使い分けルール:**
+    - **Props使用**: 単純データ（文字列、数値、boolean）、親コンポーネントから渡されるイベントハンドラー、コンポーネント間の直接的な依存関係
+    - **Store使用**: アプリケーション全体で共有される状態、複雑なビジネスロジックを含む処理、非同期処理が必要な操作
 - バックエンド（Rust）
   - 型チェックは `cargo check` でやる（src-tauriディレクトリで実行）
 - Git

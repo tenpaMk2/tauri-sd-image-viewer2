@@ -1,6 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
-import { BaseQueue } from '../utils/base-queue';
 import type { ImageMetadataInfo, SdParameters } from '../types/shared-types';
+import { BaseQueue } from '../utils/base-queue';
 
 /**
  * メタデータロード状態
@@ -71,13 +71,11 @@ const ensureLoaded = async (imagePath: string): Promise<void> => {
 	item.loadingStatus = 'queued';
 
 	// キューサービス経由でロード処理を開始
-	item.loadPromise = metadataQueue.enqueue(
-		imagePath,
-		() => loadMetadata(imagePath),
-		'metadata'
-	).then(() => {
-		item.loadPromise = undefined; // ロード完了時にPromiseをクリア
-	});
+	item.loadPromise = metadataQueue
+		.enqueue(imagePath, (abortSignal) => loadMetadata(imagePath, abortSignal), 'metadata')
+		.then(() => {
+			item.loadPromise = undefined; // ロード完了時にPromiseをクリア
+		});
 
 	return item.loadPromise;
 };
@@ -86,10 +84,15 @@ const ensureLoaded = async (imagePath: string): Promise<void> => {
  * メタデータの実際のロード処理（キューサービスから呼ばれる）
  * @internal キューサービス専用メソッド - 直接呼び出し禁止
  */
-const loadMetadata = async (imagePath: string): Promise<void> => {
+const loadMetadata = async (imagePath: string, abortSignal: AbortSignal): Promise<void> => {
 	const item = getMetadataItem(imagePath);
 
 	try {
+		// 中断チェック
+		if (abortSignal.aborted) {
+			throw new Error('Aborted');
+		}
+
 		// ロード開始時に状態を'loading'に変更
 		item.loadingStatus = 'loading';
 
@@ -97,6 +100,11 @@ const loadMetadata = async (imagePath: string): Promise<void> => {
 		const metadata = await invoke<ImageMetadataInfo>('read_image_metadata', {
 			path: imagePath
 		});
+
+		// 中断チェック（Rust側の処理後）
+		if (abortSignal.aborted) {
+			throw new Error('Aborted');
+		}
 
 		// すべての状態プロパティを一度に設定
 		item.filename = imagePath.split('/').pop() || 'Unknown';
@@ -193,6 +201,13 @@ const clearUnused = (currentImagePaths: string[]): void => {
 const clearAll = (): void => {
 	metadataQueue.clear('metadata');
 	metadataMap.clear();
+};
+
+/**
+ * メタデータキューを停止
+ */
+const stopQueue = (): void => {
+	metadataQueue.stop('metadata');
 };
 
 /**
@@ -303,6 +318,7 @@ export const imageMetadataStore = {
 		preloadMetadata,
 		clearUnused,
 		clearAll,
+		stopQueue,
 		getRatingsMapSync,
 		waitForAllRatingWrites,
 		reset,

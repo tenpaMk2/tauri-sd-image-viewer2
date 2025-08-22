@@ -40,7 +40,7 @@ const ensureLoaded = async (imagePath: string): Promise<void> => {
 
 	// キューサービス経由でロード処理を開始
 	item.loadPromise = thumbnailQueue
-		.enqueue(imagePath, () => loadThumbnail(imagePath), 'thumbnail')
+		.enqueue(imagePath, (abortSignal) => loadThumbnail(imagePath, abortSignal), 'thumbnail')
 		.then(() => {
 			item.loadPromise = undefined; // ロード完了時にPromiseをクリア
 		});
@@ -68,10 +68,15 @@ const getThumbnailItem = (imagePath: string): ThumbnailItemState => {
  * サムネイルの実際のロード処理（キューサービスから呼ばれる）
  * @internal キューサービス専用メソッド - 直接呼び出し禁止
  */
-const loadThumbnail = async (imagePath: string): Promise<void> => {
+const loadThumbnail = async (imagePath: string, abortSignal: AbortSignal): Promise<void> => {
 	const item = getThumbnailItem(imagePath);
 
 	try {
+		// 中断チェック
+		if (abortSignal.aborted) {
+			throw new Error('Aborted');
+		}
+
 		// ロード開始時に状態を'loading'に変更
 		item.loadingStatus = 'loading';
 		console.log('🔄 Loading thumbnail: ' + imagePath.split('/').pop());
@@ -80,7 +85,20 @@ const loadThumbnail = async (imagePath: string): Promise<void> => {
 
 		// onmessageをPromise化
 		const thumbnailPromise = new Promise<void>((resolve, reject) => {
+			// 中断チェック用のハンドラー
+			const abortHandler = () => {
+				reject(new Error('Thumbnail generation aborted'));
+			};
+			abortSignal.addEventListener('abort', abortHandler);
+
 			channel.onmessage = (data) => {
+				// 中断チェック
+				if (abortSignal.aborted) {
+					abortSignal.removeEventListener('abort', abortHandler);
+					reject(new Error('Thumbnail generation aborted'));
+					return;
+				}
+
 				console.log(
 					'Thumbnail data received: ' + imagePath + ' data size: ' + (data?.length || 'undefined')
 				);
@@ -94,15 +112,22 @@ const loadThumbnail = async (imagePath: string): Promise<void> => {
 					item.thumbnailUrl = thumbnailUrl;
 					item.loadError = undefined;
 					item.loadingStatus = 'loaded';
+					abortSignal.removeEventListener('abort', abortHandler);
 					resolve(); // データ受信完了時にPromise解決
 				} catch (error) {
 					console.error('Thumbnail data processing failed: ' + imagePath + ' ' + error);
 					item.loadError = 'Failed to process thumbnail data';
 					item.loadingStatus = 'error';
+					abortSignal.removeEventListener('abort', abortHandler);
 					reject(error);
 				}
 			};
 		});
+
+		// 中断チェック
+		if (abortSignal.aborted) {
+			throw new Error('Aborted');
+		}
 
 		// invokeは非同期で開始（awaitしない）
 		invoke('generate_thumbnail_async', {
@@ -111,8 +136,10 @@ const loadThumbnail = async (imagePath: string): Promise<void> => {
 			channel
 		}).catch((error) => {
 			// invokeのエラーだけキャッチ
-			item.loadingStatus = 'error';
-			item.loadError = error instanceof Error ? error.message : String(error);
+			if (!abortSignal.aborted) {
+				item.loadingStatus = 'error';
+				item.loadError = error instanceof Error ? error.message : String(error);
+			}
 		});
 
 		// onmessageのPromiseだけをawait
@@ -195,6 +222,13 @@ const clearAll = (): void => {
 };
 
 /**
+ * サムネイルキューを停止
+ */
+const stopQueue = (): void => {
+	thumbnailQueue.stop('thumbnail');
+};
+
+/**
  * 初期状態にリセット
  */
 const reset = (): void => {
@@ -231,6 +265,7 @@ export const thumbnailStore = {
 		preloadThumbnails,
 		clearUnused,
 		clearAll,
+		stopQueue,
 		reset,
 		// キュー管理用
 		getQueueSize,

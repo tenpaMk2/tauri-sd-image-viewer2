@@ -7,6 +7,7 @@
 	import ImageCanvas from './ImageCanvas.svelte';
 	import MetadataPanel from './MetadataPanel.svelte';
 	import { appStore } from './stores/app-store.svelte';
+	import { imageMetadataStore } from './stores/image-metadata-store.svelte';
 	import { thumbnailStore } from './stores/thumbnail-store.svelte';
 	import { showInfoToast, showSuccessToast } from './stores/toast.svelte';
 	import ViewerUIOverlay from './ViewerUIOverlay.svelte';
@@ -138,10 +139,13 @@
 
 	// コンポーネント破棄時のクリーンアップ
 	onDestroy(() => {
-		console.log('🗑️ ViewerPage: Component destroying, clearing queues and unused thumbnails');
+		console.log(
+			'🗑️ ViewerPage: Component destroying, stopping queues and clearing unused thumbnails'
+		);
 
-		// キューをクリアして不要な処理を停止
-		// キューはストア内で管理されているため、ストアのclearAllを呼び出すことでクリアされる
+		// キューを停止して不要な処理を停止
+		imageMetadataStore.actions.stopQueue();
+		thumbnailStore.actions.stopQueue();
 
 		// Viewerで使用していた画像以外のサムネイルを解放
 		// 現在の画像ファイルリストがあれば保持、なければ空配列で全クリア

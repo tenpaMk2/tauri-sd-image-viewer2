@@ -157,10 +157,13 @@
 
 	// コンポーネント破棄時のクリーンアップ
 	onDestroy(() => {
-		console.log('🗑️ GridPage: Component destroying, clearing queues and unused thumbnails');
+		console.log(
+			'🗑️ GridPage: Component destroying, stopping queues and clearing unused thumbnails'
+		);
 
-		// キューをクリアして不要な処理を停止
-		// キューはストア内で管理されているため、ストアのclearAllを呼び出すことでクリアされる
+		// キューを停止して不要な処理を停止
+		imageMetadataStore.actions.stopQueue();
+		thumbnailStore.actions.stopQueue();
 
 		// 不要なサムネイルを解放
 		thumbnailStore.actions.clearUnused(imageFiles);

@@ -47,7 +47,7 @@ export class TagAggregationService {
 				const metadata = imageMetadataStore.actions.getMetadataItem(imagePath);
 				// ロード完了を待つ
 				if (metadata.loadingStatus !== 'loaded') {
-					await imageMetadataStore.actions.loadMetadata(imagePath);
+					await imageMetadataStore.actions.ensureLoaded(imagePath);
 				}
 
 				const sdParameters = metadata.sdParameters;
@@ -196,7 +196,7 @@ export class TagAggregationService {
 
 			// SDパラメータを取得（ロード完了を待つ）
 			if (metadata.loadingStatus !== 'loaded') {
-				await imageMetadataStore.actions.loadMetadata(imagePath);
+				await imageMetadataStore.actions.ensureLoaded(imagePath);
 			}
 
 			const sdParameters = metadata.sdParameters;

@@ -11,7 +11,7 @@ export class BaseQueue {
 	protected queue: QueueTask[] = [];
 	protected processing = false;
 	protected maxConcurrent = 10;
-	protected activeJobs = new Map<string, { promise: Promise<void>, task: QueueTask }>(); // 統合管理
+	protected activeJobs = new Map<string, { promise: Promise<void>; task: QueueTask }>(); // 統合管理
 	protected stopped = false;
 
 	// 進行中のロード処理を管理（パスごとにresolve関数を保持）
@@ -101,7 +101,7 @@ export class BaseQueue {
 
 			// 少なくとも1つのジョブが完了するまで待機
 			if (this.activeJobs.size > 0 && !this.stopped) {
-				const promises = Array.from(this.activeJobs.values()).map(job => job.promise);
+				const promises = Array.from(this.activeJobs.values()).map((job) => job.promise);
 				await Promise.race(promises);
 			}
 		}
@@ -117,9 +117,7 @@ export class BaseQueue {
 		try {
 			await this.executeTask(task.id, task.handler, task.abortController.signal, taskTypeName);
 		} catch (error) {
-			console.error(
-				`❌ ${taskTypeName} execution failed: ${task.id.split('/').pop()} ${error}`
-			);
+			console.error(`❌ ${taskTypeName} execution failed: ${task.id.split('/').pop()} ${error}`);
 			throw error;
 		}
 	}
@@ -146,7 +144,9 @@ export class BaseQueue {
 
 			// 完了後に停止状態を再チェック（Rust処理後の防御）
 			if (this.stopped || abortSignal.aborted) {
-				console.log(`🛑 ${taskTypeName} ignored after completion (queue stopped): ${id.split('/').pop()}`);
+				console.log(
+					`🛑 ${taskTypeName} ignored after completion (queue stopped): ${id.split('/').pop()}`
+				);
 				return; // 結果を無視
 			}
 
@@ -204,7 +204,7 @@ export class BaseQueue {
 	stop(taskTypeName: string): void {
 		// 停止フラグを設定
 		this.stopped = true;
-		
+
 		// 処理中のフラグをリセット
 		this.processing = false;
 

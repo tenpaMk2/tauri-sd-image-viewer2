@@ -10,7 +10,7 @@
 	import { gridStore } from './stores/grid-store.svelte';
 	import { metadataRegistry } from './stores/metadata-registry.svelte';
 	import { tagStore } from './stores/tag-store.svelte';
-	import { thumbnailStore } from './stores/thumbnail-store.svelte';
+	import { thumbnailRegistry } from './stores/thumbnail-registry.svelte';
 	import { showSuccessToast } from './stores/toast.svelte';
 	import ThumbnailGrid from './ThumbnailGrid.svelte';
 	import { deleteSelectedImages as performDelete } from './utils/delete-images';
@@ -163,10 +163,10 @@
 
 		// キューを停止して不要な処理を停止
 		metadataRegistry.stopQueue();
-		thumbnailStore.actions.stopQueue();
+		thumbnailRegistry.stopQueue();
 
 		// 不要なサムネイルを解放
-		thumbnailStore.actions.clearUnused(imageFiles);
+		thumbnailRegistry.clearUnused(imageFiles);
 	});
 </script>
 

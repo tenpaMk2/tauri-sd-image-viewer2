@@ -191,10 +191,10 @@ export const createMetadataStore = (imagePath: string): MetadataStore => {
 		destroy: (): void => {
 			// 破棄フラグを設定（以降の操作を無効化）
 			state._isDestroyed = true;
-			
+
 			// 進行中のPromiseは継続するが、結果は無視される
 			state.loadingPromise = undefined;
-			
+
 			// 状態をクリア
 			actions.reset();
 		}

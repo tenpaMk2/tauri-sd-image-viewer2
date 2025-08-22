@@ -7,7 +7,7 @@ import { filterStore } from './filter-store.svelte';
 import { gridStore } from './grid-store.svelte';
 import { metadataRegistry } from './metadata-registry.svelte';
 import { tagStore } from './tag-store.svelte';
-import { thumbnailStore } from './thumbnail-store.svelte';
+import { thumbnailRegistry } from './thumbnail-registry.svelte';
 
 export type ImageLoadingState = 'idle' | 'loading' | 'loaded';
 
@@ -223,7 +223,7 @@ const openDirectoryDialog = async (): Promise<void> => {
 			// 古いデータとキューをクリア
 			console.log('🗑️ openDirectoryDialog: 古いデータとキューをクリア');
 			metadataRegistry.clearAll();
-			thumbnailStore.actions.clearAll();
+			thumbnailRegistry.clearAll();
 			clearImageFiles();
 
 			// 各ストアをリセット
@@ -232,7 +232,7 @@ const openDirectoryDialog = async (): Promise<void> => {
 			filterStore.actions.reset();
 			gridStore.actions.reset();
 			metadataRegistry.reset();
-			thumbnailStore.actions.reset();
+			thumbnailRegistry.reset();
 
 			console.log('🔄 openDirectoryDialog: appStateを更新');
 			appState.selectedDirectory = selected;
@@ -331,7 +331,7 @@ const handleBackToWelcome = async (): Promise<void> => {
 	// すべてをクリア
 	clearImageFiles();
 	metadataRegistry.clearAll();
-	thumbnailStore.actions.clearAll();
+	thumbnailRegistry.clearAll();
 
 	// 各ストアをリセット
 	tagStore.actions.reset();
@@ -352,7 +352,7 @@ const handleDroppedPaths = async (paths: string[]): Promise<void> => {
 		if (await isDirectory(firstPath)) {
 			// 古いデータとキューをクリア
 			metadataRegistry.clearAll();
-			thumbnailStore.actions.clearAll();
+			thumbnailRegistry.clearAll();
 			clearImageFiles();
 
 			// 各ストアをリセット
@@ -360,7 +360,7 @@ const handleDroppedPaths = async (paths: string[]): Promise<void> => {
 			filterStore.actions.reset();
 			gridStore.actions.reset();
 			metadataRegistry.reset();
-			thumbnailStore.actions.reset();
+			thumbnailRegistry.reset();
 
 			appState.selectedDirectory = firstPath;
 			appState.viewMode = 'grid';

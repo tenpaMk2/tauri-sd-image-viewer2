@@ -8,7 +8,7 @@
 	import MetadataPanel from './MetadataPanel.svelte';
 	import { appStore } from './stores/app-store.svelte';
 	import { metadataRegistry } from './stores/metadata-registry.svelte';
-	import { thumbnailStore } from './stores/thumbnail-store.svelte';
+	import { thumbnailRegistry } from './stores/thumbnail-registry.svelte';
 	import { showInfoToast, showSuccessToast } from './stores/toast.svelte';
 	import ViewerUIOverlay from './ViewerUIOverlay.svelte';
 
@@ -145,12 +145,12 @@
 
 		// キューを停止して不要な処理を停止
 		metadataRegistry.stopQueue();
-		thumbnailStore.actions.stopQueue();
+		thumbnailRegistry.stopQueue();
 
 		// Viewerで使用していた画像以外のサムネイルを解放
 		// 現在の画像ファイルリストがあれば保持、なければ空配列で全クリア
 		const currentImageFiles = appStore.state.imageFiles || [];
-		thumbnailStore.actions.clearUnused(currentImageFiles);
+		thumbnailRegistry.clearUnused(currentImageFiles);
 	});
 
 	console.log('🖼️ ViewerPage initialized with Svelte 5 patterns');

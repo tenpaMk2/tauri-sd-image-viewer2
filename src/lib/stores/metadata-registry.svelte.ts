@@ -19,7 +19,6 @@ export const metadataRegistry = {
 		return storeRegistry.get(imagePath)!;
 	},
 
-
 	/**
 	 * 複数画像のメタデータを事前読み込み
 	 */
@@ -58,7 +57,7 @@ export const metadataRegistry = {
 		for (const store of storeRegistry.values()) {
 			store.actions.destroy();
 		}
-		
+
 		metadataQueue.clear('metadata');
 		storeRegistry.clear();
 	},

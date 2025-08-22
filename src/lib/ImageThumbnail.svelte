@@ -1,6 +1,6 @@
 <script lang="ts">
 	import RatingComponent from './components/RatingComponent.svelte';
-	import { thumbnailStore } from './stores/thumbnail-store.svelte';
+	import { thumbnailRegistry } from './stores/thumbnail-registry.svelte';
 
 	const {
 		imagePath,
@@ -15,12 +15,12 @@
 	} = $props();
 
 	// サムネイルアイテムを取得（$stateオブジェクトなので$derivedは不要）
-	const thumbnail = thumbnailStore.actions.getThumbnailItem(imagePath);
+	const thumbnail = thumbnailRegistry.getStore(imagePath);
 
 	// コンポーネントマウント時に明示的にロード開始
 	$effect(() => {
-		if (thumbnail.loadingStatus === 'unloaded') {
-			thumbnailStore.actions.ensureLoaded(imagePath).catch((error) => {
+		if (thumbnail.state.loadingStatus === 'unloaded') {
+			thumbnail.actions.ensureLoaded().catch((error) => {
 				console.error('Failed to load thumbnail for ' + imagePath.split('/').pop() + ': ' + error);
 			});
 		}
@@ -48,11 +48,11 @@
 		onkeydown={(e) => e.key === 'Enter' && handleClick()}
 		aria-label="Select image (double-click to open)"
 	>
-		{#if thumbnail.loadingStatus === 'loaded'}
-			{#if thumbnail.thumbnailUrl}
+		{#if thumbnail.state.loadingStatus === 'loaded'}
+			{#if thumbnail.state.thumbnailUrl}
 				<div class="relative flex h-full w-full items-center justify-center p-1">
 					<img
-						src={thumbnail.thumbnailUrl}
+						src={thumbnail.state.thumbnailUrl}
 						alt="thumbnail"
 						class="h-full w-full rounded object-contain"
 						loading="lazy"

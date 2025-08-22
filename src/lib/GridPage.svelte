@@ -11,7 +11,7 @@
 	import { navigationStore } from './stores/navigation-store.svelte';
 	import { tagStore } from './stores/tag-store.svelte';
 	import { thumbnailRegistry } from './stores/thumbnail-registry.svelte';
-	import { showSuccessToast } from './stores/toast.svelte';
+	import { toastStore } from './stores/toast-store.svelte';
 	import ThumbnailGrid from './ThumbnailGrid.svelte';
 	import { deleteSelectedImages as performDelete } from './utils/delete-images';
 
@@ -86,7 +86,7 @@
 	const clearCache = async () => {
 		try {
 			await invoke('clear_thumbnail_cache');
-			showSuccessToast('Thumbnail cache cleared');
+			toastStore.actions.showSuccessToast('Thumbnail cache cleared');
 			gridStore.actions.closeOptionsModal();
 			// navigationStoreから画像ファイルを再読み込み
 			await navigationStore.actions.loadImageFiles(selectedDirectory);
@@ -128,7 +128,7 @@
 		const paths = Array.from(selectedImages);
 		try {
 			await invoke('set_clipboard_files', { paths });
-			showSuccessToast(`${selectedImages.size} images copied to clipboard`);
+			toastStore.actions.showSuccessToast(`${selectedImages.size} images copied to clipboard`);
 		} catch (error) {
 			console.error('Failed to copy to clipboard: ' + error);
 		}

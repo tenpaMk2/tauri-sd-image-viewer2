@@ -1,8 +1,8 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte';
-	import { getToasts, removeToast } from './stores/toast.svelte';
+	import { toastStore } from './stores/toast-store.svelte';
 
-	const toasts = $derived(getToasts());
+	const toasts = $derived(toastStore.state.toasts);
 
 	const getToastIcon = (type: string): string => {
 		switch (type) {
@@ -38,7 +38,11 @@
 		<div class="alert {getToastClass(toast.type)} min-w-64 shadow-lg">
 			<Icon icon={getToastIcon(toast.type)} class="h-5 w-5" />
 			<span class="text-sm">{toast.message}</span>
-			<button class="btn btn-ghost btn-xs" onclick={() => removeToast(toast.id)} title="Close">
+			<button
+				class="btn btn-ghost btn-xs"
+				onclick={() => toastStore.actions.removeToast(toast.id)}
+				title="Close"
+			>
 				<Icon icon="lucide:x" class="h-3 w-3" />
 			</button>
 		</div>

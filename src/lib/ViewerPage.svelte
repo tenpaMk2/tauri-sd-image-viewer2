@@ -8,7 +8,7 @@
 	import { metadataRegistry } from './stores/metadata-registry.svelte';
 	import { navigationStore } from './stores/navigation-store.svelte';
 	import { thumbnailRegistry } from './stores/thumbnail-registry.svelte';
-	import { showInfoToast, showSuccessToast } from './stores/toast.svelte';
+	import { toastStore } from './stores/toast-store.svelte';
 	import { viewerStore } from './stores/viewer-store.svelte';
 	import ViewerUIOverlay from './ViewerUIOverlay.svelte';
 
@@ -189,10 +189,10 @@
 				onCopyToClipboard={async () => {
 					try {
 						await invoke('set_clipboard_files', { paths: [imagePath] });
-						showSuccessToast('Image copied to clipboard');
+						toastStore.actions.showSuccessToast('Image copied to clipboard');
 					} catch (error) {
 						console.error('Failed to copy image to clipboard: ' + error);
-						showInfoToast('Failed to copy image to clipboard');
+						toastStore.actions.showInfoToast('Failed to copy image to clipboard');
 					}
 				}}
 				goToPrevious={async () => {

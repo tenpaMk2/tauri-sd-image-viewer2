@@ -11,7 +11,7 @@ export const thumbnailRegistry = {
 	/**
 	 * ストアを取得（なければ作成）
 	 */
-	getStore: (imagePath: string): ThumbnailStore => {
+	getOrCreateStore: (imagePath: string): ThumbnailStore => {
 		if (!storeRegistry.has(imagePath)) {
 			const store = createThumbnailStore(imagePath);
 			storeRegistry.set(imagePath, store);

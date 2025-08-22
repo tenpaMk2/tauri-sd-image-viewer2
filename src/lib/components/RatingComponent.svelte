@@ -8,7 +8,7 @@
 	const { imagePath }: Props = $props();
 
 	// メタデータストアを取得（$stateオブジェクトなので$derivedは不要）
-	const store = metadataRegistry.getStore(imagePath);
+	const store = metadataRegistry.getOrCreateStore(imagePath);
 	const metadata = store.state;
 
 	// コンポーネントマウント時に明示的にロード開始

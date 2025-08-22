@@ -43,7 +43,7 @@ export class TagAggregationService {
 		for (const imagePath of imagePaths) {
 			try {
 				// メタデータストアから取得
-				const store = metadataRegistry.getStore(imagePath);
+				const store = metadataRegistry.getOrCreateStore(imagePath);
 				// ロード完了を待つ
 				if (store.state.loadingStatus !== 'loaded') {
 					await store.actions.ensureLoaded();
@@ -191,7 +191,7 @@ export class TagAggregationService {
 		}
 
 		try {
-			const store = metadataRegistry.getStore(imagePath);
+			const store = metadataRegistry.getOrCreateStore(imagePath);
 
 			// SDパラメータを取得（ロード完了を待つ）
 			if (store.state.loadingStatus !== 'loaded') {
@@ -246,7 +246,7 @@ export class TagAggregationService {
 		const ratingsMap = new Map<string, number | undefined>();
 
 		for (const imagePath of imagePaths) {
-			const store = metadataRegistry.getStore(imagePath);
+			const store = metadataRegistry.getOrCreateStore(imagePath);
 			// メタデータが存在し、ロード済みの場合のみレーティングを取得
 			if (store && store.state.loadingStatus === 'loaded') {
 				ratingsMap.set(imagePath, store.state.rating);

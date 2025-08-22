@@ -15,7 +15,7 @@
 	} = $props();
 
 	// サムネイルアイテムを取得（$stateオブジェクトなので$derivedは不要）
-	const thumbnail = thumbnailRegistry.getStore(imagePath);
+	const thumbnail = thumbnailRegistry.getOrCreateStore(imagePath);
 
 	// コンポーネントマウント時に明示的にロード開始
 	$effect(() => {

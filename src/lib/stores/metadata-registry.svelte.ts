@@ -11,7 +11,7 @@ export const metadataRegistry = {
 	/**
 	 * ストアを取得（なければ作成）
 	 */
-	getStore: (imagePath: string): MetadataStore => {
+	getOrCreateStore: (imagePath: string): MetadataStore => {
 		if (!storeRegistry.has(imagePath)) {
 			const store = createMetadataStore(imagePath);
 			storeRegistry.set(imagePath, store);

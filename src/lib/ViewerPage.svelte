@@ -6,10 +6,11 @@
 	import type { Attachment } from 'svelte/attachments';
 	import ImageCanvas from './ImageCanvas.svelte';
 	import MetadataPanel from './MetadataPanel.svelte';
-	import { appStore } from './stores/app-store.svelte';
 	import { metadataRegistry } from './stores/metadata-registry.svelte';
+	import { navigationStore } from './stores/navigation-store.svelte';
 	import { thumbnailRegistry } from './stores/thumbnail-registry.svelte';
 	import { showInfoToast, showSuccessToast } from './stores/toast.svelte';
+	import { viewerStore } from './stores/viewer-store.svelte';
 	import ViewerUIOverlay from './ViewerUIOverlay.svelte';
 
 	const INFO_PANEL_MIN_WIDTH = 280;
@@ -27,8 +28,8 @@
 		onSwitchToGrid?: () => Promise<void>;
 	} = $props();
 
-	// app-storeから状態とアクションを取得
-	const { state: appState, actions } = appStore;
+	// viewerStoreから状態とアクションを取得
+	const { state: viewerState, actions: viewerActions } = viewerStore;
 
 	// ズーム状態を管理
 	let isZoomed = $state(false);
@@ -77,7 +78,7 @@
 	// キーボードイベントハンドラー（ViewerPageにスコープ）
 	const handleKeydown = (event: KeyboardEvent): void => {
 		// 情報パネルにフォーカスがある場合はキーボードナビゲーションを無効にする
-		if (appState.viewer.ui.isInfoPanelFocused) return;
+		if (viewerState.ui.isInfoPanelFocused) return;
 
 		const handleAsync = async (): Promise<void> => {
 			switch (event.key) {
@@ -127,13 +128,13 @@
 	// Svelte 5の@attachで使用するアタッチメント
 	const attachment: Attachment = (element) => {
 		const htmlElement = element as HTMLElement;
-		htmlElement.addEventListener('mousemove', actions.handleMouseMove);
+		htmlElement.addEventListener('mousemove', viewerActions.handleMouseMove);
 		return () => {
-			htmlElement.removeEventListener('mousemove', actions.handleMouseMove);
+			htmlElement.removeEventListener('mousemove', viewerActions.handleMouseMove);
 			// 自動ナビゲーションを停止
-			actions.stopAutoNavigation();
+			viewerActions.stopAutoNavigation();
 			// UIタイマーをリセット（app-store内で管理）
-			actions.resetUITimer();
+			viewerActions.resetUITimer();
 		};
 	};
 
@@ -149,7 +150,7 @@
 
 		// Viewerで使用していた画像以外のサムネイルを解放
 		// 現在の画像ファイルリストがあれば保持、なければ空配列で全クリア
-		const currentImageFiles = appStore.state.imageFiles || [];
+		const currentImageFiles = navigationStore.state.imageFiles || [];
 		thumbnailRegistry.clearUnused(currentImageFiles);
 	});
 
@@ -167,38 +168,38 @@
 	<!-- メインキャンバスエリア -->
 	<div
 		class="relative flex-1"
-		style="width: {appState.viewer.ui.isInfoPanelVisible
-			? `calc(100% - ${appState.viewer.ui.infoPanelWidth}px)`
+		style="width: {viewerState.ui.isInfoPanelVisible
+			? `calc(100% - ${viewerState.ui.infoPanelWidth}px)`
 			: '100%'}"
 	>
 		<!-- 画像読み込み状態表示 -->
-		{#if appState.viewer.isLoading}
+		{#if viewerState.imageState.isLoading}
 			<div class="absolute inset-0 flex items-center justify-center bg-base-300">
 				<div class="loading loading-lg loading-spinner text-primary"></div>
 			</div>
-		{:else if appState.viewer.error}
+		{:else if viewerState.imageState.error}
 			<div class="absolute inset-0 flex items-center justify-center bg-base-300">
-				<div class="text-lg text-error">{appState.viewer.error}</div>
+				<div class="text-lg text-error">{viewerState.imageState.error}</div>
 			</div>
-		{:else if appState.viewer.imageUrl}
+		{:else if viewerState.imageState.imageUrl}
 			<ImageCanvas
-				imageUrl={appState.viewer.imageUrl}
-				isLoading={appState.viewer.isLoading}
-				error={appState.viewer.error}
+				imageUrl={viewerState.imageState.imageUrl}
+				isLoading={viewerState.imageState.isLoading}
+				error={viewerState.imageState.error}
 				onZoomStateChange={handleZoomStateChange}
 			/>
 		{/if}
 
 		<!-- UI要素のオーバーレイ（ズーム時は非表示） -->
-		{#if appState.viewer.ui.isVisible && !isZoomed}
+		{#if viewerState.ui.isVisible && !isZoomed}
 			<ViewerUIOverlay
 				imagePath={navigationService.currentFilePath}
 				{openFileDialog}
 				{onSwitchToGrid}
-				onToggleInfoPanel={actions.toggleInfoPanel}
-				isInfoPanelVisible={appState.viewer.ui.isInfoPanelVisible}
-				onToggleAutoNavigation={() => actions.startAutoNavigation(handleAutoNavigation)}
-				isAutoNavActive={appState.viewer.autoNav.isActive}
+				onToggleInfoPanel={viewerActions.toggleInfoPanel}
+				isInfoPanelVisible={viewerState.ui.isInfoPanelVisible}
+				onToggleAutoNavigation={() => viewerActions.startAutoNavigation(handleAutoNavigation)}
+				isAutoNavActive={viewerState.autoNav.isActive}
 				onCopyToClipboard={async () => {
 					try {
 						await invoke('set_clipboard_files', { paths: [imagePath] });
@@ -227,24 +228,25 @@
 	</div>
 
 	<!-- 情報パネル -->
-	{#if appState.viewer.ui.isInfoPanelVisible}
+	{#if viewerState.ui.isInfoPanelVisible}
 		<div
 			class="relative flex-shrink-0 border-l border-base-300 bg-base-100"
-			style="width: {appState.viewer.ui.infoPanelWidth}px"
+			style="width: {viewerState.ui.infoPanelWidth}px"
 		>
 			<!-- リサイズハンドル -->
 			<button
 				type="button"
 				class="absolute top-0 bottom-0 left-0 w-1 cursor-col-resize bg-base-300 transition-colors hover:bg-primary"
-				onmousedown={(e) => actions.handleResize(e, INFO_PANEL_MIN_WIDTH, INFO_PANEL_MAX_WIDTH)}
+				onmousedown={(e) =>
+					viewerActions.handleResize(e, INFO_PANEL_MIN_WIDTH, INFO_PANEL_MAX_WIDTH)}
 				aria-label="Resize panel"
 			></button>
 
 			<!-- パネル内容 -->
 			<div
 				class="h-full overflow-hidden"
-				onfocus={() => actions.setInfoPanelFocus(true)}
-				onblur={() => actions.setInfoPanelFocus(false)}
+				onfocus={() => viewerActions.setInfoPanelFocus(true)}
+				onblur={() => viewerActions.setInfoPanelFocus(false)}
 				tabindex="-1"
 			>
 				<MetadataPanel {imagePath} />

@@ -73,7 +73,6 @@
 				handleBackToWelcome={actions.handleBackToWelcome}
 				openDirectoryDialog={actions.openDirectoryDialog}
 				handleImageSelect={actions.handleImageSelect}
-				loadImageFiles={actions.loadImageFiles}
 			/>
 		{:else if appStore.state.viewMode === 'viewer' && appStore.state.selectedImagePath}
 			<ViewerPage

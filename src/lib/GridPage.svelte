@@ -6,6 +6,7 @@
 	import { onDestroy } from 'svelte';
 	import FilterPanel from './FilterPanel.svelte';
 	import { appStore } from './stores/app-store.svelte';
+	import { navigationStore } from './stores/navigation-store.svelte';
 	import { filterStore } from './stores/filter-store.svelte';
 	import { gridStore } from './stores/grid-store.svelte';
 	import { metadataRegistry } from './stores/metadata-registry.svelte';
@@ -18,20 +19,19 @@
 	const {
 		handleBackToWelcome,
 		openDirectoryDialog,
-		handleImageSelect,
-		loadImageFiles
+		handleImageSelect
 	}: {
 		handleBackToWelcome: () => void;
 		openDirectoryDialog: () => void;
 		handleImageSelect: (imagePath: string) => void;
-		loadImageFiles: () => Promise<void>;
 	} = $props();
 
 	// app-storeから直接状態を取得（リアクティブ）
 	const selectedDirectory = $derived(appStore.state.selectedDirectory!);
-	const imageFiles = $derived(appStore.state.imageFiles);
-	const imageLoadingState = $derived(appStore.state.imageLoadingState);
-	const imageFileLoadError = $derived(appStore.state.imageFileLoadError);
+	// navigationStoreから画像ファイル状態を取得
+	const imageFiles = $derived(navigationStore.state.imageFiles);
+	const imageLoadingState = $derived(navigationStore.state.imageLoadingState);
+	const imageFileLoadError = $derived(navigationStore.state.imageFileLoadError);
 
 	// gridStoreから状態を取得
 	const selectedImages = $derived(gridStore.state.selectedImages);
@@ -94,8 +94,8 @@
 			await invoke('clear_thumbnail_cache');
 			showSuccessToast('Thumbnail cache cleared');
 			gridStore.actions.closeOptionsModal();
-			// app-storeから画像ファイルを再読み込み
-			await loadImageFiles();
+			// navigationStoreから画像ファイルを再読み込み
+			await navigationStore.actions.loadImageFiles(selectedDirectory);
 		} catch (error) {
 			console.error('Failed to clear cache: ' + error);
 		}
@@ -120,8 +120,8 @@
 		try {
 			await performDelete(selectedImages);
 			gridStore.actions.clearSelection();
-			// app-storeから画像ファイルを再読み込み
-			await loadImageFiles();
+			// navigationStoreから画像ファイルを再読み込み
+			await navigationStore.actions.loadImageFiles(selectedDirectory);
 		} catch (err) {
 			// エラーはperformDelete内で処理済み
 		}

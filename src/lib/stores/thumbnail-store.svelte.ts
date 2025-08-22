@@ -40,7 +40,7 @@ const ensureLoaded = async (imagePath: string): Promise<void> => {
 
 	// キューサービス経由でロード処理を開始
 	item.loadPromise = thumbnailQueue
-		.enqueue(imagePath, (abortSignal) => loadThumbnail(imagePath, abortSignal), 'thumbnail')
+		.enqueue(imagePath, (abortSignal) => _loadThumbnail(imagePath, abortSignal), 'thumbnail')
 		.then(() => {
 			item.loadPromise = undefined; // ロード完了時にPromiseをクリア
 		});
@@ -68,7 +68,7 @@ const getThumbnailItem = (imagePath: string): ThumbnailItemState => {
  * サムネイルの実際のロード処理（キューサービスから呼ばれる）
  * @internal キューサービス専用メソッド - 直接呼び出し禁止
  */
-const loadThumbnail = async (imagePath: string, abortSignal: AbortSignal): Promise<void> => {
+const _loadThumbnail = async (imagePath: string, abortSignal: AbortSignal): Promise<void> => {
 	const item = getThumbnailItem(imagePath);
 
 	try {
@@ -260,7 +260,7 @@ const setMaxConcurrent = (maxConcurrent: number): void => {
 export const thumbnailStore = {
 	actions: {
 		getThumbnailItem,
-		loadThumbnail,
+		_loadThumbnail,
 		ensureLoaded,
 		preloadThumbnails,
 		clearUnused,

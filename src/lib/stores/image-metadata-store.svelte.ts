@@ -72,7 +72,7 @@ const ensureLoaded = async (imagePath: string): Promise<void> => {
 
 	// キューサービス経由でロード処理を開始
 	item.loadPromise = metadataQueue
-		.enqueue(imagePath, (abortSignal) => loadMetadata(imagePath, abortSignal), 'metadata')
+		.enqueue(imagePath, (abortSignal) => _loadMetadata(imagePath, abortSignal), 'metadata')
 		.then(() => {
 			item.loadPromise = undefined; // ロード完了時にPromiseをクリア
 		});
@@ -84,7 +84,7 @@ const ensureLoaded = async (imagePath: string): Promise<void> => {
  * メタデータの実際のロード処理（キューサービスから呼ばれる）
  * @internal キューサービス専用メソッド - 直接呼び出し禁止
  */
-const loadMetadata = async (imagePath: string, abortSignal: AbortSignal): Promise<void> => {
+const _loadMetadata = async (imagePath: string, abortSignal: AbortSignal): Promise<void> => {
 	const item = getMetadataItem(imagePath);
 
 	try {
@@ -312,7 +312,7 @@ export const imageMetadataStore = {
 	actions: {
 		getMetadataItem,
 		ensureLoaded,
-		loadMetadata,
+		_loadMetadata,
 		updateRating,
 		reloadMetadata,
 		preloadMetadata,

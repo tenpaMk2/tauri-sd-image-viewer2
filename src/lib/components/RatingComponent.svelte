@@ -11,14 +11,12 @@
 	const store = metadataRegistry.getOrCreateStore(imagePath);
 	const metadata = store.state;
 
-	// コンポーネントマウント時に明示的にロード開始
-	$effect(() => {
-		if (metadata.loadingStatus === 'unloaded') {
-			store.actions.ensureLoaded().catch((error) => {
-				console.error('Failed to load metadata for ' + imagePath.split('/').pop() + ': ' + error);
-			});
-		}
-	});
+	// 初期化処理（コンポーネント作成時に一度だけ実行）
+	if (metadata.loadingStatus === 'unloaded') {
+		store.actions.ensureLoaded().catch((error) => {
+			console.error('Failed to load metadata for ' + imagePath.split('/').pop() + ': ' + error);
+		});
+	}
 
 	let isRatingHovered = $state(false);
 	let hoveredRating = $state(0);

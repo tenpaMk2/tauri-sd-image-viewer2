@@ -19,7 +19,6 @@ export const thumbnailRegistry = {
 		return storeRegistry.get(imagePath)!;
 	},
 
-
 	/**
 	 * 未使用のサムネイルをクリア
 	 */
@@ -50,16 +49,9 @@ export const thumbnailRegistry = {
 			store.actions.destroy();
 		}
 
-		thumbnailQueue.clear('thumbnail');
+		thumbnailQueue.clear();
 		storeRegistry.clear();
 		console.log('🗑️ All thumbnails cleared');
-	},
-
-	/**
-	 * サムネイルキューを停止
-	 */
-	stopQueue: (): void => {
-		thumbnailQueue.stop('thumbnail');
 	},
 
 	/**

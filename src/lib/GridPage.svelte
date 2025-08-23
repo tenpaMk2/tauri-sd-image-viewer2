@@ -140,8 +140,8 @@
 		console.log('🗑️ GridPage: Component destroying, clearing all tasks to prioritize viewer mode');
 
 		// 全タスクをクリア（処理中も含む）して、シングル表示を優先
-		metadataQueue.clearAll('metadata');
-		thumbnailQueue.clearAll('thumbnail');
+		metadataQueue.clear();
+		thumbnailQueue.clear();
 
 		// 不要なサムネイルを解放
 		thumbnailRegistry.clearUnused(imageFiles);

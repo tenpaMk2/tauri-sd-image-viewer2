@@ -43,17 +43,9 @@ export const metadataRegistry = {
 			store.actions.destroy();
 		}
 
-		metadataQueue.clear('metadata');
+		metadataQueue.clear();
 		storeRegistry.clear();
 	},
-
-	/**
-	 * メタデータキューを停止
-	 */
-	stopQueue: (): void => {
-		metadataQueue.stop('metadata');
-	},
-
 
 	/**
 	 * 初期状態にリセット

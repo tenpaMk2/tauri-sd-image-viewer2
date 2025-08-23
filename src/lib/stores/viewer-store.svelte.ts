@@ -1,4 +1,5 @@
 import { navigationStore } from './navigation-store.svelte';
+import { thumbnailRegistry } from './thumbnail-registry.svelte';
 
 export type ViewerUIState = {
 	isVisible: boolean;
@@ -191,6 +192,10 @@ const cleanup = (): void => {
 	}
 	// Stop auto navigation
 	stopAutoNavigation();
+
+	// Clear unused thumbnails
+	const currentImageFiles = navigationStore.state.imageFiles || [];
+	thumbnailRegistry.clearUnused(currentImageFiles);
 };
 
 const reset = (): void => {

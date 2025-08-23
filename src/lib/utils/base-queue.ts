@@ -183,7 +183,15 @@ export class BaseQueue {
 	/**
 	 * キューをクリア
 	 */
-	clear(taskTypeName: string): void {
+	clear(): void {
+		console.log(`🧹 Clearing all tasks (including active jobs)`);
+
+		// 処理中タスクを全て中断
+		for (const [id, job] of this.activeJobs) {
+			console.log(`⏸️ Aborting: ${id.split('/').pop()}`);
+			job.task.abortController.abort();
+		}
+
 		// 未完了のPromiseをreject
 		for (const [, resolvers] of this.pendingResolvers) {
 			for (const resolver of resolvers) {
@@ -195,73 +203,7 @@ export class BaseQueue {
 		// キューをクリア
 		this.queue.length = 0;
 
-		console.log(`🗑️ ${taskTypeName} queue cleared`);
-	}
-
-	/**
-	 * キューを停止（進行中のジョブは完了まで待たずに中断）
-	 */
-	stop(taskTypeName: string): void {
-		// 停止フラグを設定
-		this.stopped = true;
-
-		// 処理中のフラグをリセット
-		this.processing = false;
-
-		// キューにあるタスク（未実行）のAbortControllerを全て中断
-		for (const task of this.queue) {
-			task.abortController.abort();
-		}
-
-		// 実行中タスクのAbortControllerも中断（Rust側は止まらないが、フラグは設定）
-		for (const { task } of this.activeJobs.values()) {
-			task.abortController.abort();
-		}
-
-		// 未完了のPromiseを即座にreject
-		for (const [, resolvers] of this.pendingResolvers) {
-			for (const resolver of resolvers) {
-				resolver.reject(new Error('Queue stopped'));
-			}
-		}
-		this.pendingResolvers.clear();
-
-		// キューをクリア
-		this.queue.length = 0;
-
-		// アクティブジョブもクリア（進行中のジョブは中断される）
-		this.activeJobs.clear();
-
-		console.log(`⏹️ ${taskTypeName} queue stopped`);
-	}
-
-	/**
-	 * キューを再開
-	 */
-	resume(taskTypeName: string): void {
-		if (!this.stopped) return;
-
-		this.stopped = false;
-		this.processing = false;
-		console.log(`▶️ ${taskTypeName} queue resumed`);
-	}
-
-	/**
-	 * 処理中タスクも含めて全てクリア・中断
-	 */
-	clearAll(taskTypeName: string): void {
-		console.log(`🧹 Clearing all ${taskTypeName} tasks (including active jobs)`);
-
-		// 1. 処理中タスクを全て中断
-		for (const [id, job] of this.activeJobs) {
-			console.log(`⏸️ Aborting ${taskTypeName}: ${id.split('/').pop()}`);
-			job.task.abortController.abort();
-		}
-
-		// 2. 既存のclear()で未処理キューもクリア
-		this.clear(taskTypeName);
-
-		console.log(`✅ All ${taskTypeName} tasks cleared`);
+		console.log(`🗑️ queue cleared`);
 	}
 
 	/**

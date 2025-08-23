@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { invoke } from '@tauri-apps/api/core';
-	import { onDestroy, onMount } from 'svelte';
+	import { onMount } from 'svelte';
 	import type { Attachment } from 'svelte/attachments';
 	import ImageCanvas from './ImageCanvas.svelte';
 	import MetadataPanel from './MetadataPanel.svelte';
@@ -135,22 +135,6 @@
 			viewerActions.resetUITimer();
 		};
 	};
-
-	// コンポーネント破棄時のクリーンアップ
-	onDestroy(() => {
-		console.log(
-			'🗑️ ViewerPage: Component destroying, stopping queues and clearing unused thumbnails'
-		);
-
-		// キューを停止して不要な処理を停止
-		metadataRegistry.stopQueue();
-		thumbnailRegistry.stopQueue();
-
-		// Viewerで使用していた画像以外のサムネイルを解放
-		// 現在の画像ファイルリストがあれば保持、なければ空配列で全クリア
-		const currentImageFiles = navigationStore.state.imageFiles || [];
-		thumbnailRegistry.clearUnused(currentImageFiles);
-	});
 
 	console.log('🖼️ ViewerPage initialized with Svelte 5 patterns');
 </script>

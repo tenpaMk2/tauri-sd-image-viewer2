@@ -4,7 +4,7 @@
  */
 
 import type { SdTag } from '../types/shared-types';
-import { metadataRegistry } from './metadata-registry.svelte';
+import { metadataRegistry } from './metadata-registry';
 export type TagCount = {
 	name: string;
 	count: number;

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import RatingComponent from './components/RatingComponent.svelte';
-	import { thumbnailRegistry } from './services/thumbnail-registry.svelte';
+	import { thumbnailRegistry } from './services/thumbnail-registry';
 	import { appStore } from './stores/app-store.svelte';
 
 	const {

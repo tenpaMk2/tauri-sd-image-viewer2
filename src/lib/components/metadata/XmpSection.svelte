@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { metadataRegistry } from '../../services/metadata-registry.svelte';
+	import { metadataRegistry } from '../../services/metadata-registry';
 
 	type Props = {
 		imagePath: string;

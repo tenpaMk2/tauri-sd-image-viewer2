@@ -1,6 +1,6 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte';
-	import { metadataRegistry } from '../../services/metadata-registry.svelte';
+	import { metadataRegistry } from '../../services/metadata-registry';
 	import { toastStore } from '../../stores/toast-store.svelte';
 	import { formatSdTags } from '../../utils/image-utils';
 	import { copyToClipboard } from '../../utils/ui-utils';

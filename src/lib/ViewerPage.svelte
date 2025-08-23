@@ -2,24 +2,23 @@
 	import { onMount } from 'svelte';
 	import ImageCanvas from './ImageCanvas.svelte';
 	import MetadataPanel from './MetadataPanel.svelte';
+	import { imageViewStore } from './stores/image-view-store.svelte';
 	import { metadataPanelStore } from './stores/metadata-panel-store.svelte';
 	import { navigationStore } from './stores/navigation-store.svelte';
 	import { viewerUIStore } from './stores/viewer-ui-store.svelte';
 	import ViewerUiOverlay from './ViewerUIOverlay.svelte';
 
 	// viewerUIStoreから状態とアクションを取得
-	const { state: viewerUIState, actions: viewerUIActions } = viewerUIStore;
+	const { actions: viewerUIActions } = viewerUIStore;
 
 	// metadataPanelStoreから状態とアクションを取得
 	const { state: metadataPanelState } = metadataPanelStore;
 
 	// navigationStoreから現在の画像パスを取得
-	const { state: navigationState } = navigationStore; // ズーム状態を管理
-	let isZoomed = $state(false);
+	const { state: navigationState } = navigationStore;
 
-	const handleZoomStateChange = (zoomed: boolean) => {
-		isZoomed = zoomed;
-	};
+	// imageViewStoreからズーム状態を取得
+	const { getters: imageViewGetters } = imageViewStore;
 
 	// マウスムーブイベントハンドラー
 	const handleMouseMove = () => {
@@ -83,10 +82,10 @@
 			? `calc(100% - ${metadataPanelState.width}px)`
 			: '100%'}"
 	>
-		<ImageCanvas onZoomStateChange={handleZoomStateChange} />
+		<ImageCanvas />
 
 		<!-- UI要素のオーバーレイ（ズーム時は非表示） -->
-		{#if !isZoomed}
+		{#if !imageViewGetters.isZoomed}
 			<ViewerUiOverlay />
 		{/if}
 	</div>

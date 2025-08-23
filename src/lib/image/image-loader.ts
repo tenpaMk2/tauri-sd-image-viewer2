@@ -20,7 +20,7 @@ export const getImageFiles = async (directoryPath: string): Promise<string[]> =>
 		const imageExtensions = SUPPORTED_IMAGE_EXTS.map((ext) => `.${ext}`);
 		const imageEntries = entries.filter(
 			(entry) =>
-				entry.isFile && imageExtensions.some((ext) => entry.name.toLowerCase().endsWith(ext))
+				entry.isFile && imageExtensions.some((ext) => entry.name.toLowerCase().endsWith(ext)),
 		);
 		console.log('Filtered image entries count:', imageEntries.length);
 
@@ -28,7 +28,7 @@ export const getImageFiles = async (directoryPath: string): Promise<string[]> =>
 		const imageFiles = await Promise.all(
 			imageEntries
 				.sort((a, b) => a.name.localeCompare(b.name, 'ja', { numeric: true }))
-				.map(async (entry): Promise<string> => await join(directoryPath, entry.name))
+				.map(async (entry): Promise<string> => await join(directoryPath, entry.name)),
 		);
 
 		console.log('Image file list completed: ' + imageFiles.length + ' files');
@@ -57,7 +57,7 @@ export const loadImage = async (filePath: string): Promise<ImageData> => {
 		return {
 			url,
 			mimeType,
-			filePath
+			filePath,
 		};
 	} catch (error) {
 		console.error('Failed to load image: ' + error);

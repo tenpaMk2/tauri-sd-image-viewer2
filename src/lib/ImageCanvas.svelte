@@ -1,70 +1,52 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte';
-	import { ImageViewService } from './image/image-manipulation.svelte';
+	import { imageViewStore } from './stores/image-view-store.svelte';
 	import { navigationStore } from './stores/navigation-store.svelte';
 
+	const { state: navigationState } = navigationStore;
 	const {
-		onZoomStateChange,
-	}: {
-		onZoomStateChange?: (isZoomed: boolean) => void;
-	} = $props();
-
-	const { state: navigationState, actions: navigationActions } = navigationStore;
+		state: imageViewState,
+		getters: imageViewGetters,
+		actions: imageViewActions,
+	} = imageViewStore;
 
 	let containerRef: HTMLDivElement;
 	let imageRef = $state<HTMLImageElement>();
-	const imageViewService = new ImageViewService();
 
 	// トランジションを表示するかどうかの判定（ズーム中かつドラッグ中でない場合のみ）
-	const shouldShowTransition = $derived(
-		imageViewService.viewState.isZooming && !imageViewService.viewState.isDragging,
-	);
+	const shouldShowTransition = $derived(imageViewState.isZooming && !imageViewState.isDragging);
 
 	const onwheel = (event: WheelEvent) => {
 		event.preventDefault();
-		imageViewService.zoom(event.deltaY);
+		imageViewActions.zoom(event.deltaY);
 	};
 
 	const onmousedown = (event: MouseEvent) => {
 		// ミドルボタン（ボタン1）でドラッグを開始
 		if (event.button === 1) {
 			event.preventDefault();
-			imageViewService.startDrag(event.clientX, event.clientY);
+			imageViewActions.startDrag(event.clientX, event.clientY);
 		}
 	};
 
 	const onmousemove = (event: MouseEvent) => {
-		if (imageViewService.viewState.isDragging) {
+		if (imageViewState.isDragging) {
 			event.preventDefault();
-			imageViewService.updateDrag(event.clientX, event.clientY);
+			imageViewActions.updateDrag(event.clientX, event.clientY);
 		}
 	};
 
 	const onmouseup = (event: MouseEvent) => {
 		event.preventDefault();
-		imageViewService.endDrag();
+		imageViewActions.endDrag();
 	};
 
 	const onImageLoad = () => {
 		if (imageRef) {
 			// 画像読み込み完了時に全ての状態をリセット
-			imageViewService.onImageLoaded(imageRef, containerRef);
+			imageViewActions.onImageLoaded(imageRef, containerRef);
 		}
 	};
-
-	// ズームされているかどうかをチェック
-	const isZoomed = $derived(
-		imageViewService.viewState.zoomLevel !== 1 ||
-			imageViewService.viewState.panX !== 0 ||
-			imageViewService.viewState.panY !== 0,
-	);
-
-	// ズーム状態変更時にコールバックを呼び出し
-	$effect(() => {
-		if (onZoomStateChange) {
-			onZoomStateChange(isZoomed);
-		}
-	});
 </script>
 
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
@@ -109,10 +91,8 @@
 			src={navigationState.currentImageUrl}
 			alt=""
 			class={shouldShowTransition ? 'transition-transform duration-200' : ''}
-			style="transform: translate({imageViewService.viewState.panX}px, {imageViewService.viewState
-				.panY}px) scale({imageViewService.viewState.fitScale *
-				imageViewService.viewState
-					.zoomLevel}); transform-origin: center center; cursor: grab; max-width: none; max-height: none;"
+			style="transform: translate({imageViewState.panX}px, {imageViewState.panY}px) scale({imageViewState.fitScale *
+				imageViewState.zoomLevel}); transform-origin: center center; cursor: grab; max-width: none; max-height: none;"
 			onload={onImageLoad}
 		/>
 	{:else}
@@ -122,10 +102,10 @@
 	{/if}
 
 	<!-- ズームリセットボタン -->
-	{#if isZoomed}
+	{#if imageViewGetters.isZoomed}
 		<button
 			class="btn absolute right-4 bottom-4 bg-black/60 text-white btn-ghost backdrop-blur-sm btn-sm hover:bg-black/80"
-			onclick={() => imageViewService.resetZoom()}
+			onclick={() => imageViewActions.resetZoom()}
 			title="Reset zoom (1:1)"
 			aria-label="Reset zoom"
 		>

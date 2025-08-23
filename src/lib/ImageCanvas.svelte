@@ -39,10 +39,11 @@
 	let imageViewService = new ImageViewService();
 	let previousImageUrl = '';
 
-	// 画像URLが変更されたときは準備のみ（fitScaleは保持）
+	// 画像URLが変更されたときは完全リセット
 	$effect(() => {
 		if (imageUrl && imageUrl !== previousImageUrl) {
-			// ズーム状態をリセット（fitScaleは保持）
+			// ズーム状態を完全にリセット
+			imageViewService.resetZoom();
 			imageViewService.prepareForNewImage();
 			previousImageUrl = imageUrl;
 		}

@@ -140,9 +140,15 @@ export const navigationStore = {
 
 	// 計算プロパティ（getters）
 	getters: {
-		currentIndex,
-		hasPrevious,
-		hasNext,
+		get currentIndex() {
+			return currentIndex;
+		},
+		get hasPrevious() {
+			return hasPrevious;
+		},
+		get hasNext() {
+			return hasNext;
+		},
 	},
 
 	actions: {

@@ -58,6 +58,19 @@
 				.catch((error: unknown) => {
 					console.error('❌ Failed to update navigationService: ' + error);
 				});
+
+			// 現在表示中の画像のメタデータとサムネイルを優先ロード
+			console.log('🚨 Priority loading for viewer: ' + imagePath.split('/').pop());
+			const metadataStore = metadataRegistry.getOrCreateStore(imagePath);
+			const thumbnailStore = thumbnailRegistry.getOrCreateStore(imagePath);
+
+			metadataStore.actions.ensureLoaded().catch((error) => {
+				console.error('Failed to load metadata for ' + imagePath.split('/').pop() + ': ' + error);
+			});
+
+			thumbnailStore.actions.ensureLoaded().catch((error) => {
+				console.error('Failed to load thumbnail for ' + imagePath.split('/').pop() + ': ' + error);
+			});
 		}
 	});
 

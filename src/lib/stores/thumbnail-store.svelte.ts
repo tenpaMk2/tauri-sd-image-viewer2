@@ -73,6 +73,8 @@ export const createThumbnailStore = (imagePath: string): ThumbnailStore => {
 					// エラー時も破棄済みでなければPromiseをクリア
 					if (!state._isDestroyed) {
 						state.loadingPromise = undefined;
+						state.loadingStatus = 'error'; // エラー状態に更新
+						state.loadError = error instanceof Error ? error.message : String(error);
 					}
 					throw error;
 				});

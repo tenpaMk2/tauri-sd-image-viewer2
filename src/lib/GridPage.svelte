@@ -7,9 +7,10 @@
 	import { appStore } from './stores/app-store.svelte';
 	import { filterStore } from './stores/filter-store.svelte';
 	import { gridStore } from './stores/grid-store.svelte';
-	import { metadataRegistry } from './stores/metadata-registry.svelte';
+	import { metadataQueue } from './stores/metadata-queue';
 	import { navigationStore } from './stores/navigation-store.svelte';
 	import { tagStore } from './stores/tag-store.svelte';
+	import { thumbnailQueue } from './stores/thumbnail-queue';
 	import { thumbnailRegistry } from './stores/thumbnail-registry.svelte';
 	import { toastStore } from './stores/toast-store.svelte';
 	import ThumbnailGrid from './ThumbnailGrid.svelte';
@@ -136,13 +137,11 @@
 
 	// コンポーネント破棄時のクリーンアップ
 	onDestroy(() => {
-		console.log(
-			'🗑️ GridPage: Component destroying, stopping queues and clearing unused thumbnails'
-		);
+		console.log('🗑️ GridPage: Component destroying, clearing all tasks to prioritize viewer mode');
 
-		// キューを停止して不要な処理を停止
-		metadataRegistry.stopQueue();
-		thumbnailRegistry.stopQueue();
+		// 全タスクをクリア（処理中も含む）して、シングル表示を優先
+		metadataQueue.clearAll('metadata');
+		thumbnailQueue.clearAll('thumbnail');
 
 		// 不要なサムネイルを解放
 		thumbnailRegistry.clearUnused(imageFiles);

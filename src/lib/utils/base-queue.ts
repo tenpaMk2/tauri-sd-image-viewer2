@@ -236,6 +236,35 @@ export class BaseQueue {
 	}
 
 	/**
+	 * キューを再開
+	 */
+	resume(taskTypeName: string): void {
+		if (!this.stopped) return;
+
+		this.stopped = false;
+		this.processing = false;
+		console.log(`▶️ ${taskTypeName} queue resumed`);
+	}
+
+	/**
+	 * 処理中タスクも含めて全てクリア・中断
+	 */
+	clearAll(taskTypeName: string): void {
+		console.log(`🧹 Clearing all ${taskTypeName} tasks (including active jobs)`);
+
+		// 1. 処理中タスクを全て中断
+		for (const [id, job] of this.activeJobs) {
+			console.log(`⏸️ Aborting ${taskTypeName}: ${id.split('/').pop()}`);
+			job.task.abortController.abort();
+		}
+
+		// 2. 既存のclear()で未処理キューもクリア
+		this.clear(taskTypeName);
+
+		console.log(`✅ All ${taskTypeName} tasks cleared`);
+	}
+
+	/**
 	 * 現在のキューサイズを取得
 	 */
 	get queueSize(): number {

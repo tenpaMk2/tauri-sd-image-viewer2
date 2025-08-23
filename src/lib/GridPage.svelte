@@ -1,14 +1,14 @@
 <script lang="ts">
+	import FilterPanel from '$lib/FilterPanel.svelte';
+	import { dialogService } from '$lib/services/dialog';
+	import { appStore } from '$lib/stores/app-store.svelte';
+	import { filterStore } from '$lib/stores/filter-store.svelte';
+	import { gridStore } from '$lib/stores/grid-store.svelte';
+	import { navigationStore } from '$lib/stores/navigation-store.svelte';
+	import { tagStore } from '$lib/stores/tag-store.svelte';
+	import ThumbnailGrid from '$lib/ThumbnailGrid.svelte';
 	import Icon from '@iconify/svelte';
 	import { path } from '@tauri-apps/api';
-	import FilterPanel from './FilterPanel.svelte';
-	import { dialogService } from './services/dialog';
-	import { appStore } from './stores/app-store.svelte';
-	import { filterStore } from './stores/filter-store.svelte';
-	import { gridStore } from './stores/grid-store.svelte';
-	import { navigationStore } from './stores/navigation-store.svelte';
-	import { tagStore } from './stores/tag-store.svelte';
-	import ThumbnailGrid from './ThumbnailGrid.svelte';
 
 	// app-storeから直接状態を取得（リアクティブ）
 	const directory = $derived(appStore.state.directory!);

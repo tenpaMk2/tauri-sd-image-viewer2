@@ -3,8 +3,9 @@
  * ディレクトリ内の全画像からSDタグを抽出・集計する
  */
 
-import type { SdTag } from '../types/shared-types';
-import { metadataRegistry } from './metadata-registry';
+import { metadataRegistry } from '$lib/services/metadata-registry';
+import type { SdTag } from '$lib/types/shared-types';
+
 export type TagCount = {
 	name: string;
 	count: number;

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { navigationStore } from '$lib/stores/navigation-store.svelte';
+	import { viewerUIStore } from '$lib/stores/viewer-ui-store.svelte';
 	import Icon from '@iconify/svelte';
-	import { viewerUIStore } from './stores/viewer-ui-store.svelte';
 
 	const { state: navigationState, getters: navigationGetters } = navigationStore;
 	const { state: viewerUIState } = viewerUIStore;

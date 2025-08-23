@@ -1,5 +1,5 @@
 <script lang="ts">
-	import ImageThumbnail from './ImageThumbnail.svelte';
+	import ImageThumbnail from '$lib/ImageThumbnail.svelte';
 
 	const {
 		imageFiles,

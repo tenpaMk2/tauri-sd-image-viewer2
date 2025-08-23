@@ -1,6 +1,6 @@
 <script lang="ts">
+	import { toastStore } from '$lib/stores/toast-store.svelte';
 	import Icon from '@iconify/svelte';
-	import { toastStore } from './stores/toast-store.svelte';
 
 	const toasts = $derived(toastStore.state.toasts);
 

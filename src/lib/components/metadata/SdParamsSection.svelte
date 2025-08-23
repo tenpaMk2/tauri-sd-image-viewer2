@@ -1,9 +1,9 @@
 <script lang="ts">
+	import { metadataRegistry } from '$lib/services/metadata-registry';
+	import { toastStore } from '$lib/stores/toast-store.svelte';
+	import { copyToClipboard } from '$lib/utils/copy-utils';
+	import { formatSdTags } from '$lib/utils/image-utils';
 	import Icon from '@iconify/svelte';
-	import { metadataRegistry } from '../../services/metadata-registry';
-	import { toastStore } from '../../stores/toast-store.svelte';
-	import { formatSdTags } from '../../utils/image-utils';
-	import { copyToClipboard } from '../../utils/ui-utils';
 
 	type Props = {
 		imagePath: string;

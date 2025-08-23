@@ -1,4 +1,4 @@
-import type { SdTag } from '../types/shared-types';
+import type { SdTag } from '$lib/types/shared-types';
 
 /**
  * SDタグを文字列にフォーマット

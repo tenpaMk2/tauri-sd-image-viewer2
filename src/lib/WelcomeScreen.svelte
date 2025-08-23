@@ -1,8 +1,8 @@
 <script lang="ts">
+	import { dialogService } from '$lib/services/dialog';
+	import { appStore } from '$lib/stores/app-store.svelte';
 	import { getVersion } from '@tauri-apps/api/app';
 	import { onMount } from 'svelte';
-	import { dialogService } from './services/dialog';
-	import { appStore } from './stores/app-store.svelte';
 
 	// ファイル選択ハンドラー
 	const openFileDialog = async () => {

@@ -1,9 +1,9 @@
+import { metadataQueue } from '$lib/services/metadata-queue';
+import { metadataRegistry } from '$lib/services/metadata-registry';
+import { thumbnailQueue } from '$lib/services/thumbnail-queue';
+import { thumbnailRegistry } from '$lib/services/thumbnail-registry';
+import { navigationStore } from '$lib/stores/navigation-store.svelte';
 import { path } from '@tauri-apps/api';
-import { metadataQueue } from '../services/metadata-queue';
-import { metadataRegistry } from '../services/metadata-registry';
-import { thumbnailQueue } from '../services/thumbnail-queue';
-import { thumbnailRegistry } from '../services/thumbnail-registry';
-import { navigationStore } from './navigation-store.svelte';
 
 type ViewMode = 'welcome' | 'grid' | 'viewer';
 

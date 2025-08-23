@@ -1,12 +1,12 @@
 <script lang="ts">
+	import ImageCanvas from '$lib/ImageCanvas.svelte';
+	import MetadataPanel from '$lib/MetadataPanel.svelte';
+	import { imageViewStore } from '$lib/stores/image-view-store.svelte';
+	import { metadataPanelStore } from '$lib/stores/metadata-panel-store.svelte';
+	import { navigationStore } from '$lib/stores/navigation-store.svelte';
+	import { viewerUIStore } from '$lib/stores/viewer-ui-store.svelte';
+	import ViewerUiOverlay from '$lib/ViewerUIOverlay.svelte';
 	import { onMount } from 'svelte';
-	import ImageCanvas from './ImageCanvas.svelte';
-	import MetadataPanel from './MetadataPanel.svelte';
-	import { imageViewStore } from './stores/image-view-store.svelte';
-	import { metadataPanelStore } from './stores/metadata-panel-store.svelte';
-	import { navigationStore } from './stores/navigation-store.svelte';
-	import { viewerUIStore } from './stores/viewer-ui-store.svelte';
-	import ViewerUiOverlay from './ViewerUIOverlay.svelte';
 
 	// viewerUIStoreから状態とアクションを取得
 	const { actions: viewerUIActions } = viewerUIStore;

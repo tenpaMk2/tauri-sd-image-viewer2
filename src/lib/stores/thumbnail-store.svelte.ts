@@ -1,5 +1,5 @@
+import { thumbnailQueue } from '$lib/services/thumbnail-queue';
 import { Channel, invoke } from '@tauri-apps/api/core';
-import { thumbnailQueue } from '../services/thumbnail-queue';
 
 /**
  * サムネイルロード状態

@@ -1,4 +1,4 @@
-import { BaseQueue } from '../utils/base-queue';
+import { BaseQueue } from '$lib/utils/base-queue';
 
 /**
  * メタデータ処理専用のシングルトンキュー

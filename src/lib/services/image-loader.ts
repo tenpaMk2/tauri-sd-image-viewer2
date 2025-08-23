@@ -1,6 +1,6 @@
+import { detectImageMimeType, SUPPORTED_IMAGE_EXTS, type MimeType } from '$lib/services/mime-type';
 import { join } from '@tauri-apps/api/path';
 import { readDir, readFile } from '@tauri-apps/plugin-fs';
-import { detectImageMimeType, SUPPORTED_IMAGE_EXTS, type MimeType } from './mime-type';
 
 export type ImageData = {
 	url: string;

@@ -1,5 +1,5 @@
-import { createMetadataStore, type MetadataStore } from '../stores/metadata-store.svelte';
-import { metadataQueue } from './metadata-queue';
+import { metadataQueue } from '$lib/services/metadata-queue';
+import { createMetadataStore, type MetadataStore } from '$lib/stores/metadata-store.svelte';
 
 // ストアレジストリ（Map + 個別$state）
 const storeRegistry = new Map<string, MetadataStore>();

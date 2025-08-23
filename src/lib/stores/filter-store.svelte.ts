@@ -1,8 +1,8 @@
 /**
  * Grid filtering store for rating and filename filtering
  */
-import type { TagAggregationService } from '../services/tag-aggregation';
-import { filterFilesByGlob } from '../utils/glob-utils';
+import type { TagAggregationService } from '$lib/services/tag-aggregation';
+import { filterFilesByGlob } from '$lib/utils/glob-utils';
 
 export type RatingComparison = 'gte' | 'eq' | 'lte';
 

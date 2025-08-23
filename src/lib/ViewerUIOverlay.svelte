@@ -1,9 +1,9 @@
 <script lang="ts">
-	import RatingComponent from './components/RatingComponent.svelte';
-	import NavigationButtons from './NavigationButtons.svelte';
-	import { navigationStore } from './stores/navigation-store.svelte';
-	import { viewerUIStore } from './stores/viewer-ui-store.svelte';
-	import ToolbarOverlay from './ToolbarOverlay.svelte';
+	import RatingComponent from '$lib/components/RatingComponent.svelte';
+	import NavigationButtons from '$lib/NavigationButtons.svelte';
+	import { navigationStore } from '$lib/stores/navigation-store.svelte';
+	import { viewerUIStore } from '$lib/stores/viewer-ui-store.svelte';
+	import ToolbarOverlay from '$lib/ToolbarOverlay.svelte';
 
 	// navigationStoreから画像状態を取得
 	const { state: navigationState } = navigationStore;

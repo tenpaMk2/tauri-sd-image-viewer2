@@ -1,8 +1,8 @@
 <script lang="ts">
-	import BasicInfoSection from './components/metadata/BasicInfoSection.svelte';
-	import SdParamsSection from './components/metadata/SdParamsSection.svelte';
-	import XmpSection from './components/metadata/XmpSection.svelte';
-	import { metadataPanelStore } from './stores/metadata-panel-store.svelte';
+	import BasicInfoSection from '$lib/components/metadata/BasicInfoSection.svelte';
+	import SdParamsSection from '$lib/components/metadata/SdParamsSection.svelte';
+	import XmpSection from '$lib/components/metadata/XmpSection.svelte';
+	import { metadataPanelStore } from '$lib/stores/metadata-panel-store.svelte';
 
 	const {
 		imagePath,

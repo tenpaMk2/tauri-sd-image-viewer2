@@ -1,7 +1,7 @@
 <script lang="ts">
+	import type { TagAggregationResult } from '$lib/services/tag-aggregation';
+	import { filterStore, type RatingComparison } from '$lib/stores/filter-store.svelte';
 	import Icon from '@iconify/svelte';
-	import type { TagAggregationResult } from './services/tag-aggregation';
-	import { filterStore, type RatingComparison } from './stores/filter-store.svelte';
 
 	const {
 		isExpanded = false,

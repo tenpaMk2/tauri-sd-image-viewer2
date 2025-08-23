@@ -1,12 +1,12 @@
 <script lang="ts">
+	import { dialogService } from '$lib/services/dialog';
+	import { appStore } from '$lib/stores/app-store.svelte';
+	import { metadataPanelStore } from '$lib/stores/metadata-panel-store.svelte';
 	import { navigationStore } from '$lib/stores/navigation-store.svelte';
+	import { toastStore } from '$lib/stores/toast-store.svelte';
+	import { viewerUIStore } from '$lib/stores/viewer-ui-store.svelte';
+	import { copyFileToClipboard } from '$lib/utils/copy-utils';
 	import Icon from '@iconify/svelte';
-	import { dialogService } from './services/dialog';
-	import { appStore } from './stores/app-store.svelte';
-	import { metadataPanelStore } from './stores/metadata-panel-store.svelte';
-	import { toastStore } from './stores/toast-store.svelte';
-	import { viewerUIStore } from './stores/viewer-ui-store.svelte';
-	import { copyFileToClipboard } from './utils/ui-utils';
 
 	// ストアから状態を取得
 	const { state: viewerUIState } = viewerUIStore;

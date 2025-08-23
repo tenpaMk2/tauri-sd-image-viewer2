@@ -1,5 +1,5 @@
-import { createThumbnailStore, type ThumbnailStore } from '../stores/thumbnail-store.svelte';
-import { thumbnailQueue } from './thumbnail-queue';
+import { thumbnailQueue } from '$lib/services/thumbnail-queue';
+import { createThumbnailStore, type ThumbnailStore } from '$lib/stores/thumbnail-store.svelte';
 
 // ストアレジストリ（Map + 個別$state）
 const storeRegistry = new Map<string, ThumbnailStore>();

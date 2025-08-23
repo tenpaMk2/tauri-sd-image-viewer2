@@ -1,7 +1,7 @@
+import { toastStore } from '$lib/stores/toast-store.svelte';
+import { deleteSelectedImages as performDelete } from '$lib/utils/delete-images';
 import { invoke } from '@tauri-apps/api/core';
 import { SvelteSet } from 'svelte/reactivity';
-import { deleteSelectedImages as performDelete } from '../utils/delete-images';
-import { toastStore } from './toast-store.svelte';
 
 type MutableGridState = {
 	selectedImages: SvelteSet<string>;

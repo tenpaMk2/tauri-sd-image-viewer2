@@ -1,5 +1,5 @@
-import type { TagAggregationResult } from '../services/tag-aggregation';
-import { TagAggregationService } from '../services/tag-aggregation';
+import type { TagAggregationResult } from '$lib/services/tag-aggregation';
+import { TagAggregationService } from '$lib/services/tag-aggregation';
 
 type MutableTagState = {
 	tagData: TagAggregationResult | null;

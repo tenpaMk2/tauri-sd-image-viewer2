@@ -1,4 +1,4 @@
-import { loadImage as loadImageData, type ImageData } from './image-loader';
+import { loadImage as loadImageData, type ImageData } from '$lib/services/image-loader';
 
 // 画像キャッシュサービスクラス
 export class ImageCacheService {

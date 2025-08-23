@@ -1,11 +1,10 @@
+import { SUPPORTED_IMAGE_EXTS } from '$lib/services/mime-type';
 import { path } from '@tauri-apps/api';
 import { stat } from '@tauri-apps/plugin-fs';
 
-const SUPPORTED_EXTENSIONS = ['png', 'jpg', 'jpeg', 'webp'];
-
 const isImageFile = async (input: string): Promise<boolean> => {
-	const extension = (await path.extname(input)).toLocaleLowerCase();
-	return SUPPORTED_EXTENSIONS.includes(extension);
+	const extension = (await path.extname(input)).toLowerCase().replace('.', '');
+	return (SUPPORTED_IMAGE_EXTS as readonly string[]).includes(extension);
 };
 
 const isDirectory = async (input: string): Promise<boolean> => {
@@ -45,5 +44,5 @@ export const dragAndDropService = {
 			console.error('Error processing dropped path: ' + error);
 			return null;
 		}
-	}
+	},
 };

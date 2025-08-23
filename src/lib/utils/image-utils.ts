@@ -1,3 +1,4 @@
+import { SUPPORTED_IMAGE_EXTS } from '$lib/services/mime-type';
 import type { SdTag } from '$lib/types/shared-types';
 
 /**
@@ -8,19 +9,11 @@ export const formatSdTags = (tags: SdTag[]): string => {
 };
 
 /**
- * 画像拡張子の判定
- */
-export const getSupportedImageExtensions = (): string[] => {
-	return ['png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp', 'avif'];
-};
-
-/**
  * ファイルが画像かどうかを判定
  */
 export const isImageFile = (filename: string): boolean => {
-	const extensions = getSupportedImageExtensions();
 	const ext = filename.toLowerCase().split('.').pop();
-	return ext ? extensions.includes(ext) : false;
+	return ext ? (SUPPORTED_IMAGE_EXTS as readonly string[]).includes(ext) : false;
 };
 
 /**

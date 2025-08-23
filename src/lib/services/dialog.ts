@@ -1,3 +1,4 @@
+import { SUPPORTED_IMAGE_EXTS } from '$lib/services/mime-type';
 import { open } from '@tauri-apps/plugin-dialog';
 
 /**
@@ -15,7 +16,7 @@ export const dialogService = {
 				filters: [
 					{
 						name: 'Image Files',
-						extensions: ['png', 'jpg', 'jpeg', 'webp'],
+						extensions: [...SUPPORTED_IMAGE_EXTS],
 					},
 				],
 			});

@@ -8,15 +8,7 @@ export type MimeType =
 	| 'image/bmp'
 	| 'image/avif';
 
-export const SUPPORTED_IMAGE_EXTS = [
-	'jpg',
-	'jpeg',
-	'png',
-	'webp',
-	'gif',
-	'bmp',
-	'avif'
-] as const satisfies string[];
+export const SUPPORTED_IMAGE_EXTS = ['jpg', 'jpeg', 'png', 'webp'] as const satisfies string[];
 
 export const detectImageMimeType = async (filename: string): Promise<MimeType | null> => {
 	const ext = (await path.extname(filename)).toLowerCase();

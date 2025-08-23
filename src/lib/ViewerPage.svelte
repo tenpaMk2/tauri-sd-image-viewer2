@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { navigationService } from '$lib/services/navigation-service.svelte';
 	import { invoke } from '@tauri-apps/api/core';
 	import { onDestroy, onMount } from 'svelte';
 	import type { Attachment } from 'svelte/attachments';
@@ -37,26 +36,26 @@
 		isZoomed = zoomed;
 	};
 
-	// navigationService初期化（imagePath依存）
+	// navigationStore初期化（imagePath依存）
 	onMount(async () => {
 		if (imagePath) {
-			console.log('🔄 Initializing navigationService with: ' + imagePath.split('/').pop());
-			await navigationService.initializeNavigation(imagePath);
-			console.log('✅ NavigationService initialized');
+			console.log('🔄 Initializing navigationStore with: ' + imagePath.split('/').pop());
+			await navigationStore.actions.initializeNavigation(imagePath);
+			console.log('✅ NavigationStore initialized');
 		}
 	});
 
-	// imagePathが変更された時にnavigationServiceを更新
+	// imagePathが変更された時にnavigationStoreを更新
 	$effect(() => {
 		if (imagePath) {
-			console.log('🔄 Updating navigationService for: ' + imagePath.split('/').pop());
-			navigationService
+			console.log('🔄 Updating navigationStore for: ' + imagePath.split('/').pop());
+			navigationStore.actions
 				.initializeNavigation(imagePath)
 				.then(() => {
-					console.log('✅ NavigationService updated');
+					console.log('✅ NavigationStore updated');
 				})
 				.catch((error: unknown) => {
-					console.error('❌ Failed to update navigationService: ' + error);
+					console.error('❌ Failed to update navigationStore: ' + error);
 				});
 
 			// 現在表示中の画像のメタデータとサムネイルを優先ロード
@@ -84,16 +83,16 @@
 				case 'ArrowRight':
 					event.preventDefault();
 					console.log('➡️➡️➡️');
-					await navigationService.navigateNext();
-					if (navigationService.currentFilePath)
-						await onImageChange(navigationService.currentFilePath);
+					await navigationStore.actions.navigateNext();
+					if (navigationStore.state.currentFilePath)
+						await onImageChange(navigationStore.state.currentFilePath);
 					break;
 				case 'ArrowLeft':
 					event.preventDefault();
 					console.log('⬅️⬅️⬅️');
-					await navigationService.navigatePrevious();
-					if (navigationService.currentFilePath)
-						await onImageChange(navigationService.currentFilePath);
+					await navigationStore.actions.navigatePrevious();
+					if (navigationStore.state.currentFilePath)
+						await onImageChange(navigationStore.state.currentFilePath);
 					break;
 			}
 		};
@@ -118,9 +117,9 @@
 
 	// 自動ナビゲーション用のハンドラー
 	const handleAutoNavigation = async (): Promise<void> => {
-		await navigationService.navigateNext();
-		if (navigationService.currentFilePath) {
-			await onImageChange(navigationService.currentFilePath);
+		await navigationStore.actions.navigateNext();
+		if (navigationStore.state.currentFilePath) {
+			await onImageChange(navigationStore.state.currentFilePath);
 		}
 	};
 
@@ -192,7 +191,7 @@
 		<!-- UI要素のオーバーレイ（ズーム時は非表示） -->
 		{#if viewerState.ui.isVisible && !isZoomed}
 			<ViewerUIOverlay
-				imagePath={navigationService.currentFilePath}
+				imagePath={navigationStore.state.currentFilePath}
 				{openFileDialog}
 				{onSwitchToGrid}
 				onToggleInfoPanel={viewerActions.toggleInfoPanel}
@@ -209,18 +208,18 @@
 					}
 				}}
 				goToPrevious={async () => {
-					await navigationService.navigatePrevious();
-					if (navigationService.currentFilePath) {
-						await onImageChange(navigationService.currentFilePath);
+					await navigationStore.actions.navigatePrevious();
+					if (navigationStore.state.currentFilePath) {
+						await onImageChange(navigationStore.state.currentFilePath);
 					}
 				}}
 				goToNext={async () => {
-					await navigationService.navigateNext();
-					if (navigationService.currentFilePath) {
-						await onImageChange(navigationService.currentFilePath);
+					await navigationStore.actions.navigateNext();
+					if (navigationStore.state.currentFilePath) {
+						await onImageChange(navigationStore.state.currentFilePath);
 					}
 				}}
-				isNavigating={navigationService.isNavigating}
+				isNavigating={navigationStore.state.isNavigating}
 			/>
 		{/if}
 	</div>

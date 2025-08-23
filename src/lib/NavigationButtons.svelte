@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { navigationService } from '$lib/services/navigation-service.svelte';
+	import { navigationStore } from '$lib/stores/navigation-store.svelte';
 	import Icon from '@iconify/svelte';
 
 	const {
@@ -16,9 +16,9 @@
 </script>
 
 <!-- ナビゲーションボタン -->
-{#if 2 <= navigationService.files.length}
+{#if 2 <= navigationStore.state.imageFiles.length}
 	<!-- 前の画像ボタン -->
-	{#if navigationService.hasPrevious}
+	{#if navigationStore.getters.hasPrevious}
 		<div
 			class="absolute top-1/2 left-6 flex h-16 w-16 -translate-y-1/2 items-center justify-center transition-opacity duration-300"
 			class:opacity-0={!isUIVisible}
@@ -40,7 +40,7 @@
 	{/if}
 
 	<!-- 次の画像ボタン -->
-	{#if navigationService.hasNext}
+	{#if navigationStore.getters.hasNext}
 		<div
 			class="absolute top-1/2 right-6 flex h-16 w-16 -translate-y-1/2 items-center justify-center transition-opacity duration-300"
 			class:opacity-0={!isUIVisible}

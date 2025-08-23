@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { navigationService } from '$lib/services/navigation-service.svelte';
+	import { navigationStore } from '$lib/stores/navigation-store.svelte';
 	import Icon from '@iconify/svelte';
 
 	const {
@@ -32,9 +32,9 @@
 	<div class="flex items-center text-white">
 		<!-- Left: Page Info -->
 		<div class="flex items-center gap-4">
-			{#if 1 < navigationService.files.length}
+			{#if 1 < navigationStore.state.imageFiles.length}
 				<div class="text-sm opacity-80">
-					{navigationService.currentIndex + 1} / {navigationService.files.length}
+					{navigationStore.getters.currentIndex + 1} / {navigationStore.state.imageFiles.length}
 				</div>
 			{/if}
 		</div>

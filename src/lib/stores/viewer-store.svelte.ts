@@ -1,4 +1,4 @@
-import { navigationService } from '$lib/services/navigation-service.svelte';
+import { navigationStore } from './navigation-store.svelte';
 
 export type ViewerUIState = {
 	isVisible: boolean;
@@ -75,7 +75,7 @@ const loadImage = async (imagePath: string): Promise<void> => {
 		state.imageState.error = '';
 
 		console.log('🔄 Loading image...');
-		const url = await navigationService.loadImage(imagePath);
+		const url = await navigationStore.actions.loadImage(imagePath);
 		console.log('✅ Image loaded, URL: ' + (url ? 'blob:...' : 'null'));
 
 		// Success state update

@@ -115,11 +115,21 @@ const reset = (): void => {
 	clear();
 };
 
+// 画像ファイルが変更されたときの自動処理
+const handleImageFilesChange = (imageFiles: string[]): void => {
+	if (0 < imageFiles.length) {
+		loadTags(imageFiles);
+	} else {
+		clear();
+	}
+};
+
 export const tagStore = {
 	state: state as TagState,
 	actions: {
 		loadTags,
 		clear,
-		reset
+		reset,
+		handleImageFilesChange
 	}
 };

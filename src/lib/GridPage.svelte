@@ -37,15 +37,6 @@
 	// タグストアから状態を取得
 	const tagData = $derived(tagStore.state.tagData);
 
-	// 画像ファイルが変更されたらタグデータをロード
-	$effect(() => {
-		if (imageFiles.length > 0) {
-			tagStore.actions.loadTags(imageFiles);
-		} else {
-			tagStore.actions.clear();
-		}
-	});
-
 	// フィルタリングされた画像リスト（フィルタ適用前のimageFiles.lengthと比較用）
 	const totalImageCount = $derived(imageFiles.length);
 

@@ -37,6 +37,13 @@ let state = $state<MutableNavigationState>({
 	imageFileLoadError: null
 });
 
+// imageFilesのセッター関数（tagStoreとの連携を自動化）
+const setImageFiles = (files: string[]): void => {
+	state.imageFiles = files;
+	// 画像ファイルが変更されたらタグストアに通知
+	tagStore.actions.handleImageFilesChange(files);
+};
+
 const loadImageFiles = async (selectedDirectory: string | null): Promise<void> => {
 	console.log(
 		'🔄 loadImageFiles: Started selectedDirectory=' +
@@ -47,7 +54,7 @@ const loadImageFiles = async (selectedDirectory: string | null): Promise<void> =
 
 	if (!selectedDirectory) {
 		console.log('❌ loadImageFiles: selectedDirectory is empty');
-		state.imageFiles = [];
+		setImageFiles([]);
 		state.imageLoadingState = 'idle';
 		return;
 	}
@@ -69,7 +76,7 @@ const loadImageFiles = async (selectedDirectory: string | null): Promise<void> =
 		);
 
 		console.log('🔄 loadImageFiles: Updating state.imageFiles');
-		state.imageFiles = files;
+		setImageFiles(files);
 		console.log(
 			'✅ loadImageFiles: state.imageFiles update completed newLength=' +
 				state.imageFiles.length +
@@ -84,7 +91,7 @@ const loadImageFiles = async (selectedDirectory: string | null): Promise<void> =
 			errorStack: error instanceof Error ? error.stack : undefined
 		});
 		state.imageFileLoadError = error instanceof Error ? error.message : String(error);
-		state.imageFiles = [];
+		setImageFiles([]);
 	} finally {
 		console.log('🔄 loadImageFiles: finally - Setting loading state to loaded');
 		state.imageLoadingState = 'loaded';
@@ -100,7 +107,7 @@ const loadImageFiles = async (selectedDirectory: string | null): Promise<void> =
 };
 
 const clearImageFiles = (): void => {
-	state.imageFiles = [];
+	setImageFiles([]);
 	state.currentFilePath = '';
 	state.isNavigating = false;
 	state.imageLoadingState = 'idle';
@@ -196,7 +203,7 @@ const initializeNavigation = async (imagePath: string): Promise<void> => {
 		const dirPath = await dirname(imagePath);
 		const files = await getImageFiles(dirPath);
 
-		state.imageFiles = files;
+		setImageFiles(files);
 		state.currentFilePath = imagePath;
 
 		// 初期化時に現在の画像の隣接する画像をプリロード
@@ -307,7 +314,7 @@ const clearAllData = (): void => {
 };
 
 const reset = (): void => {
-	state.imageFiles = INITIAL_NAVIGATION_STATE.imageFiles;
+	setImageFiles(INITIAL_NAVIGATION_STATE.imageFiles);
 	state.currentFilePath = INITIAL_NAVIGATION_STATE.currentFilePath;
 	state.isNavigating = INITIAL_NAVIGATION_STATE.isNavigating;
 	state.imageLoadingState = INITIAL_NAVIGATION_STATE.imageLoadingState;

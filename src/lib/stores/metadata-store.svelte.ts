@@ -56,7 +56,7 @@ export const createMetadataStore = (imagePath: string): MetadataStore => {
 		loadingStatus: 'unloaded',
 		loadingError: undefined,
 		loadingPromise: undefined,
-		_isDestroyed: false
+		_isDestroyed: false,
 	});
 
 	const actions: MetadataActions = {
@@ -113,7 +113,7 @@ export const createMetadataStore = (imagePath: string): MetadataStore => {
 
 				// Rust側からメタデータを取得（停止不可能）
 				const metadata = await invoke<ImageMetadataInfo>('read_image_metadata', {
-					path: imagePath
+					path: imagePath,
 				});
 
 				// Rust完了後に破棄済みまたは中断チェック
@@ -150,7 +150,7 @@ export const createMetadataStore = (imagePath: string): MetadataStore => {
 				// Rust側でRating更新
 				await invoke('write_xmp_image_rating', {
 					srcPath: imagePath,
-					rating: newRating
+					rating: newRating,
 				});
 
 				// リアクティブ状態を即座に更新
@@ -201,8 +201,10 @@ export const createMetadataStore = (imagePath: string): MetadataStore => {
 
 			// 状態をクリア
 			actions.reset();
-		}
+		},
 	};
+
+	actions.ensureLoaded();
 
 	return { state: state as MetadataState, actions };
 };

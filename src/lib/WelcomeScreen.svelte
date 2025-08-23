@@ -1,14 +1,24 @@
 <script lang="ts">
 	import { getVersion } from '@tauri-apps/api/app';
 	import { onMount } from 'svelte';
+	import { dialogService } from './services/dialog-service';
+	import { appStore } from './stores/app-store.svelte';
 
-	const {
-		openFileDialog,
-		openDirectoryDialog
-	}: {
-		openFileDialog: () => void;
-		openDirectoryDialog: () => void;
-	} = $props();
+	// ファイル選択ハンドラー
+	const openFileDialog = async () => {
+		const result = await dialogService.openFileDialog();
+		if (result) {
+			await appStore.actions.transitionToViewer(result);
+		}
+	};
+
+	// ディレクトリ選択ハンドラー
+	const openDirectoryDialog = async () => {
+		const result = await dialogService.openDirectoryDialog();
+		if (result) {
+			await appStore.actions.transitionToGrid(result);
+		}
+	};
 
 	let version = $state<string>('');
 

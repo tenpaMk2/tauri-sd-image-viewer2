@@ -56,10 +56,11 @@ export class ImageCacheService {
 		}
 	};
 
+	// TODO: ↓は責務違反
 	preloadAdjacentImages = async (
 		files: string[],
 		index: number,
-		preloadCount: number = 2
+		preloadCount: number = 2,
 	): Promise<void> => {
 		const promises: Promise<void>[] = [];
 		const startIndex = Math.max(0, index - preloadCount);
@@ -72,7 +73,7 @@ export class ImageCacheService {
 						.then(() => {})
 						.catch((error: any) => {
 							console.warn('Failed to preload image: ' + files[i] + ' ' + error);
-						})
+						}),
 				);
 			}
 		}

@@ -2,16 +2,23 @@
 	import BasicInfoSection from './components/metadata/BasicInfoSection.svelte';
 	import SdParamsSection from './components/metadata/SdParamsSection.svelte';
 	import XmpSection from './components/metadata/XmpSection.svelte';
+	import { metadataPanelStore } from './stores/metadata-panel-store.svelte';
 
 	const {
 		imagePath,
-		onFocus,
-		onBlur
 	}: {
 		imagePath: string;
-		onFocus?: () => void;
-		onBlur?: () => void;
 	} = $props();
+
+	const { actions: metadataPanelActions } = metadataPanelStore;
+
+	const handleFocus = () => {
+		metadataPanelActions.setFocus(true);
+	};
+
+	const handleBlur = () => {
+		metadataPanelActions.setFocus(false);
+	};
 </script>
 
 <!-- Right: Info Panel (Resizable) -->
@@ -20,8 +27,8 @@
 	tabindex="0"
 	role="tabpanel"
 	aria-label="Image Info Panel"
-	onfocus={onFocus}
-	onblur={onBlur}
+	onfocus={handleFocus}
+	onblur={handleBlur}
 >
 	<div class="p-3">
 		<div class="metadata-content space-y-3">

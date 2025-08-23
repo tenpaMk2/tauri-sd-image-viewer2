@@ -1,7 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 import { SvelteSet } from 'svelte/reactivity';
 import { deleteSelectedImages as performDelete } from '../utils/delete-images';
-import { navigationStore } from './navigation-store.svelte';
 import { toastStore } from './toast-store.svelte';
 
 type MutableGridState = {
@@ -20,7 +19,7 @@ const INITIAL_GRID_STATE: MutableGridState = {
 	showFilterPanel: false,
 	filteredImageCount: 0,
 	lastSelectedIndex: -1,
-	showOptionsModal: false
+	showOptionsModal: false,
 };
 
 let gridState = $state<MutableGridState>({
@@ -28,7 +27,7 @@ let gridState = $state<MutableGridState>({
 	showFilterPanel: false,
 	filteredImageCount: 0,
 	lastSelectedIndex: -1,
-	showOptionsModal: false
+	showOptionsModal: false,
 });
 
 // 画像選択ロジックを専用関数として分離
@@ -36,7 +35,7 @@ const toggleImageSelection = (
 	imagePath: string,
 	imageFiles: string[],
 	shiftKey: boolean = false,
-	metaKey: boolean = false
+	metaKey: boolean = false,
 ) => {
 	const currentIndex = imageFiles.indexOf(imagePath);
 
@@ -107,8 +106,6 @@ const clearCache = async (selectedDirectory: string) => {
 		await invoke('clear_thumbnail_cache');
 		toastStore.actions.showSuccessToast('Thumbnail cache cleared');
 		closeOptionsModal();
-		// navigationStoreから画像ファイルを再読み込み
-		await navigationStore.actions.loadImageFiles(selectedDirectory);
 	} catch (error) {
 		console.error('Failed to clear cache: ' + error);
 		toastStore.actions.showErrorToast('Failed to clear cache');
@@ -122,8 +119,6 @@ const deleteSelectedImages = async (selectedDirectory: string) => {
 	try {
 		await performDelete(gridState.selectedImages);
 		clearSelection();
-		// navigationStoreから画像ファイルを再読み込み
-		await navigationStore.actions.loadImageFiles(selectedDirectory);
 	} catch (err) {
 		// エラーはperformDelete内で処理済み
 	}
@@ -137,7 +132,7 @@ const copySelectedToClipboard = async (): Promise<void> => {
 	try {
 		await invoke('set_clipboard_files', { paths });
 		toastStore.actions.showSuccessToast(
-			`${gridState.selectedImages.size} images copied to clipboard`
+			`${gridState.selectedImages.size} images copied to clipboard`,
 		);
 	} catch (error) {
 		console.error('Failed to copy to clipboard: ' + error);
@@ -173,6 +168,6 @@ export const gridStore = {
 		deleteSelectedImages,
 		copySelectedToClipboard,
 		cleanup,
-		reset
-	}
+		reset,
+	},
 };

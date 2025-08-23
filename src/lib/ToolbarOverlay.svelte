@@ -1,40 +1,62 @@
 <script lang="ts">
 	import { navigationStore } from '$lib/stores/navigation-store.svelte';
 	import Icon from '@iconify/svelte';
+	import { dialogService } from './services/dialog-service';
+	import { appStore } from './stores/app-store.svelte';
+	import { metadataPanelStore } from './stores/metadata-panel-store.svelte';
+	import { toastStore } from './stores/toast-store.svelte';
+	import { viewerUIStore } from './stores/viewer-ui-store.svelte';
+	import { copyFileToClipboard } from './utils/ui-utils';
 
-	const {
-		openFileDialog,
-		onSwitchToGrid,
-		onToggleInfoPanel,
-		isInfoPanelVisible,
-		onToggleAutoNavigation,
-		isAutoNavActive,
-		isUIVisible,
-		onCopyToClipboard
-	}: {
-		openFileDialog: () => void;
-		onSwitchToGrid?: () => Promise<void>;
-		onToggleInfoPanel?: () => void;
-		isInfoPanelVisible?: boolean;
-		onToggleAutoNavigation?: () => void;
-		isAutoNavActive?: boolean;
-		isUIVisible?: boolean;
-		onCopyToClipboard?: () => void;
-	} = $props();
+	// ストアから状態を取得
+	const { state: viewerUIState } = viewerUIStore;
+	const { state: metadataPanelState, actions: metadataPanelActions } = metadataPanelStore;
+	const { state: navigationState } = navigationStore;
+
+	// ツールバー用のイベントハンドラー
+	const handleToggleInfoPanel = () => {
+		metadataPanelActions.toggle();
+	};
+
+	const handleToggleAutoNavigation = async () => {
+		const navigateToNext = async () => {
+			await navigationStore.actions.navigateNext();
+		};
+		viewerUIStore.actions.startAutoNavigation(navigateToNext);
+	};
+
+	const handleCopyToClipboard = async () => {
+		try {
+			await copyFileToClipboard([navigationState.currentImagePath]);
+			toastStore.actions.showSuccessToast('Image files copied to clipboard');
+		} catch (error) {
+			console.error('Failed to copy image files to clipboard: ' + error);
+			toastStore.actions.showErrorToast('Failed to copy image files to clipboard');
+		}
+	};
+
+	// ファイル選択ハンドラー
+	const openFileDialog = async () => {
+		const result = await dialogService.openFileDialog();
+		if (result) {
+			await appStore.actions.transitionToViewer(result);
+		}
+	};
 </script>
 
 <!-- Overlay Toolbar -->
 <div
 	class="absolute top-0 right-0 left-0 z-10 bg-gradient-to-b from-black/70 to-transparent p-4 transition-opacity duration-300"
-	class:opacity-0={!isUIVisible}
-	class:pointer-events-none={!isUIVisible}
+	class:opacity-0={!viewerUIState.isVisible}
+	class:pointer-events-none={!viewerUIState.isVisible}
 >
 	<div class="flex items-center text-white">
 		<!-- Left: Page Info -->
 		<div class="flex items-center gap-4">
-			{#if 1 < navigationStore.state.imageFiles.length}
+			{#if 1 < navigationStore.state.directoryImagePaths.length}
 				<div class="text-sm opacity-80">
-					{navigationStore.getters.currentIndex + 1} / {navigationStore.state.imageFiles.length}
+					{navigationStore.getters.currentIndex + 1} / {navigationStore.state.directoryImagePaths
+						.length}
 				</div>
 			{/if}
 		</div>
@@ -44,51 +66,47 @@
 			<button class="btn text-white btn-ghost btn-sm" onclick={openFileDialog} title="Open File">
 				<Icon icon="lucide:image-plus" class="h-4 w-4" />
 			</button>
-			{#if onCopyToClipboard}
-				<button
-					class="btn text-white btn-ghost btn-sm"
-					onclick={onCopyToClipboard}
-					title="Copy to Clipboard"
-				>
-					<Icon icon="lucide:clipboard-copy" class="h-4 w-4" />
-				</button>
-			{/if}
-			{#if onToggleAutoNavigation}
-				<button
-					class="btn text-white btn-sm"
-					class:btn-ghost={!isAutoNavActive}
-					class:btn-active={isAutoNavActive}
-					onclick={onToggleAutoNavigation}
-					title={isAutoNavActive ? 'Stop Auto Navigation' : 'Start Auto Navigation to Latest Image'}
-				>
-					<Icon icon="lucide:skip-forward" class="h-4 w-4" />
-				</button>
-			{/if}
-			{#if onSwitchToGrid}
-				<button
-					class="btn text-white btn-ghost btn-sm"
-					onclick={() => onSwitchToGrid?.()}
-					title="Grid View"
-				>
-					<Icon icon="lucide:layout-grid" class="h-4 w-4" />
-				</button>
-			{/if}
+			<button
+				class="btn text-white btn-ghost btn-sm"
+				onclick={handleCopyToClipboard}
+				title={'Copy image files to clipboard'}
+			>
+				<Icon icon="lucide:clipboard-copy" class="h-4 w-4" />
+			</button>
+			<button
+				class="btn text-white btn-sm"
+				class:btn-ghost={!viewerUIState.isAutoNavActive}
+				class:btn-active={viewerUIState.isAutoNavActive}
+				onclick={handleToggleAutoNavigation}
+				title={viewerUIState.isAutoNavActive
+					? 'Stop Auto Navigation'
+					: 'Start Auto Navigation to Latest Image'}
+			>
+				<Icon icon="lucide:skip-forward" class="h-4 w-4" />
+			</button>
+			<button
+				class="btn text-white btn-ghost btn-sm"
+				onclick={async () => await appStore.actions.transitionToGrid()}
+				title="Grid View"
+			>
+				<Icon icon="lucide:layout-grid" class="h-4 w-4" />
+			</button>
 		</div>
 
 		<!-- Right: Info Panel Button -->
 		<div class="flex items-center gap-2">
-			{#if onToggleInfoPanel}
-				<button
-					class="btn text-white btn-ghost btn-sm"
-					onclick={onToggleInfoPanel}
-					title={isInfoPanelVisible ? 'Hide Info Panel' : 'Show Info Panel'}
-				>
-					<Icon
-						icon={isInfoPanelVisible ? 'lucide:panel-right-close' : 'lucide:panel-right-open'}
-						class="h-4 w-4"
-					/>
-				</button>
-			{/if}
+			<button
+				class="btn text-white btn-ghost btn-sm"
+				onclick={handleToggleInfoPanel}
+				title={metadataPanelState.isVisible ? 'Hide Info Panel' : 'Show Info Panel'}
+			>
+				<Icon
+					icon={metadataPanelState.isVisible
+						? 'lucide:panel-right-close'
+						: 'lucide:panel-right-open'}
+					class="h-4 w-4"
+				/>
+			</button>
 		</div>
 	</div>
 </div>

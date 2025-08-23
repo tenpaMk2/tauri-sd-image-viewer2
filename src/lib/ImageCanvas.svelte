@@ -1,45 +1,31 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte';
 	import { ImageViewService } from './image/image-manipulation.svelte';
+	import { navigationStore } from './stores/navigation-store.svelte';
 
 	const {
-		imageUrl,
-		isLoading,
-		error,
-		onZoomStateChange
+		onZoomStateChange,
 	}: {
-		imageUrl: string;
-		isLoading: boolean;
-		error: string;
 		onZoomStateChange?: (isZoomed: boolean) => void;
 	} = $props();
 
+	const { state: navigationState, actions: navigationActions } = navigationStore;
+
 	let containerRef: HTMLDivElement;
 	let imageRef = $state<HTMLImageElement>();
-	let imageViewService = new ImageViewService();
-	let previousImageUrl = '';
-
-	// 画像URLが変更されたときは完全リセット
-	$effect(() => {
-		if (imageUrl && imageUrl !== previousImageUrl) {
-			// ズーム状態を完全にリセット
-			imageViewService.resetZoom();
-			imageViewService.prepareForNewImage();
-			previousImageUrl = imageUrl;
-		}
-	});
+	const imageViewService = new ImageViewService();
 
 	// トランジションを表示するかどうかの判定（ズーム中かつドラッグ中でない場合のみ）
 	const shouldShowTransition = $derived(
-		imageViewService.viewState.isZooming && !imageViewService.viewState.isDragging
+		imageViewService.viewState.isZooming && !imageViewService.viewState.isDragging,
 	);
 
-	const handleWheel = (event: WheelEvent) => {
+	const onwheel = (event: WheelEvent) => {
 		event.preventDefault();
 		imageViewService.zoom(event.deltaY);
 	};
 
-	const handleMouseDown = (event: MouseEvent) => {
+	const onmousedown = (event: MouseEvent) => {
 		// ミドルボタン（ボタン1）でドラッグを開始
 		if (event.button === 1) {
 			event.preventDefault();
@@ -47,14 +33,14 @@
 		}
 	};
 
-	const handleMouseMove = (event: MouseEvent) => {
+	const onmousemove = (event: MouseEvent) => {
 		if (imageViewService.viewState.isDragging) {
 			event.preventDefault();
 			imageViewService.updateDrag(event.clientX, event.clientY);
 		}
 	};
 
-	const handleMouseUp = (event: MouseEvent) => {
+	const onmouseup = (event: MouseEvent) => {
 		event.preventDefault();
 		imageViewService.endDrag();
 	};
@@ -70,7 +56,7 @@
 	const isZoomed = $derived(
 		imageViewService.viewState.zoomLevel !== 1 ||
 			imageViewService.viewState.panX !== 0 ||
-			imageViewService.viewState.panY !== 0
+			imageViewService.viewState.panY !== 0,
 	);
 
 	// ズーム状態変更時にコールバックを呼び出し
@@ -89,13 +75,13 @@
 	role="img"
 	tabindex="0"
 	aria-label="画像表示キャンバス"
-	onwheel={handleWheel}
-	onmousedown={handleMouseDown}
-	onmousemove={handleMouseMove}
-	onmouseup={handleMouseUp}
-	onmouseleave={handleMouseUp}
+	{onwheel}
+	{onmousedown}
+	{onmousemove}
+	{onmouseup}
+	onmouseleave={onmouseup}
 >
-	{#if error && error.length > 0}
+	{#if navigationState.imageFileLoadError}
 		<div class="flex flex-col items-center gap-2 text-red-400">
 			<svg class="h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 				<path
@@ -105,12 +91,22 @@
 					d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
 				></path>
 			</svg>
-			<span class="text-center">{error}</span>
+			<span class="text-center">{navigationState.imageFileLoadError}</span>
 		</div>
-	{:else if imageUrl && imageUrl.length > 0}
+	{:else if navigationState.imageLoadingStatus === 'idle'}
+		<div class="flex flex-col items-center gap-2 text-white">
+			<span class="loading loading-lg loading-spinner"></span>
+			<span class="opacity-80">Idle</span>
+		</div>
+	{:else if navigationState.imageLoadingStatus === 'loading'}
+		<div class="flex flex-col items-center gap-2 text-white">
+			<span class="loading loading-lg loading-spinner"></span>
+			<span class="opacity-80">Loading image...</span>
+		</div>
+	{:else if navigationState.currentImageUrl}
 		<img
 			bind:this={imageRef}
-			src={imageUrl}
+			src={navigationState.currentImageUrl}
 			alt=""
 			class={shouldShowTransition ? 'transition-transform duration-200' : ''}
 			style="transform: translate({imageViewService.viewState.panX}px, {imageViewService.viewState
@@ -119,11 +115,6 @@
 					.zoomLevel}); transform-origin: center center; cursor: grab; max-width: none; max-height: none;"
 			onload={onImageLoad}
 		/>
-	{:else if isLoading}
-		<div class="flex flex-col items-center gap-2 text-white">
-			<span class="loading loading-lg loading-spinner"></span>
-			<span class="opacity-80">Loading image...</span>
-		</div>
 	{:else}
 		<div class="flex flex-col items-center gap-2 text-gray-400">
 			<span class="opacity-80">No content to display</span>
@@ -131,7 +122,7 @@
 	{/if}
 
 	<!-- ズームリセットボタン -->
-	{#if imageUrl && isZoomed}
+	{#if isZoomed}
 		<button
 			class="btn absolute right-4 bottom-4 bg-black/60 text-white btn-ghost backdrop-blur-sm btn-sm hover:bg-black/80"
 			onclick={() => imageViewService.resetZoom()}

@@ -3,34 +3,27 @@
 	import Toast from '$lib/Toast.svelte';
 	import ViewerPage from '$lib/ViewerPage.svelte';
 	import WelcomeScreen from '$lib/WelcomeScreen.svelte';
+	import { dragAndDropService } from '$lib/services/drag-and-drop-service';
 	import { appStore } from '$lib/stores/app-store.svelte';
 	import { getCurrentWebview } from '@tauri-apps/api/webview';
 	import { onMount } from 'svelte';
-	const { actions } = appStore;
 
-	// デバッグ用: 状態変更を監視
-	$effect(() => {
-		console.log(
-			'🔍 App state changed: viewMode=' +
-				appStore.state.viewMode +
-				' selectedImagePath=' +
-				(appStore.state.selectedImagePath
-					? appStore.state.selectedImagePath.split('/').pop()
-					: 'null') +
-				' selectedDirectory=' +
-				(appStore.state.selectedDirectory
-					? appStore.state.selectedDirectory.split('/').pop()
-					: 'null')
-		);
-		console.log(
-			'🔍 Current view condition check: isViewerMode=' +
-				(appStore.state.viewMode === 'viewer') +
-				' hasSelectedImagePath=' +
-				!!appStore.state.selectedImagePath +
-				' shouldShowViewer=' +
-				!!(appStore.state.viewMode === 'viewer' && appStore.state.selectedImagePath)
-		);
-	});
+	// ドラッグ&ドロップハンドラー
+	const handleDroppedPaths = async (paths: string[]) => {
+		const result = await dragAndDropService.handleDroppedPaths(paths);
+
+		if (!result) return;
+
+		switch (result.kind) {
+			case 'file':
+				await appStore.actions.transitionToViewer(result.path);
+				break;
+
+			case 'directory':
+				await appStore.actions.transitionToGrid(result.path);
+				break;
+		}
+	};
 
 	onMount(() => {
 		const setupDragDrop = async () => {
@@ -39,7 +32,7 @@
 				if (event.payload.type !== 'drop' || (event.payload.paths ?? []).length === 0) {
 					return;
 				}
-				actions.handleDroppedPaths(event.payload.paths);
+				handleDroppedPaths(event.payload.paths);
 			});
 
 			return unlisten;
@@ -64,23 +57,11 @@
 <div class="min-h-screen bg-base-100">
 	<main class="h-screen">
 		{#if appStore.state.viewMode === 'welcome'}
-			<WelcomeScreen
-				openFileDialog={actions.openFileDialog}
-				openDirectoryDialog={actions.openDirectoryDialog}
-			/>
-		{:else if appStore.state.viewMode === 'grid' && appStore.state.selectedDirectory}
-			<GridPage
-				handleBackToWelcome={actions.handleBackToWelcome}
-				openDirectoryDialog={actions.openDirectoryDialog}
-				handleImageSelect={actions.handleImageSelect}
-			/>
-		{:else if appStore.state.viewMode === 'viewer' && appStore.state.selectedImagePath}
-			<ViewerPage
-				imagePath={appStore.state.selectedImagePath}
-				onImageChange={actions.handleImageChange}
-				openFileDialog={actions.openFileDialog}
-				onSwitchToGrid={appStore.state.selectedDirectory ? actions.handleSwitchToGrid : undefined}
-			/>
+			<WelcomeScreen />
+		{:else if appStore.state.viewMode === 'grid'}
+			<GridPage />
+		{:else if appStore.state.viewMode === 'viewer'}
+			<ViewerPage />
 		{/if}
 	</main>
 

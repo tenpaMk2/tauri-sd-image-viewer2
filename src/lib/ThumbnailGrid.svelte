@@ -3,12 +3,10 @@
 
 	const {
 		imageFiles,
-		onImageSelect,
 		selectedImages = new Set(),
-		onToggleSelection
+		onToggleSelection,
 	}: {
 		imageFiles: string[];
-		onImageSelect: (imagePath: string) => void;
 		selectedImages?: Set<string>;
 		onToggleSelection?: (imagePath: string, shiftKey?: boolean, metaKey?: boolean) => void;
 	} = $props();
@@ -17,12 +15,7 @@
 <!-- サムネイルグリッド -->
 <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8">
 	{#each imageFiles as imagePath (imagePath)}
-		<ImageThumbnail
-			{imagePath}
-			isSelected={selectedImages.has(imagePath)}
-			onImageClick={onImageSelect}
-			{onToggleSelection}
-		/>
+		<ImageThumbnail {imagePath} isSelected={selectedImages.has(imagePath)} {onToggleSelection} />
 	{/each}
 </div>
 

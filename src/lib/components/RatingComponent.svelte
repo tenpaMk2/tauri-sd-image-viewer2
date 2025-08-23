@@ -11,15 +11,6 @@
 	const store = $derived(metadataRegistry.getOrCreateStore(imagePath));
 	const metadata = $derived(store.state);
 
-	// 表示時に自動的にメタデータをロード（UI表示の責務）
-	$effect(() => {
-		if (store.state.loadingStatus === 'unloaded') {
-			store.actions.ensureLoaded().catch((error) => {
-				console.error('Failed to load metadata for ' + imagePath.split('/').pop() + ': ' + error);
-			});
-		}
-	});
-
 	let isRatingHovered = $state(false);
 	let hoveredRating = $state(0);
 

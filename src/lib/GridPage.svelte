@@ -1,7 +1,8 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte';
-	import { basename } from '@tauri-apps/api/path';
+	import { path } from '@tauri-apps/api';
 	import FilterPanel from './FilterPanel.svelte';
+	import { dialogService } from './services/dialog-service';
 	import { appStore } from './stores/app-store.svelte';
 	import { filterStore } from './stores/filter-store.svelte';
 	import { gridStore } from './stores/grid-store.svelte';
@@ -9,21 +10,11 @@
 	import { tagStore } from './stores/tag-store.svelte';
 	import ThumbnailGrid from './ThumbnailGrid.svelte';
 
-	const {
-		handleBackToWelcome,
-		openDirectoryDialog,
-		handleImageSelect
-	}: {
-		handleBackToWelcome: () => void;
-		openDirectoryDialog: () => void;
-		handleImageSelect: (imagePath: string) => void;
-	} = $props();
-
 	// app-storeから直接状態を取得（リアクティブ）
-	const selectedDirectory = $derived(appStore.state.selectedDirectory!);
+	const directory = $derived(appStore.state.directory!);
 	// navigationStoreから画像ファイル状態を取得
-	const imageFiles = $derived(navigationStore.state.imageFiles);
-	const imageLoadingState = $derived(navigationStore.state.imageLoadingState);
+	const imageFiles = $derived(navigationStore.state.directoryImagePaths);
+	const imageLoadingState = $derived(navigationStore.state.imageLoadingStatus);
 	const imageFileLoadError = $derived(navigationStore.state.imageFileLoadError);
 
 	// gridStoreから状態を取得
@@ -51,7 +42,7 @@
 		return filterStore.actions.filterImages(
 			imageFiles,
 			ratingsMap,
-			tagStore.state.tagAggregationService
+			tagStore.state.tagAggregationService,
 		);
 	});
 
@@ -69,14 +60,14 @@
 
 	// キャッシュ削除
 	const clearCache = async () => {
-		await gridStore.actions.clearCache(selectedDirectory);
+		await gridStore.actions.clearCache(directory);
 	};
 
 	// 画像選択/選択解除（OSファイル選択エミュレート）
 	const toggleImageSelection = (
 		imagePath: string,
 		shiftKey: boolean = false,
-		metaKey: boolean = false
+		metaKey: boolean = false,
 	) => {
 		gridStore.actions.toggleImageSelection(imagePath, imageFiles, shiftKey, metaKey);
 	};
@@ -88,12 +79,20 @@
 
 	// 選択画像削除
 	const deleteSelectedImages = async () => {
-		await gridStore.actions.deleteSelectedImages(selectedDirectory);
+		await gridStore.actions.deleteSelectedImages(directory);
 	};
 
 	// クリップボード機能
 	const copySelectedToClipboard = async (): Promise<void> => {
 		await gridStore.actions.copySelectedToClipboard();
+	};
+
+	// ディレクトリ選択ハンドラー
+	const openDirectoryDialog = async () => {
+		const result = await dialogService.openDirectoryDialog();
+		if (result) {
+			await appStore.actions.transitionToGrid(result);
+		}
 	};
 </script>
 
@@ -101,10 +100,14 @@
 	<!-- Header -->
 	<div class="flex items-center justify-between bg-base-200 p-4">
 		<div class="flex items-center gap-4">
-			<button class="btn btn-ghost btn-sm" onclick={handleBackToWelcome} title="Back to Home">
+			<button
+				class="btn btn-ghost btn-sm"
+				onclick={async () => await appStore.actions.transitionToWelcome()}
+				title="Back to Home"
+			>
 				<Icon icon="lucide:home" class="h-4 w-4" />
 			</button>
-			{#await basename(selectedDirectory) then folderName}
+			{#await path.basename(directory) then folderName}
 				<h1 class="truncate text-lg font-semibold">
 					{folderName || 'Folder'}
 				</h1>
@@ -212,7 +215,6 @@
 			<!-- ファイルリストが確定している場合のみThumbnailGridを表示 -->
 			<ThumbnailGrid
 				imageFiles={filteredImageFiles}
-				onImageSelect={handleImageSelect}
 				{selectedImages}
 				onToggleSelection={toggleImageSelection}
 			/>

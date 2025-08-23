@@ -1,16 +1,15 @@
 <script lang="ts">
 	import RatingComponent from './components/RatingComponent.svelte';
+	import { appStore } from './stores/app-store.svelte';
 	import { thumbnailRegistry } from './stores/thumbnail-registry.svelte';
 
 	const {
 		imagePath,
 		isSelected = false,
-		onImageClick,
-		onToggleSelection
+		onToggleSelection,
 	}: {
 		imagePath: string;
 		isSelected?: boolean;
-		onImageClick: (imagePath: string) => void;
 		onToggleSelection?: (imagePath: string, shiftKey?: boolean, metaKey?: boolean) => void;
 	} = $props();
 
@@ -31,10 +30,6 @@
 			onToggleSelection(imagePath, event?.shiftKey, event?.metaKey);
 		}
 	};
-
-	const handleDoubleClick = (): void => {
-		onImageClick(imagePath);
-	};
 </script>
 
 <div class="group relative cursor-pointer">
@@ -44,7 +39,7 @@
 		class:ring-blue-500={isSelected}
 		class:opacity-80={isSelected}
 		onclick={handleClick}
-		ondblclick={handleDoubleClick}
+		ondblclick={async () => await appStore.actions.transitionToViewer(imagePath)}
 		onkeydown={(e) => e.key === 'Enter' && handleClick()}
 		aria-label="Select image (double-click to open)"
 	>

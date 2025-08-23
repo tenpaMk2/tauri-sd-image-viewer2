@@ -1,5 +1,4 @@
 import { open } from '@tauri-apps/plugin-dialog';
-import { getDirectoryFromPath } from '../image/utils';
 
 /**
  * ダイアログサービス - ファイル・ディレクトリ選択の処理を担当
@@ -16,17 +15,14 @@ export const dialogService = {
 				filters: [
 					{
 						name: 'Image Files',
-						extensions: ['png', 'jpg', 'jpeg', 'webp']
-					}
-				]
+						extensions: ['png', 'jpg', 'jpeg', 'webp'],
+					},
+				],
 			});
 
 			console.log('📁 File selected: ' + selected);
 
 			if (selected && typeof selected === 'string') {
-				const selectedDirectory = await getDirectoryFromPath(selected);
-				console.log('📂 Directory: ' + selectedDirectory);
-
 				return selected;
 			} else {
 				console.log('❌ No file selected or invalid selection');
@@ -46,7 +42,7 @@ export const dialogService = {
 			console.log('🔄 openDirectoryDialog: Opening dialog');
 			const selected = await open({
 				directory: true,
-				multiple: false
+				multiple: false,
 			});
 
 			console.log('📁 openDirectoryDialog: Selection result', selected);
@@ -61,5 +57,5 @@ export const dialogService = {
 			console.error('❌ openDirectoryDialog: Error occurred', error);
 			return null;
 		}
-	}
+	},
 };

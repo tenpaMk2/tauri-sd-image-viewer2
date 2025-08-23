@@ -1,13 +1,13 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte';
-	import type { TagAggregationResult } from './services/tag-aggregation-service';
+	import type { TagAggregationResult } from './services/tag-aggregation';
 	import { filterStore, type RatingComparison } from './stores/filter-store.svelte';
 
 	const {
 		isExpanded = false,
 		totalImages = 0,
 		filteredImages = 0,
-		tagData = null
+		tagData = null,
 	}: {
 		isExpanded?: boolean;
 		totalImages?: number;
@@ -30,7 +30,8 @@
 		const inputLower = tagInput.toLowerCase();
 		return tagData.uniqueTagNames
 			.filter(
-				(tag) => tag.toLowerCase().includes(inputLower) && !selectedTags.includes(tag.toLowerCase())
+				(tag) =>
+					tag.toLowerCase().includes(inputLower) && !selectedTags.includes(tag.toLowerCase()),
 			)
 			.slice(0, 10); // Limit suggestions
 	});

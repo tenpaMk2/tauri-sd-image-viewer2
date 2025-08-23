@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { getVersion } from '@tauri-apps/api/app';
 	import { onMount } from 'svelte';
-	import { dialogService } from './services/dialog-service';
+	import { dialogService } from './services/dialog';
 	import { appStore } from './stores/app-store.svelte';
 
 	// ファイル選択ハンドラー

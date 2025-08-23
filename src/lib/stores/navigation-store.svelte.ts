@@ -1,6 +1,6 @@
 import { path } from '@tauri-apps/api';
-import { getImageFiles } from '../image/image-loader';
-import { imageCacheService } from '../services/image-cache-service';
+import { imageCacheService } from '../services/image-cache';
+import { getImageFiles } from '../services/image-loader';
 
 export type ImageLoadingStatus = 'idle' | 'loading' | 'loaded';
 

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { navigationStore } from '$lib/stores/navigation-store.svelte';
 	import Icon from '@iconify/svelte';
-	import { dialogService } from './services/dialog-service';
+	import { dialogService } from './services/dialog';
 	import { appStore } from './stores/app-store.svelte';
 	import { metadataPanelStore } from './stores/metadata-panel-store.svelte';
 	import { toastStore } from './stores/toast-store.svelte';

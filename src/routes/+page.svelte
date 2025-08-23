@@ -3,7 +3,7 @@
 	import Toast from '$lib/Toast.svelte';
 	import ViewerPage from '$lib/ViewerPage.svelte';
 	import WelcomeScreen from '$lib/WelcomeScreen.svelte';
-	import { dragAndDropService } from '$lib/services/drag-and-drop-service';
+	import { dragAndDropService } from '$lib/services/drag-and-drop';
 	import { appStore } from '$lib/stores/app-store.svelte';
 	import { getCurrentWebview } from '@tauri-apps/api/webview';
 	import { onMount } from 'svelte';

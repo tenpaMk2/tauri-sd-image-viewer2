@@ -2,7 +2,7 @@
 	import Icon from '@iconify/svelte';
 	import { path } from '@tauri-apps/api';
 	import FilterPanel from './FilterPanel.svelte';
-	import { dialogService } from './services/dialog-service';
+	import { dialogService } from './services/dialog';
 	import { appStore } from './stores/app-store.svelte';
 	import { filterStore } from './stores/filter-store.svelte';
 	import { gridStore } from './stores/grid-store.svelte';

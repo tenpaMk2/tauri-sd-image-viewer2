@@ -1,5 +1,5 @@
-import type { TagAggregationResult } from '../services/tag-aggregation-service';
-import { TagAggregationService } from '../services/tag-aggregation-service';
+import type { TagAggregationResult } from '../services/tag-aggregation';
+import { TagAggregationService } from '../services/tag-aggregation';
 
 type MutableTagState = {
 	tagData: TagAggregationResult | null;
@@ -25,7 +25,7 @@ let state = $state<MutableTagState>({
 
 	// プライベート状態（内部実装用、アンダースコア接頭辞）
 	_lastImageFilesLength: 0,
-	_lastImageFilesHash: ''
+	_lastImageFilesHash: '',
 });
 
 // 画像ファイルリストのハッシュを計算する簡単な関数
@@ -130,6 +130,6 @@ export const tagStore = {
 		loadTags,
 		clear,
 		reset,
-		handleImageFilesChange
-	}
+		handleImageFilesChange,
+	},
 };

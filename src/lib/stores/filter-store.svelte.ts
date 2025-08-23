@@ -1,7 +1,7 @@
 /**
  * Grid filtering store for rating and filename filtering
  */
-import type { TagAggregationService } from '../services/tag-aggregation-service';
+import type { TagAggregationService } from '../services/tag-aggregation';
 import { filterFilesByGlob } from '../utils/glob-utils';
 
 export type RatingComparison = 'gte' | 'eq' | 'lte';
@@ -26,7 +26,7 @@ const INITIAL_FILTER_STATE: MutableFilterState = {
 	ratingComparison: 'gte',
 	filenamePattern: '',
 	selectedTags: [],
-	isActive: false
+	isActive: false,
 };
 
 let state = $state<MutableFilterState>({
@@ -34,7 +34,7 @@ let state = $state<MutableFilterState>({
 	ratingComparison: 'gte', // Default: >= 0 (show all)
 	filenamePattern: '',
 	selectedTags: [],
-	isActive: false
+	isActive: false,
 });
 
 // debouncing用のタイマー
@@ -107,7 +107,7 @@ const updateActiveState = () => {
 const filterImages = (
 	imagePaths: string[],
 	ratingsMap: Map<string, number | undefined>,
-	tagAggregationService?: TagAggregationService
+	tagAggregationService?: TagAggregationService,
 ): string[] => {
 	let filtered = imagePaths;
 
@@ -188,6 +188,6 @@ export const filterStore = {
 		clearFilters,
 		reset,
 		filterImages,
-		getFilterSummary
-	}
+		getFilterSummary,
+	},
 };

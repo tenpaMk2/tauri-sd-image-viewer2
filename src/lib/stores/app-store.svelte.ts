@@ -1,10 +1,11 @@
 import { path } from '@tauri-apps/api';
-import type { ViewMode } from '../ui/types';
 import { metadataQueue } from './metadata-queue';
 import { metadataRegistry } from './metadata-registry.svelte';
 import { navigationStore } from './navigation-store.svelte';
 import { thumbnailQueue } from './thumbnail-queue';
 import { thumbnailRegistry } from './thumbnail-registry.svelte';
+
+type ViewMode = 'welcome' | 'grid' | 'viewer';
 
 type MutableAppState = {
 	viewMode: ViewMode;

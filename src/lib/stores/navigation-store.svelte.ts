@@ -18,7 +18,7 @@ type MutableNavigationState = {
 
 export type NavigationState = Readonly<MutableNavigationState>;
 
-const INITIAL_NAVIGATION_STATE: MutableNavigationState = {
+const INITIAL_NAVIGATION_STATE: NavigationState = {
 	directoryImagePaths: [],
 	currentImagePath: '',
 	isNavigating: false,
@@ -29,32 +29,23 @@ const INITIAL_NAVIGATION_STATE: MutableNavigationState = {
 
 let state = $state<MutableNavigationState>({ ...INITIAL_NAVIGATION_STATE });
 
-// 計算プロパティ
-const getCurrentIndex = (): number => {
+const currentIndex = $derived.by(() => {
 	const paths = state.directoryImagePaths;
 	const targetPath = state.currentImagePath;
-	if (!paths.length || !targetPath) return -1;
 	return paths.findIndex((path) => path === targetPath);
-};
-
-const getHasPrevious = (): boolean => {
-	return 0 < getCurrentIndex();
-};
-
-const getHasNext = (): boolean => {
-	const currentIndex = getCurrentIndex();
-	return 0 <= currentIndex && currentIndex < state.directoryImagePaths.length - 1;
-};
+});
+const hasPrevious = $derived(0 < currentIndex);
+const hasNext = $derived(0 <= currentIndex && currentIndex < state.directoryImagePaths.length - 1);
 
 // ナビゲーション関連アクション
 const navigateNext = async (): Promise<void> => {
 	console.log('🔄 NavigationStore.navigateNext called');
-	if (!getHasNext()) {
+	if (!hasNext) {
 		console.log('❌ No next image available');
 		return;
 	}
 
-	const nextIndex = getCurrentIndex() + 1;
+	const nextIndex = currentIndex + 1;
 	const nextPath = state.directoryImagePaths[nextIndex];
 	console.log('🔄 Next image path: ' + nextPath.split('/').pop());
 
@@ -65,19 +56,19 @@ const navigateNext = async (): Promise<void> => {
 	_loadImage(nextPath).then(() => (state.isNavigating = false));
 
 	// プリロード（非同期で実行）
-	if (getHasNext()) {
-		_preloadImage(state.directoryImagePaths[getCurrentIndex() + 1]);
+	if (hasNext) {
+		_preloadImage(state.directoryImagePaths[currentIndex + 1]);
 	}
 };
 
 const navigatePrevious = async (): Promise<void> => {
 	console.log('🔄 NavigationStore.navigatePrevious called');
-	if (!getHasPrevious()) {
+	if (!hasPrevious) {
 		console.log('❌ No previous image available');
 		return;
 	}
 
-	const prevIndex = getCurrentIndex() - 1;
+	const prevIndex = currentIndex - 1;
 	const prevPath = state.directoryImagePaths[prevIndex];
 	console.log('🔄 Previous image path: ' + prevPath.split('/').pop());
 
@@ -88,8 +79,8 @@ const navigatePrevious = async (): Promise<void> => {
 	_loadImage(prevPath).then(() => (state.isNavigating = false));
 
 	// プリロード（非同期で実行）
-	if (getHasPrevious()) {
-		_preloadImage(state.directoryImagePaths[getCurrentIndex() - 1]);
+	if (hasPrevious) {
+		_preloadImage(state.directoryImagePaths[prevIndex]);
 	}
 };
 
@@ -107,15 +98,14 @@ const initializeNavigation = async (imagePath: string): Promise<void> => {
 			console.error('Failed to load the image on initialization: ' + error);
 		});
 
-		if (getHasNext()) {
-			_preloadImage(state.directoryImagePaths[getCurrentIndex() + 1]);
+		if (hasNext) {
+			_preloadImage(state.directoryImagePaths[currentIndex + 1]);
 		}
-		if (getHasPrevious()) {
-			_preloadImage(state.directoryImagePaths[getCurrentIndex() - 1]);
+		if (hasPrevious) {
+			_preloadImage(state.directoryImagePaths[currentIndex - 1]);
 		}
 
 		// 初期化時に現在の画像の隣接する画像をプリロード
-		const currentIndex = getCurrentIndex();
 		if (0 <= currentIndex) {
 			imageCacheService
 				.preloadAdjacentImages(state.directoryImagePaths, currentIndex)
@@ -150,15 +140,9 @@ export const navigationStore = {
 
 	// 計算プロパティ（getters）
 	getters: {
-		get currentIndex(): number {
-			return getCurrentIndex();
-		},
-		get hasPrevious(): boolean {
-			return getHasPrevious();
-		},
-		get hasNext(): boolean {
-			return getHasNext();
-		},
+		currentIndex,
+		hasPrevious,
+		hasNext,
 	},
 
 	actions: {

@@ -1,6 +1,6 @@
 export type ToastType = 'success' | 'info' | 'warning' | 'error';
 
-export type Toast = {
+type Toast = {
 	id: string;
 	message: string;
 	type: ToastType;
@@ -9,31 +9,20 @@ export type Toast = {
 
 type MutableToastState = {
 	toasts: Toast[];
+	idCounter: number;
 };
 
 export type ToastState = Readonly<MutableToastState>;
 
-export type ToastActions = {
-	showToast: (message: string, type?: ToastType, duration?: number) => void;
-	removeToast: (id: string) => void;
-	showSuccessToast: (message: string, duration?: number) => void;
-	showInfoToast: (message: string, duration?: number) => void;
-	showWarningToast: (message: string, duration?: number) => void;
-	showErrorToast: (message: string, duration?: number) => void;
+const INITIAL_TOAST_STATE: ToastState = {
+	toasts: [],
+	idCounter: 0,
 };
 
-const INITIAL_TOAST_STATE: MutableToastState = {
-	toasts: []
-};
-
-let state = $state<MutableToastState>({
-	toasts: []
-});
-
-let toastIdCounter = 0;
+let state = $state<MutableToastState>({ ...INITIAL_TOAST_STATE });
 
 const generateToastId = (): string => {
-	return `toast-${++toastIdCounter}-${Date.now()}`;
+	return `toast-${++state.idCounter}-${Date.now()}`;
 };
 
 const showToast = (message: string, type: ToastType = 'info', duration: number = 3000): void => {
@@ -78,6 +67,6 @@ export const toastStore = {
 		showSuccessToast,
 		showInfoToast,
 		showWarningToast,
-		showErrorToast
-	}
+		showErrorToast,
+	},
 };

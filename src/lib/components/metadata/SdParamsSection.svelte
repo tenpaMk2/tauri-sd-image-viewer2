@@ -11,15 +11,14 @@
 
 	const { imagePath }: Props = $props();
 
-	// メタデータストアを取得（$stateオブジェクトなので$derivedは不要）
-	const store = metadataRegistry.getOrCreateStore(imagePath);
-	const metadata = store.state;
+	// メタデータストアを取得（imagePathが変更されるたびに新しいストアを取得）
+	const store = $derived(metadataRegistry.getOrCreateStore(imagePath));
+	const metadata = $derived(store.state);
 
 	// imagePathが変わるたびにメタデータの初期化を確認
 	$effect(() => {
-		const currentStore = metadataRegistry.getOrCreateStore(imagePath);
-		if (currentStore.state.loadingStatus === 'unloaded') {
-			currentStore.actions.ensureLoaded().catch((error) => {
+		if (store.state.loadingStatus === 'unloaded') {
+			store.actions.ensureLoaded().catch((error) => {
 				console.error('Failed to load metadata for ' + imagePath.split('/').pop() + ': ' + error);
 			});
 		}

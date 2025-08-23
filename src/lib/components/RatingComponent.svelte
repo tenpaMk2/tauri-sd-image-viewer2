@@ -7,9 +7,9 @@
 
 	const { imagePath }: Props = $props();
 
-	// メタデータストアを取得（$stateオブジェクトなので$derivedは不要）
-	const store = metadataRegistry.getOrCreateStore(imagePath);
-	const metadata = store.state;
+	// メタデータストアを取得（imagePathが変更されるたびに新しいストアを取得）
+	const store = $derived(metadataRegistry.getOrCreateStore(imagePath));
+	const metadata = $derived(store.state);
 
 	// 表示時に自動的にメタデータをロード（UI表示の責務）
 	$effect(() => {

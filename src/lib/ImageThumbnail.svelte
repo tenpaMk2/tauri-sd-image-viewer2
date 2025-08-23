@@ -17,12 +17,15 @@
 	// サムネイルアイテムを取得（$stateオブジェクトなので$derivedは不要）
 	const thumbnail = thumbnailRegistry.getOrCreateStore(imagePath);
 
-	// 初期化処理（コンポーネント作成時に一度だけ実行）
-	if (thumbnail.state.loadingStatus === 'unloaded') {
-		thumbnail.actions.ensureLoaded().catch((error) => {
-			console.error('Failed to load thumbnail for ' + imagePath.split('/').pop() + ': ' + error);
-		});
-	}
+	// imagePathが変わるたびにサムネイルの初期化を確認
+	$effect(() => {
+		const currentThumbnail = thumbnailRegistry.getOrCreateStore(imagePath);
+		if (currentThumbnail.state.loadingStatus === 'unloaded') {
+			currentThumbnail.actions.ensureLoaded().catch((error) => {
+				console.error('Failed to load thumbnail for ' + imagePath.split('/').pop() + ': ' + error);
+			});
+		}
+	});
 
 	const handleClick = (event?: MouseEvent): void => {
 		if (onToggleSelection) {

@@ -15,12 +15,15 @@
 	const store = metadataRegistry.getOrCreateStore(imagePath);
 	const metadata = store.state;
 
-	// 初期化処理（コンポーネント作成時に一度だけ実行）
-	if (metadata.loadingStatus === 'unloaded') {
-		store.actions.ensureLoaded().catch((error) => {
-			console.error('Failed to load metadata for ' + imagePath.split('/').pop() + ': ' + error);
-		});
-	}
+	// imagePathが変わるたびにメタデータの初期化を確認
+	$effect(() => {
+		const currentStore = metadataRegistry.getOrCreateStore(imagePath);
+		if (currentStore.state.loadingStatus === 'unloaded') {
+			currentStore.actions.ensureLoaded().catch((error) => {
+				console.error('Failed to load metadata for ' + imagePath.split('/').pop() + ': ' + error);
+			});
+		}
+	});
 </script>
 
 {#if metadata.loadingStatus === 'loaded'}

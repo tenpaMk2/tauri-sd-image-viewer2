@@ -14,26 +14,6 @@
 		onZoomStateChange?: (isZoomed: boolean) => void;
 	} = $props();
 
-	// デバッグ: propsの変更を監視（より詳細に）
-	$effect(() => {
-		// 全てのpropsを明示的に監視
-		const url = imageUrl;
-		const loading = isLoading;
-		const err = error;
-
-		console.log('📊 ImageCanvas props updated:', {
-			imageUrl: url ? `${url.substring(0, 20)}...` : 'null',
-			isLoading: loading,
-			error: err || 'empty'
-		});
-
-		console.log('🎯 ImageCanvas conditions will be:', {
-			hasError: !!(err && err.length > 0),
-			hasImageUrl: !!(url && url.length > 0),
-			isCurrentlyLoading: loading
-		});
-	});
-
 	let containerRef: HTMLDivElement;
 	let imageRef = $state<HTMLImageElement>();
 	let imageViewService = new ImageViewService();
@@ -115,14 +95,7 @@
 	onmouseup={handleMouseUp}
 	onmouseleave={handleMouseUp}
 >
-	{console.log('🎯 ImageCanvas condition check:', {
-		error: error || 'empty',
-		errorType: typeof error,
-		imageUrl: imageUrl ? 'exists' : 'null',
-		isLoading
-	})}
 	{#if error && error.length > 0}
-		{console.log('❌ ImageCanvas: Showing error')}
 		<div class="flex flex-col items-center gap-2 text-red-400">
 			<svg class="h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 				<path
@@ -135,7 +108,6 @@
 			<span class="text-center">{error}</span>
 		</div>
 	{:else if imageUrl && imageUrl.length > 0}
-		{console.log('🖼️ ImageCanvas: Showing image')}
 		<img
 			bind:this={imageRef}
 			src={imageUrl}
@@ -148,13 +120,11 @@
 			onload={onImageLoad}
 		/>
 	{:else if isLoading}
-		{console.log('⏳ ImageCanvas: Showing loading')}
 		<div class="flex flex-col items-center gap-2 text-white">
 			<span class="loading loading-lg loading-spinner"></span>
 			<span class="opacity-80">Loading image...</span>
 		</div>
 	{:else}
-		{console.log('❓ ImageCanvas: Default state')}
 		<div class="flex flex-col items-center gap-2 text-gray-400">
 			<span class="opacity-80">No content to display</span>
 		</div>

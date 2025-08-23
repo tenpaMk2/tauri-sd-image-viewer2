@@ -50,16 +50,12 @@
 	};
 
 	// Handle pattern input changes with debouncing
-	let patternTimeout: number | undefined;
 	const handlePatternChange = (event: Event) => {
 		const target = event.target as HTMLInputElement;
 		const inputValue = target.value;
 
-		// Debounce pattern updates
-		clearTimeout(patternTimeout);
-		patternTimeout = setTimeout(() => {
-			filterStore.actions.updateFilenamePattern(inputValue);
-		}, 300);
+		// ストア側でdebouncingを処理
+		filterStore.actions.updateFilenamePatternWithDebounce(inputValue);
 	};
 
 	// Handle tag input changes

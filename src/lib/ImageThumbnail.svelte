@@ -17,11 +17,10 @@
 	// サムネイルアイテムを取得（$stateオブジェクトなので$derivedは不要）
 	const thumbnail = thumbnailRegistry.getOrCreateStore(imagePath);
 
-	// imagePathが変わるたびにサムネイルの初期化を確認
+	// 表示時に自動的にサムネイルをロード（UI表示の責務）
 	$effect(() => {
-		const currentThumbnail = thumbnailRegistry.getOrCreateStore(imagePath);
-		if (currentThumbnail.state.loadingStatus === 'unloaded') {
-			currentThumbnail.actions.ensureLoaded().catch((error) => {
+		if (thumbnail.state.loadingStatus === 'unloaded') {
+			thumbnail.actions.ensureLoaded().catch((error) => {
 				console.error('Failed to load thumbnail for ' + imagePath.split('/').pop() + ': ' + error);
 			});
 		}

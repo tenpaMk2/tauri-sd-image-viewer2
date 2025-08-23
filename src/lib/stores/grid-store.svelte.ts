@@ -1,4 +1,8 @@
+import { invoke } from '@tauri-apps/api/core';
 import { SvelteSet } from 'svelte/reactivity';
+import { deleteSelectedImages as performDelete } from '../utils/delete-images';
+import { navigationStore } from './navigation-store.svelte';
+import { toastStore } from './toast-store.svelte';
 
 type MutableGridState = {
 	selectedImages: SvelteSet<string>;
@@ -97,6 +101,56 @@ const closeOptionsModal = () => {
 	gridState.showOptionsModal = false;
 };
 
+// キャッシュ削除
+const clearCache = async (selectedDirectory: string) => {
+	try {
+		await invoke('clear_thumbnail_cache');
+		toastStore.actions.showSuccessToast('Thumbnail cache cleared');
+		closeOptionsModal();
+		// navigationStoreから画像ファイルを再読み込み
+		await navigationStore.actions.loadImageFiles(selectedDirectory);
+	} catch (error) {
+		console.error('Failed to clear cache: ' + error);
+		toastStore.actions.showErrorToast('Failed to clear cache');
+	}
+};
+
+// 選択画像削除
+const deleteSelectedImages = async (selectedDirectory: string) => {
+	if (gridState.selectedImages.size === 0) return;
+
+	try {
+		await performDelete(gridState.selectedImages);
+		clearSelection();
+		// navigationStoreから画像ファイルを再読み込み
+		await navigationStore.actions.loadImageFiles(selectedDirectory);
+	} catch (err) {
+		// エラーはperformDelete内で処理済み
+	}
+};
+
+// クリップボード機能
+const copySelectedToClipboard = async (): Promise<void> => {
+	if (gridState.selectedImages.size === 0) return;
+
+	const paths = Array.from(gridState.selectedImages);
+	try {
+		await invoke('set_clipboard_files', { paths });
+		toastStore.actions.showSuccessToast(
+			`${gridState.selectedImages.size} images copied to clipboard`
+		);
+	} catch (error) {
+		console.error('Failed to copy to clipboard: ' + error);
+		toastStore.actions.showErrorToast('Failed to copy to clipboard');
+	}
+};
+
+// Gridページ離脱時のクリーンアップ
+const cleanup = (currentImageFiles: string[]) => {
+	// このメソッドは現在使用しない（app-store側で管理）
+	// 将来的にGrid固有のクリーンアップが必要になった場合に使用
+};
+
 const reset = () => {
 	// 初期状態に完全リセット
 	gridState.selectedImages = new SvelteSet();
@@ -115,6 +169,10 @@ export const gridStore = {
 		toggleFilterPanel,
 		toggleOptionsModal,
 		closeOptionsModal,
+		clearCache,
+		deleteSelectedImages,
+		copySelectedToClipboard,
+		cleanup,
 		reset
 	}
 };

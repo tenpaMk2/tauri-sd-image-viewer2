@@ -11,11 +11,10 @@
 	const store = metadataRegistry.getOrCreateStore(imagePath);
 	const metadata = store.state;
 
-	// imagePathが変わるたびにメタデータの初期化を確認
+	// 表示時に自動的にメタデータをロード（UI表示の責務）
 	$effect(() => {
-		const currentStore = metadataRegistry.getOrCreateStore(imagePath);
-		if (currentStore.state.loadingStatus === 'unloaded') {
-			currentStore.actions.ensureLoaded().catch((error) => {
+		if (store.state.loadingStatus === 'unloaded') {
+			store.actions.ensureLoaded().catch((error) => {
 				console.error('Failed to load metadata for ' + imagePath.split('/').pop() + ': ' + error);
 			});
 		}
@@ -38,10 +37,10 @@
 	const handleStarClick = async (e: Event, clickedRating: number) => {
 		e.stopPropagation(); // 親要素のクリックイベントを防ぐ
 
-		try {
-			// 同じ星をクリックした場合は0に戻す、そうでなければ新しいRating値を設定
-			const newRating = (metadata.rating ?? 0) === clickedRating ? 0 : clickedRating;
+		// 同じ星をクリックした場合は0に戻す、そうでなければ新しいRating値を設定
+		const newRating = (metadata.rating ?? 0) === clickedRating ? 0 : clickedRating;
 
+		try {
 			await store.actions.updateRating(newRating);
 		} catch (error) {
 			console.error('Failed to update rating for ' + imagePath.split('/').pop() + ': ' + error);

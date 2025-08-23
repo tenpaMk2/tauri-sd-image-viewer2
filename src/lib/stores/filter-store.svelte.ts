@@ -37,6 +37,9 @@ let state = $state<MutableFilterState>({
 	isActive: false
 });
 
+// debouncing用のタイマー
+let patternTimeout: number | undefined;
+
 const updateRatingFilter = (rating: number, comparison: RatingComparison) => {
 	// Always keep rating filter active: 0 = unrated, 1-5 = rated
 	state.targetRating = Math.max(0, Math.min(5, rating));
@@ -47,6 +50,14 @@ const updateRatingFilter = (rating: number, comparison: RatingComparison) => {
 const updateFilenamePattern = (pattern: string) => {
 	state.filenamePattern = pattern.trim();
 	updateActiveState();
+};
+
+const updateFilenamePatternWithDebounce = (pattern: string) => {
+	// Debounce pattern updates
+	clearTimeout(patternTimeout);
+	patternTimeout = setTimeout(() => {
+		updateFilenamePattern(pattern);
+	}, 300);
 };
 
 const addTag = (tagName: string) => {
@@ -170,6 +181,7 @@ export const filterStore = {
 	actions: {
 		updateRatingFilter,
 		updateFilenamePattern,
+		updateFilenamePatternWithDebounce,
 		addTag,
 		removeTag,
 		clearAllTags,

@@ -1,8 +1,5 @@
 <script lang="ts">
-	import { onDestroy } from 'svelte';
 	import ImageThumbnail from './ImageThumbnail.svelte';
-	import { metadataRegistry } from './stores/metadata-registry.svelte';
-	import { thumbnailRegistry } from './stores/thumbnail-registry.svelte';
 
 	const {
 		imageFiles,
@@ -15,14 +12,6 @@
 		selectedImages?: Set<string>;
 		onToggleSelection?: (imagePath: string, shiftKey?: boolean, metaKey?: boolean) => void;
 	} = $props();
-
-	// クリーンアップ
-	onDestroy(() => {
-		// 未使用メタデータをクリア
-		metadataRegistry.clearUnused([]);
-		// 未使用サムネイルをクリア
-		thumbnailRegistry.clearUnused([]);
-	});
 </script>
 
 <!-- サムネイルグリッド -->

@@ -1,20 +1,13 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte';
-	import { invoke } from '@tauri-apps/api/core';
 	import { basename } from '@tauri-apps/api/path';
-	import { onDestroy } from 'svelte';
 	import FilterPanel from './FilterPanel.svelte';
 	import { appStore } from './stores/app-store.svelte';
 	import { filterStore } from './stores/filter-store.svelte';
 	import { gridStore } from './stores/grid-store.svelte';
-	import { metadataQueue } from './stores/metadata-queue';
 	import { navigationStore } from './stores/navigation-store.svelte';
 	import { tagStore } from './stores/tag-store.svelte';
-	import { thumbnailQueue } from './stores/thumbnail-queue';
-	import { thumbnailRegistry } from './stores/thumbnail-registry.svelte';
-	import { toastStore } from './stores/toast-store.svelte';
 	import ThumbnailGrid from './ThumbnailGrid.svelte';
-	import { deleteSelectedImages as performDelete } from './utils/delete-images';
 
 	const {
 		handleBackToWelcome,
@@ -85,15 +78,7 @@
 
 	// キャッシュ削除
 	const clearCache = async () => {
-		try {
-			await invoke('clear_thumbnail_cache');
-			toastStore.actions.showSuccessToast('Thumbnail cache cleared');
-			gridStore.actions.closeOptionsModal();
-			// navigationStoreから画像ファイルを再読み込み
-			await navigationStore.actions.loadImageFiles(selectedDirectory);
-		} catch (error) {
-			console.error('Failed to clear cache: ' + error);
-		}
+		await gridStore.actions.clearCache(selectedDirectory);
 	};
 
 	// 画像選択/選択解除（OSファイル選択エミュレート）
@@ -112,40 +97,13 @@
 
 	// 選択画像削除
 	const deleteSelectedImages = async () => {
-		try {
-			await performDelete(selectedImages);
-			gridStore.actions.clearSelection();
-			// navigationStoreから画像ファイルを再読み込み
-			await navigationStore.actions.loadImageFiles(selectedDirectory);
-		} catch (err) {
-			// エラーはperformDelete内で処理済み
-		}
+		await gridStore.actions.deleteSelectedImages(selectedDirectory);
 	};
 
 	// クリップボード機能
 	const copySelectedToClipboard = async (): Promise<void> => {
-		if (selectedImages.size === 0) return;
-
-		const paths = Array.from(selectedImages);
-		try {
-			await invoke('set_clipboard_files', { paths });
-			toastStore.actions.showSuccessToast(`${selectedImages.size} images copied to clipboard`);
-		} catch (error) {
-			console.error('Failed to copy to clipboard: ' + error);
-		}
+		await gridStore.actions.copySelectedToClipboard();
 	};
-
-	// コンポーネント破棄時のクリーンアップ
-	onDestroy(() => {
-		console.log('🗑️ GridPage: Component destroying, clearing all tasks to prioritize viewer mode');
-
-		// 全タスクをクリア（処理中も含む）して、シングル表示を優先
-		metadataQueue.clear();
-		thumbnailQueue.clear();
-
-		// 不要なサムネイルを解放
-		thumbnailRegistry.clearUnused(imageFiles);
-	});
 </script>
 
 <div class="flex h-full flex-col">

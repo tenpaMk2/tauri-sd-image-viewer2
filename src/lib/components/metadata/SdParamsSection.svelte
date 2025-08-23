@@ -1,6 +1,6 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte';
-	import { metadataRegistry } from '../../stores/metadata-registry.svelte';
+	import { metadataRegistry } from '../../services/metadata-registry.svelte';
 	import { toastStore } from '../../stores/toast-store.svelte';
 	import { formatSdTags } from '../../utils/image-utils';
 	import { copyToClipboard } from '../../utils/ui-utils';
@@ -51,7 +51,7 @@
 								class="btn btn-ghost btn-xs"
 								onclick={async () => {
 									await copyToClipboard(
-										formatSdTags(metadata.sdParameters?.positive_sd_tags ?? [])
+										formatSdTags(metadata.sdParameters?.positive_sd_tags ?? []),
 									);
 									toastStore.actions.showSuccessToast('Positive prompt copied to clipboard');
 								}}
@@ -79,7 +79,7 @@
 								class="btn btn-ghost btn-xs"
 								onclick={async () => {
 									await copyToClipboard(
-										formatSdTags(metadata.sdParameters?.negative_sd_tags ?? [])
+										formatSdTags(metadata.sdParameters?.negative_sd_tags ?? []),
 									);
 									toastStore.actions.showSuccessToast('Negative prompt copied to clipboard');
 								}}

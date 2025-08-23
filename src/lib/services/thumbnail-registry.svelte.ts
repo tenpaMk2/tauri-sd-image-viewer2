@@ -1,5 +1,5 @@
+import { createThumbnailStore, type ThumbnailStore } from '../stores/thumbnail-store.svelte';
 import { thumbnailQueue } from './thumbnail-queue';
-import { createThumbnailStore, type ThumbnailStore } from './thumbnail-store.svelte';
 
 // ストアレジストリ（Map + 個別$state）
 const storeRegistry = new Map<string, ThumbnailStore>();
@@ -60,5 +60,5 @@ export const thumbnailRegistry = {
 	reset: (): void => {
 		// 全サムネイルをクリア（clearAll()が全ストアを破棄してstoreRegistry.clear()を呼ぶ）
 		thumbnailRegistry.clearAll();
-	}
+	},
 };

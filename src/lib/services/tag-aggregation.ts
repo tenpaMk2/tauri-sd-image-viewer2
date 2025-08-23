@@ -3,8 +3,8 @@
  * ディレクトリ内の全画像からSDタグを抽出・集計する
  */
 
-import { metadataRegistry } from '../stores/metadata-registry.svelte';
 import type { SdTag } from '../types/shared-types';
+import { metadataRegistry } from './metadata-registry.svelte';
 export type TagCount = {
 	name: string;
 	count: number;
@@ -94,7 +94,7 @@ export class TagAggregationService {
 	private addTagsToCount = (
 		tagCounts: Map<string, { count: number; isNegative: Set<boolean> }>,
 		tags: SdTag[],
-		isNegative: boolean
+		isNegative: boolean,
 	): void => {
 		for (const tag of tags) {
 			const tagName = tag.name.trim().toLowerCase();
@@ -114,7 +114,7 @@ export class TagAggregationService {
 	 * 集計結果を処理して返却用の形式に変換
 	 */
 	private processAggregationResult = (
-		tagCounts: Map<string, { count: number; isNegative: Set<boolean> }>
+		tagCounts: Map<string, { count: number; isNegative: Set<boolean> }>,
 	): TagAggregationResult => {
 		const allTags: TagCount[] = [];
 		const positiveTagNames: string[] = [];
@@ -151,7 +151,7 @@ export class TagAggregationService {
 			allTags,
 			positiveTagNames,
 			negativeTagNames,
-			uniqueTagNames
+			uniqueTagNames,
 		};
 	};
 
@@ -234,8 +234,8 @@ export class TagAggregationService {
 			cacheSize: this.imageTagsCache.size,
 			totalTags: Array.from(this.imageTagsCache.values()).reduce(
 				(total, tags) => total + tags.size,
-				0
-			)
+				0,
+			),
 		};
 	};
 

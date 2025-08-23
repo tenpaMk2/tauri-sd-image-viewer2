@@ -1,5 +1,5 @@
 import { Channel, invoke } from '@tauri-apps/api/core';
-import { thumbnailQueue } from './thumbnail-queue';
+import { thumbnailQueue } from '../services/thumbnail-queue';
 
 /**
  * サムネイルロード状態
@@ -37,7 +37,7 @@ export const createThumbnailStore = (imagePath: string): ThumbnailStore => {
 		loadingStatus: 'unloaded',
 		loadError: undefined,
 		loadingPromise: undefined,
-		_isDestroyed: false
+		_isDestroyed: false,
 	});
 
 	const actions: ThumbnailActions = {
@@ -115,14 +115,14 @@ export const createThumbnailStore = (imagePath: string): ThumbnailStore => {
 							'Thumbnail data received: ' +
 								imagePath +
 								' data size: ' +
-								(data?.length || 'undefined')
+								(data?.length || 'undefined'),
 						);
 						try {
 							const blob = new Blob([new Uint8Array(data)], { type: 'image/webp' });
 							const thumbnailUrl = URL.createObjectURL(blob);
 
 							console.log(
-								'Thumbnail generated successfully: ' + imagePath + ' URL: ' + thumbnailUrl
+								'Thumbnail generated successfully: ' + imagePath + ' URL: ' + thumbnailUrl,
 							);
 
 							// リアクティブ状態を更新
@@ -152,7 +152,7 @@ export const createThumbnailStore = (imagePath: string): ThumbnailStore => {
 				invoke('generate_thumbnail_async', {
 					imagePath: imagePath,
 					config: null,
-					channel
+					channel,
 				}).catch((error) => {
 					// invokeのエラーだけキャッチ
 					if (!abortSignal.aborted && !state._isDestroyed) {
@@ -199,7 +199,7 @@ export const createThumbnailStore = (imagePath: string): ThumbnailStore => {
 			state.thumbnailUrl = undefined;
 			state.loadingStatus = 'unloaded';
 			state.loadError = undefined;
-		}
+		},
 	};
 
 	return { state: state as ThumbnailState, actions };

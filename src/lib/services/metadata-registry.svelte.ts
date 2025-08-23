@@ -1,5 +1,5 @@
+import { createMetadataStore, type MetadataStore } from '../stores/metadata-store.svelte';
 import { metadataQueue } from './metadata-queue';
-import { createMetadataStore, type MetadataStore } from './metadata-store.svelte';
 
 // ストアレジストリ（Map + 個別$state）
 const storeRegistry = new Map<string, MetadataStore>();
@@ -53,5 +53,5 @@ export const metadataRegistry = {
 	reset: (): void => {
 		// 全メタデータをクリア（clearAll()が全ストアを破棄してstoreRegistry.clear()を呼ぶ）
 		metadataRegistry.clearAll();
-	}
+	},
 };

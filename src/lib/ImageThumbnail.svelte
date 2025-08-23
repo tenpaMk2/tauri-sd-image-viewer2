@@ -1,7 +1,7 @@
 <script lang="ts">
 	import RatingComponent from './components/RatingComponent.svelte';
+	import { thumbnailRegistry } from './services/thumbnail-registry.svelte';
 	import { appStore } from './stores/app-store.svelte';
-	import { thumbnailRegistry } from './stores/thumbnail-registry.svelte';
 
 	const {
 		imagePath,

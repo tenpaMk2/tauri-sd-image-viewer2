@@ -1,6 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
+import { metadataQueue } from '../services/metadata-queue';
 import type { ImageMetadataInfo, SdParameters } from '../types/shared-types';
-import { metadataQueue } from './metadata-queue';
 
 /**
  * メタデータロード状態

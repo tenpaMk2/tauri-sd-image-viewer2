@@ -1,8 +1,10 @@
 <script lang="ts">
-	import { gridStore } from '$lib/stores/grid-store.svelte';
+	import * as imageActions from '$lib/services/image-actions';
+	import { imageSelectionStore } from '$lib/stores/image-selection-store.svelte';
+	import { toastStore } from '$lib/stores/toast-store.svelte';
 	import Icon from '@iconify/svelte';
 
-	const selectedImages = gridStore.state.selectedImages;
+	const selectedImages = imageSelectionStore.state.selectedImages;
 </script>
 
 {#if 0 < selectedImages.size}
@@ -16,14 +18,32 @@
 			<div class="flex items-center gap-4">
 				<button
 					class="btn text-white btn-ghost btn-sm"
-					onclick={() => gridStore.actions.copySelectedToClipboard()}
+					onclick={() =>
+						imageActions.copyImagesToClipboard(
+							Array.from(selectedImages),
+							(message: string) => toastStore.actions.showSuccessToast(message),
+							(message: string) => toastStore.actions.showErrorToast(message),
+						)}
 					title="Copy to Clipboard"
 				>
 					<Icon icon="lucide:copy" class="h-4 w-4" />
 				</button>
 				<button
 					class="btn text-white btn-ghost btn-sm"
-					onclick={() => gridStore.actions.deleteSelectedImages()}
+					onclick={async () => {
+						const shouldClear = await imageActions.deleteImages(
+							Array.from(selectedImages),
+							async (count: number) => {
+								return confirm(`Delete ${count} images?\n\nDeleted images cannot be restored.`);
+							},
+							(message: string) => toastStore.actions.showSuccessToast(message),
+							(message: string) => toastStore.actions.showWarningToast(message),
+							(message: string) => toastStore.actions.showErrorToast(message),
+						);
+						if (shouldClear) {
+							imageSelectionStore.actions.clearSelection();
+						}
+					}}
 					title="Delete"
 				>
 					<Icon icon="lucide:trash-2" class="h-4 w-4" />

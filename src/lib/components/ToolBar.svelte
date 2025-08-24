@@ -2,12 +2,12 @@
 	import { dialogService } from '$lib/services/dialog';
 	import { appStore } from '$lib/stores/app-store.svelte';
 	import { filteredImagesStore } from '$lib/stores/filtered-images-store.svelte';
-	import { gridStore } from '$lib/stores/grid-store.svelte';
+	import { gridUiStore } from '$lib/stores/grid-ui-store.svelte';
+	import { imageSelectionStore } from '$lib/stores/image-selection-store.svelte';
 	import Icon from '@iconify/svelte';
-	const selectedImages = gridStore.state.selectedImages;
-	const showFilterPanel = gridStore.state.showFilterPanel;
+	const selectedImages = imageSelectionStore.state.selectedImages;
+	const showFilterPanel = gridUiStore.state.showFilterPanel;
 	const filteredImageCount = filteredImagesStore.getters.filteredImageCount;
-
 	const openDirectoryDialog = async () => {
 		const result = await dialogService.openDirectoryDialog();
 		if (result) {
@@ -20,7 +20,7 @@
 	<!-- Options Button -->
 	<button
 		class="btn btn-ghost btn-sm"
-		onclick={() => gridStore.actions.toggleOptionsModal()}
+		onclick={() => gridUiStore.actions.toggleOptionsModal()}
 		title="Options"
 	>
 		<Icon icon="lucide:settings" class="h-4 w-4" />
@@ -29,7 +29,7 @@
 	<!-- Filter Button -->
 	<button
 		class="btn btn-ghost btn-sm {showFilterPanel ? 'btn-active btn-primary' : ''}"
-		onclick={() => gridStore.actions.toggleFilterPanel()}
+		onclick={() => gridUiStore.actions.toggleFilterPanel()}
 		title="Toggle Filters"
 	>
 		<Icon icon="lucide:filter" class="h-4 w-4" />
@@ -39,7 +39,7 @@
 	{#if 0 < filteredImageCount}
 		<button
 			class="btn btn-ghost btn-sm"
-			onclick={() => gridStore.actions.toggleSelectAll()}
+			onclick={() => imageSelectionStore.actions.toggleSelectAll()}
 			title={selectedImages.size === filteredImageCount ? 'Deselect All' : 'Select All'}
 		>
 			<Icon

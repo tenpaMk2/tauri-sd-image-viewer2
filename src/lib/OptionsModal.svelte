@@ -1,11 +1,13 @@
 <script lang="ts">
-	import { gridStore } from '$lib/stores/grid-store.svelte';
+	import * as imageActions from '$lib/services/image-actions';
+	import { gridUiStore } from '$lib/stores/grid-ui-store.svelte';
+	import { toastStore } from '$lib/stores/toast-store.svelte';
 	import Icon from '@iconify/svelte';
 
-	const showOptionsModal = gridStore.state.showOptionsModal;
+	const showOptionsModal = gridUiStore.state.showOptionsModal;
 
 	const toggleOptionsModal = () => {
-		gridStore.actions.toggleOptionsModal();
+		gridUiStore.actions.toggleOptionsModal();
 	};
 </script>
 
@@ -20,7 +22,15 @@
 						<div class="font-medium">Clear Thumbnail Cache</div>
 						<div class="text-sm opacity-70">Remove all cached thumbnails to free up disk space</div>
 					</div>
-					<button class="btn btn-outline btn-sm" onclick={() => gridStore.actions.clearCache()}>
+					<button
+						class="btn btn-outline btn-sm"
+						onclick={() =>
+							imageActions.clearThumbnailCache(
+								(message: string) => toastStore.actions.showSuccessToast(message),
+								(message: string) => toastStore.actions.showErrorToast(message),
+								() => gridUiStore.actions.closeOptionsModal(),
+							)}
+					>
 						<Icon icon="lucide:trash-2" class="h-4 w-4" />
 						Clear
 					</button>

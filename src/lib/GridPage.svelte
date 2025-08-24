@@ -1,19 +1,19 @@
 <script lang="ts">
+	import BottomToolbar from '$lib/BottomToolbar.svelte';
 	import FilterPanel from '$lib/FilterPanel.svelte';
 	import HeaderBar from '$lib/HeaderBar.svelte';
-	import BottomToolbar from '$lib/BottomToolbar.svelte';
 	import OptionsModal from '$lib/OptionsModal.svelte';
-	import { gridStore } from '$lib/stores/grid-store.svelte';
-	import { navigationStore } from '$lib/stores/navigation-store.svelte';
 	import { filteredImagesStore } from '$lib/stores/filtered-images-store.svelte';
+	import { gridUiStore } from '$lib/stores/grid-ui-store.svelte';
+	import { imageSelectionStore } from '$lib/stores/image-selection-store.svelte';
+	import { navigationStore } from '$lib/stores/navigation-store.svelte';
 	import ThumbnailGrid from '$lib/ThumbnailGrid.svelte';
-
 	// ストアから直接状態を取得
 	const imageFiles = navigationStore.state.directoryImagePaths;
 	const imageLoadingState = navigationStore.state.imageLoadingStatus;
 	const imageFileLoadError = navigationStore.state.imageFileLoadError;
-	const selectedImages = gridStore.state.selectedImages;
-	const showFilterPanel = gridStore.state.showFilterPanel;
+	const selectedImages = imageSelectionStore.state.selectedImages;
+	const showFilterPanel = gridUiStore.state.showFilterPanel;
 
 	// フィルタリング済み画像リスト
 	const filteredImageFiles = filteredImagesStore.getters.filteredImageFiles;
@@ -24,7 +24,7 @@
 		shiftKey: boolean = false,
 		metaKey: boolean = false,
 	) => {
-		gridStore.actions.toggleImageSelection(imagePath, shiftKey, metaKey);
+		imageSelectionStore.actions.toggleImageSelection(imagePath, shiftKey, metaKey);
 	};
 </script>
 

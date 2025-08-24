@@ -1,3 +1,4 @@
+import { navigationStore } from '$lib/stores/navigation-store.svelte';
 import { toastStore } from '$lib/stores/toast-store.svelte';
 import { deleteSelectedImages as performDelete } from '$lib/utils/delete-images';
 import { invoke } from '@tauri-apps/api/core';
@@ -33,10 +34,10 @@ let gridState = $state<MutableGridState>({
 // 画像選択ロジックを専用関数として分離
 const toggleImageSelection = (
 	imagePath: string,
-	imageFiles: string[],
 	shiftKey: boolean = false,
 	metaKey: boolean = false,
 ) => {
+	const imageFiles = navigationStore.state.directoryImagePaths;
 	const currentIndex = imageFiles.indexOf(imagePath);
 
 	if (shiftKey && gridState.lastSelectedIndex !== -1) {
@@ -75,7 +76,8 @@ const toggleImageSelection = (
 	}
 };
 
-const toggleSelectAll = (imageFiles: string[]) => {
+const toggleSelectAll = () => {
+	const imageFiles = navigationStore.state.directoryImagePaths;
 	if (gridState.selectedImages.size === imageFiles.length) {
 		gridState.selectedImages = new SvelteSet();
 	} else {
@@ -101,7 +103,7 @@ const closeOptionsModal = () => {
 };
 
 // キャッシュ削除
-const clearCache = async (selectedDirectory: string) => {
+const clearCache = async () => {
 	try {
 		await invoke('clear_thumbnail_cache');
 		toastStore.actions.showSuccessToast('Thumbnail cache cleared');
@@ -113,7 +115,7 @@ const clearCache = async (selectedDirectory: string) => {
 };
 
 // 選択画像削除
-const deleteSelectedImages = async (selectedDirectory: string) => {
+const deleteSelectedImages = async () => {
 	if (gridState.selectedImages.size === 0) return;
 
 	try {
@@ -141,7 +143,7 @@ const copySelectedToClipboard = async (): Promise<void> => {
 };
 
 // Gridページ離脱時のクリーンアップ
-const cleanup = (currentImageFiles: string[]) => {
+const cleanup = () => {
 	// このメソッドは現在使用しない（app-store側で管理）
 	// 将来的にGrid固有のクリーンアップが必要になった場合に使用
 };

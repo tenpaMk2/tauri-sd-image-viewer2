@@ -1,19 +1,10 @@
 <script lang="ts">
-	import type { TagAggregationResult } from '$lib/services/tag-aggregation';
 	import { filterStore, type RatingComparison } from '$lib/stores/filter-store.svelte';
+	import { tagStore } from '$lib/stores/tag-store.svelte';
 	import Icon from '@iconify/svelte';
 
-	const {
-		isExpanded = false,
-		totalImages = 0,
-		filteredImages = 0,
-		tagData = null,
-	}: {
-		isExpanded?: boolean;
-		totalImages?: number;
-		filteredImages?: number;
-		tagData?: TagAggregationResult | null;
-	} = $props();
+	// ストアから直接状態を取得
+	const tagData = tagStore.state.tagData;
 
 	let selectedRating = $derived(filterStore.state.targetRating);
 	let selectedComparison = $derived(filterStore.state.ratingComparison);
@@ -21,20 +12,6 @@
 	let selectedTags = $derived(filterStore.state.selectedTags);
 	let tagInput = $state('');
 	let showHelpModal = $state(false);
-	let showTagDropdown = $state(false);
-
-	// Filtered tag suggestions based on input
-	const filteredTagSuggestions = $derived.by(() => {
-		if (!tagData?.uniqueTagNames || tagInput.length < 1) return [];
-
-		const inputLower = tagInput.toLowerCase();
-		return tagData.uniqueTagNames
-			.filter(
-				(tag) =>
-					tag.toLowerCase().includes(inputLower) && !selectedTags.includes(tag.toLowerCase()),
-			)
-			.slice(0, 10); // Limit suggestions
-	});
 
 	// Handle star rating selection
 	const handleStarClick = (rating: number) => {

@@ -202,5 +202,7 @@ export const createThumbnailStore = (imagePath: string): ThumbnailStore => {
 		},
 	};
 
+	actions.ensureLoaded();
+
 	return { state: state as ThumbnailState, actions };
 };

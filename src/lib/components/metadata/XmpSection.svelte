@@ -9,15 +9,6 @@
 	// メタデータストアを取得（imagePathが変更されるたびに新しいストアを取得）
 	const store = $derived(metadataRegistry.getOrCreateStore(imagePath));
 	const metadata = $derived(store.state);
-
-	// imagePathが変わるたびにメタデータの初期化を確認
-	$effect(() => {
-		if (store.state.loadingStatus === 'unloaded') {
-			store.actions.ensureLoaded().catch((error) => {
-				console.error('Failed to load metadata for ' + imagePath.split('/').pop() + ': ' + error);
-			});
-		}
-	});
 </script>
 
 <div class="rounded-lg bg-base-300 p-3">

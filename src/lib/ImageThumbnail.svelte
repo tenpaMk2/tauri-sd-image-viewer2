@@ -16,15 +16,6 @@
 	// サムネイルアイテムを取得（$stateオブジェクトなので$derivedは不要）
 	const thumbnail = thumbnailRegistry.getOrCreateStore(imagePath);
 
-	// 表示時に自動的にサムネイルをロード（UI表示の責務）
-	$effect(() => {
-		if (thumbnail.state.loadingStatus === 'unloaded') {
-			thumbnail.actions.ensureLoaded().catch((error) => {
-				console.error('Failed to load thumbnail for ' + imagePath.split('/').pop() + ': ' + error);
-			});
-		}
-	});
-
 	const handleClick = (event?: MouseEvent): void => {
 		if (onToggleSelection) {
 			onToggleSelection(imagePath, event?.shiftKey, event?.metaKey);

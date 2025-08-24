@@ -29,7 +29,7 @@ export class BaseQueue {
 	async enqueue(
 		id: string,
 		handler: (abortSignal: AbortSignal) => Promise<void>,
-		taskTypeName: string
+		taskTypeName: string,
 	): Promise<void> {
 		// キューが停止している場合は即座にreject
 		if (this.stopped) {
@@ -56,13 +56,13 @@ export class BaseQueue {
 		const task: QueueTask = {
 			id,
 			handler,
-			abortController
+			abortController,
 		};
 
 		if (!this.queue.some((t) => t.id === id)) {
 			this.queue.push(task);
 			console.log(
-				`📋 ${taskTypeName} queued: ${id.split('/').pop()} | Queue size: ${this.queue.length}, Active: ${this.activeJobs.size}/${this.maxConcurrent}`
+				`📋 ${taskTypeName} queued: ${id.split('/').pop()} | Queue size: ${this.queue.length}, Active: ${this.activeJobs.size}/${this.maxConcurrent}`,
 			);
 
 			// 処理を開始
@@ -84,7 +84,7 @@ export class BaseQueue {
 			while (this.activeJobs.size < this.maxConcurrent && this.queue.length > 0 && !this.stopped) {
 				const task = this.queue.shift()!;
 				console.log(
-					`▶️ Processing ${taskTypeName}: ${task.id.split('/').pop()} | Queue remaining: ${this.queue.length}, Active: ${this.activeJobs.size + 1}/${this.maxConcurrent}`
+					`▶️ Processing ${taskTypeName}: ${task.id.split('/').pop()} | Queue remaining: ${this.queue.length}, Active: ${this.activeJobs.size + 1}/${this.maxConcurrent}`,
 				);
 
 				const job = this.executeQueueTask(task, taskTypeName);
@@ -94,7 +94,7 @@ export class BaseQueue {
 				job.finally(() => {
 					this.activeJobs.delete(task.id);
 					console.log(
-						`✅ Completed ${taskTypeName}: ${task.id.split('/').pop()} | Active jobs remaining: ${this.activeJobs.size}`
+						`✅ Completed ${taskTypeName}: ${task.id.split('/').pop()} | Active jobs remaining: ${this.activeJobs.size}`,
 					);
 				});
 			}
@@ -129,7 +129,7 @@ export class BaseQueue {
 		id: string,
 		handler: (abortSignal: AbortSignal) => Promise<void>,
 		abortSignal: AbortSignal,
-		taskTypeName: string
+		taskTypeName: string,
 	): Promise<void> {
 		try {
 			// 停止チェック
@@ -145,7 +145,7 @@ export class BaseQueue {
 			// 完了後に停止状態を再チェック（Rust処理後の防御）
 			if (this.stopped || abortSignal.aborted) {
 				console.log(
-					`🛑 ${taskTypeName} ignored after completion (queue stopped): ${id.split('/').pop()}`
+					`🛑 ${taskTypeName} ignored after completion (queue stopped): ${id.split('/').pop()}`,
 				);
 				return; // 結果を無視
 			}

@@ -81,7 +81,7 @@ export const testGlobPatterns = () => {
 		{ pattern: 'test?.jpg', filename: 'testa.jpg', expected: true },
 		{ pattern: 'test?.jpg', filename: 'test12.jpg', expected: false },
 		{ pattern: '*[0-9]*', filename: 'image123.png', expected: true },
-		{ pattern: 'DSC*', filename: 'DSC_0001.jpg', expected: true }
+		{ pattern: 'DSC*', filename: 'DSC_0001.jpg', expected: true },
 	];
 
 	console.log('Glob pattern test results:');

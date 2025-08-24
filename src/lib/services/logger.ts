@@ -2,7 +2,7 @@ import { attachConsole, debug, error, info, warn } from '@tauri-apps/plugin-log'
 
 const forwardConsole = (
 	fnName: 'log' | 'debug' | 'info' | 'warn' | 'error',
-	logger: (...args: any[]) => Promise<void>
+	logger: (...args: any[]) => Promise<void>,
 ) => {
 	const original = console[fnName];
 	console[fnName] = (...args) => {

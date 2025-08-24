@@ -3,7 +3,7 @@
  */
 
 export const deleteSelectedImages = async (
-	selectedImages: Set<string>
+	selectedImages: Set<string>,
 ): Promise<{
 	successCount: number;
 	errorCount: number;
@@ -14,7 +14,7 @@ export const deleteSelectedImages = async (
 	}
 
 	const confirmDelete = confirm(
-		`Delete ${selectedImages.size} images?\n\nDeleted images cannot be restored.`
+		`Delete ${selectedImages.size} images?\n\nDeleted images cannot be restored.`,
 	);
 	if (!confirmDelete) {
 		return { successCount: 0, errorCount: 0, errors: [] };
@@ -45,7 +45,7 @@ export const deleteSelectedImages = async (
 		// エラーがある場合のみユーザーに通知
 		if (0 < errorCount) {
 			alert(
-				`Deletion completed: ${successCount} successful, ${errorCount} failed\n\nFailed files:\n${errors.slice(0, 5).join('\n')}${5 < errors.length ? '\n...' : ''}`
+				`Deletion completed: ${successCount} successful, ${errorCount} failed\n\nFailed files:\n${errors.slice(0, 5).join('\n')}${5 < errors.length ? '\n...' : ''}`,
 			);
 		} else {
 			console.log(`${successCount}個の画像を削除しました。`);

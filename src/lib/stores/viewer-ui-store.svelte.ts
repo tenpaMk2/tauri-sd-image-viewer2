@@ -10,7 +10,7 @@ const INITIAL_VIEWER_UI_STATE: ViewerUIState = {
 	isAutoNavActive: false,
 };
 
-let state = $state<ViewerUIState>({ ...INITIAL_VIEWER_UI_STATE });
+const _state = $state<ViewerUIState>({ ...INITIAL_VIEWER_UI_STATE });
 
 // Timer management
 let uiTimer: number | null = null;
@@ -18,12 +18,12 @@ let autoNavTimer: number | null = null;
 
 // UI Controls
 const showUI = (): void => {
-	state.isVisible = true;
+	_state.isVisible = true;
 	resetUITimer();
 };
 
 const hideUI = (): void => {
-	state.isVisible = false;
+	_state.isVisible = false;
 };
 
 const resetUITimer = (): void => {
@@ -37,10 +37,10 @@ const resetUITimer = (): void => {
 
 // Auto Navigation
 const startAutoNavigation = (onNavigate: () => Promise<void>): void => {
-	if (state.isAutoNavActive) {
+	if (_state.isAutoNavActive) {
 		stopAutoNavigation();
 	} else {
-		state.isAutoNavActive = true;
+		_state.isAutoNavActive = true;
 		autoNavTimer = setInterval(async () => {
 			await onNavigate();
 		}, 2000);
@@ -52,26 +52,27 @@ const stopAutoNavigation = (): void => {
 		clearInterval(autoNavTimer);
 		autoNavTimer = null;
 	}
-	state.isAutoNavActive = false;
+	_state.isAutoNavActive = false;
 };
 
 // Mouse Event Handlers
 const handleMouseMove = (): void => {
-	if (!state.isVisible) {
-		showUI();
-	} else {
+	if (_state.isVisible) {
 		resetUITimer();
+	} else {
+		showUI();
 	}
 };
 
 const reset = (): void => {
 	// Reset to initial state
-	state.isVisible = INITIAL_VIEWER_UI_STATE.isVisible;
-	state.isAutoNavActive = INITIAL_VIEWER_UI_STATE.isAutoNavActive;
+	_state.isVisible = INITIAL_VIEWER_UI_STATE.isVisible;
+	_state.isAutoNavActive = INITIAL_VIEWER_UI_STATE.isAutoNavActive;
 };
 
 export const viewerUIStore = {
-	state: state as ViewerUIStoreState,
+	state: _state as ViewerUIStoreState,
+	deriveds: {},
 	actions: {
 		showUI,
 		hideUI,

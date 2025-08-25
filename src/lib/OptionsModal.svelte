@@ -4,14 +4,12 @@
 	import { toastStore } from '$lib/stores/toast-store.svelte';
 	import Icon from '@iconify/svelte';
 
-	const showOptionsModal = gridUiStore.state.showOptionsModal;
+	const { state: gridUiState, actions: gridUiActions } = gridUiStore;
 
-	const toggleOptionsModal = () => {
-		gridUiStore.actions.toggleOptionsModal();
-	};
+	const optionsModalVisible = $derived(gridUiState.optionsModalVisible);
 </script>
 
-{#if showOptionsModal}
+{#if optionsModalVisible}
 	<div class="modal-open modal">
 		<div class="modal-box">
 			<h3 class="mb-4 text-lg font-bold">Options</h3>
@@ -38,11 +36,11 @@
 			</div>
 
 			<div class="modal-action">
-				<button class="btn" onclick={toggleOptionsModal}>Close</button>
+				<button class="btn" onclick={() => gridUiActions.toggleOptionsModal()}>Close</button>
 			</div>
 		</div>
 		<!-- svelte-ignore a11y_click_events_have_key_events -->
 		<!-- svelte-ignore a11y_no_static_element_interactions -->
-		<div class="modal-backdrop" onclick={toggleOptionsModal}></div>
+		<div class="modal-backdrop" onclick={() => gridUiActions.toggleOptionsModal()}></div>
 	</div>
 {/if}

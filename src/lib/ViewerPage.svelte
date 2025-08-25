@@ -1,15 +1,15 @@
 <script lang="ts">
-	import ImageCanvas from '$lib/ImageCanvas.svelte';
-	import MetadataPanel from '$lib/MetadataPanel.svelte';
 	import { imageViewStore } from '$lib/stores/image-view-store.svelte';
 	import { metadataPanelStore } from '$lib/stores/metadata-panel-store.svelte';
 	import { navigationStore } from '$lib/stores/navigation-store.svelte';
 	import { viewerUIStore } from '$lib/stores/viewer-ui-store.svelte';
-	import ViewerUiOverlay from '$lib/ViewerUIOverlay.svelte';
 	import { onMount } from 'svelte';
+	import ImageCanvas from './ImageCanvas.svelte';
+	import MetadataPanel from './MetadataPanel.svelte';
+	import ViewerUiOverlay from './ViewerUIOverlay.svelte';
 
-	// viewerUIStoreから状態とアクションを取得
-	const { actions: viewerUIActions } = viewerUIStore;
+	// imageViewStoreからズーム状態を取得
+	const { deriveds: imageViewDeriveds } = imageViewStore;
 
 	// metadataPanelStoreから状態とアクションを取得
 	const { state: metadataPanelState } = metadataPanelStore;
@@ -17,13 +17,8 @@
 	// navigationStoreから現在の画像パスを取得
 	const { state: navigationState } = navigationStore;
 
-	// imageViewStoreからズーム状態を取得
-	const { getters: imageViewGetters } = imageViewStore;
-
-	// マウスムーブイベントハンドラー
-	const handleMouseMove = () => {
-		viewerUIActions.handleMouseMove();
-	};
+	// viewerUIStoreから状態とアクションを取得
+	const { actions: viewerUIActions } = viewerUIStore;
 
 	// キーボードイベントハンドラー
 	const handleKeydown = async (event: KeyboardEvent): Promise<void> => {
@@ -49,31 +44,26 @@
 	// コンポーネントのマウント時とクリーンアップ処理
 	onMount(() => {
 		// グローバルキーボードイベントリスナーを追加
-		const handleGlobalKeydown = (event: KeyboardEvent) => {
-			handleKeydown(event);
-		};
+		const handleGlobalKeydown = (event: KeyboardEvent) => handleKeydown(event);
 
 		window.addEventListener('keydown', handleGlobalKeydown);
 
-		const cleanup = () => {
+		// アンマウント時のクリーンアップ
+		return () => {
 			window.removeEventListener('keydown', handleGlobalKeydown);
 			viewerUIActions.stopAutoNavigation();
 			viewerUIActions.resetUITimer();
 		};
-
-		// アンマウント時のクリーンアップ
-		return cleanup;
 	});
 
 	console.log('🖼️ ViewerPage initialized with Svelte 5 patterns');
 </script>
 
-<!-- メイン画面のレイアウト -->
 <div
 	class="relative flex h-full bg-base-300 outline-none"
 	role="application"
 	aria-label="Image viewer"
-	onmousemove={handleMouseMove}
+	onmousemove={() => viewerUIActions.handleMouseMove()}
 >
 	<!-- メインキャンバスエリア -->
 	<div
@@ -85,7 +75,7 @@
 		<ImageCanvas />
 
 		<!-- UI要素のオーバーレイ（ズーム時は非表示） -->
-		{#if !imageViewGetters.isZoomed}
+		{#if !imageViewDeriveds.isZoomed}
 			<ViewerUiOverlay />
 		{/if}
 	</div>

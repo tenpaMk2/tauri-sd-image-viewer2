@@ -1,10 +1,10 @@
 <script lang="ts">
-	import { toastStore } from '$lib/stores/toast-store.svelte';
+	import { toastStore, type ToastType } from '$lib/stores/toast-store.svelte';
 	import Icon from '@iconify/svelte';
 
-	const toasts = $derived(toastStore.state.toasts);
+	const { state: toastState } = toastStore;
 
-	const getToastIcon = (type: string): string => {
+	const getToastIcon = (type: ToastType): string => {
 		switch (type) {
 			case 'success':
 				return 'lucide:check-circle';
@@ -13,12 +13,11 @@
 			case 'error':
 				return 'lucide:x-circle';
 			case 'info':
-			default:
 				return 'lucide:info';
 		}
 	};
 
-	const getToastClass = (type: string): string => {
+	const getToastClass = (type: ToastType): string => {
 		switch (type) {
 			case 'success':
 				return 'alert-success';
@@ -27,14 +26,13 @@
 			case 'error':
 				return 'alert-error';
 			case 'info':
-			default:
 				return 'alert-info';
 		}
 	};
 </script>
 
 <div class="toast-bottom toast-end toast z-50">
-	{#each toasts as toast (toast.id)}
+	{#each toastState.toasts as toast (toast.id)}
 		<div class="alert {getToastClass(toast.type)} min-w-64 shadow-lg">
 			<Icon icon={getToastIcon(toast.type)} class="h-5 w-5" />
 			<span class="text-sm">{toast.message}</span>

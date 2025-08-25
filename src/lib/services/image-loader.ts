@@ -11,7 +11,7 @@ export type ImageData = {
 /**
  * ディレクトリ内の画像ファイル一覧を取得
  */
-export const getImageFiles = async (directoryPath: string): Promise<string[]> => {
+export const getImagePaths = async (directoryPath: string): Promise<string[]> => {
 	try {
 		console.log('Reading directory: ' + directoryPath);
 		const entries = await readDir(directoryPath);

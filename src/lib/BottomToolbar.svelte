@@ -4,7 +4,10 @@
 	import { toastStore } from '$lib/stores/toast-store.svelte';
 	import Icon from '@iconify/svelte';
 
-	const selectedImages = imageSelectionStore.state.selectedImages;
+	const { state: imageSelectionState, actions: imageSelectionActions } = imageSelectionStore;
+	const { actions: toastActions } = toastStore;
+
+	const selectedImages = $derived(imageSelectionState.selectedImages);
 </script>
 
 {#if 0 < selectedImages.size}
@@ -21,8 +24,8 @@
 					onclick={() =>
 						imageActions.copyImagesToClipboard(
 							Array.from(selectedImages),
-							(message: string) => toastStore.actions.showSuccessToast(message),
-							(message: string) => toastStore.actions.showErrorToast(message),
+							(message: string) => toastActions.showSuccessToast(message),
+							(message: string) => toastActions.showErrorToast(message),
 						)}
 					title="Copy to Clipboard"
 				>
@@ -36,12 +39,12 @@
 							async (count: number) => {
 								return confirm(`Delete ${count} images?\n\nDeleted images cannot be restored.`);
 							},
-							(message: string) => toastStore.actions.showSuccessToast(message),
-							(message: string) => toastStore.actions.showWarningToast(message),
-							(message: string) => toastStore.actions.showErrorToast(message),
+							(message: string) => toastActions.showSuccessToast(message),
+							(message: string) => toastActions.showWarningToast(message),
+							(message: string) => toastActions.showErrorToast(message),
 						);
 						if (shouldClear) {
-							imageSelectionStore.actions.clearSelection();
+							imageSelectionActions.clearSelection();
 						}
 					}}
 					title="Delete"

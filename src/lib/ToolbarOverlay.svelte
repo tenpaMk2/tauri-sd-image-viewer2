@@ -1,12 +1,13 @@
 <script lang="ts">
+	import { transitionToGrid, transitionToViewer } from '$lib/services/app-transitions';
 	import { dialogService } from '$lib/services/dialog';
-	import { appStore } from '$lib/stores/app-store.svelte';
 	import { metadataPanelStore } from '$lib/stores/metadata-panel-store.svelte';
 	import { navigationStore } from '$lib/stores/navigation-store.svelte';
 	import { toastStore } from '$lib/stores/toast-store.svelte';
 	import { viewerUIStore } from '$lib/stores/viewer-ui-store.svelte';
 	import { copyFileToClipboard } from '$lib/utils/copy-utils';
 	import Icon from '@iconify/svelte';
+	import { path } from '@tauri-apps/api';
 
 	// ストアから状態を取得
 	const { state: viewerUIState } = viewerUIStore;
@@ -39,7 +40,7 @@
 	const openFileDialog = async () => {
 		const result = await dialogService.openFileDialog();
 		if (result) {
-			await appStore.actions.transitionToViewer(result);
+			transitionToViewer(result);
 		}
 	};
 </script>
@@ -55,7 +56,7 @@
 		<div class="flex items-center gap-4">
 			{#if 1 < navigationStore.state.directoryImagePaths.length}
 				<div class="text-sm opacity-80">
-					{navigationStore.getters.currentIndex + 1} / {navigationStore.state.directoryImagePaths
+					{navigationStore.deriveds.currentIndex + 1} / {navigationStore.state.directoryImagePaths
 						.length}
 				</div>
 			{/if}
@@ -86,7 +87,12 @@
 			</button>
 			<button
 				class="btn text-white btn-ghost btn-sm"
-				onclick={async () => await appStore.actions.transitionToGrid()}
+				onclick={async () => {
+					const directory = await path.dirname(navigationState.currentImagePath);
+					if (directory) {
+						transitionToGrid(directory);
+					}
+				}}
 				title="Grid View"
 			>
 				<Icon icon="lucide:layout-grid" class="h-4 w-4" />

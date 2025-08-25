@@ -1,17 +1,23 @@
 <script lang="ts">
 	import { dialogService } from '$lib/services/dialog';
-	import { appStore } from '$lib/stores/app-store.svelte';
-	import { filteredImagesStore } from '$lib/stores/filtered-images-store.svelte';
+	import { transitionToGrid } from '$lib/services/app-transitions';
+	import { filteredImagesStore } from '$lib/stores/filtered-images-paths-store.svelte';
 	import { gridUiStore } from '$lib/stores/grid-ui-store.svelte';
 	import { imageSelectionStore } from '$lib/stores/image-selection-store.svelte';
 	import Icon from '@iconify/svelte';
-	const selectedImages = imageSelectionStore.state.selectedImages;
-	const showFilterPanel = gridUiStore.state.showFilterPanel;
-	const filteredImageCount = filteredImagesStore.getters.filteredImageCount;
+
+	const { state: imageSelectionState, actions: imageSelectionActions } = imageSelectionStore;
+	const { deriveds: filteredImagesDeriveds } = filteredImagesStore;
+	const { state: gridUiState, actions: gridUiActions } = gridUiStore;
+
+	const selectedImages = $derived(imageSelectionState.selectedImages);
+	const showFilterPanel = $derived(gridUiState.filterPanelVisible);
+	const filteredImageCount = filteredImagesDeriveds.filteredImageCount;
+
 	const openDirectoryDialog = async () => {
 		const result = await dialogService.openDirectoryDialog();
 		if (result) {
-			await appStore.actions.transitionToGrid(result);
+			transitionToGrid(result);
 		}
 	};
 </script>
@@ -20,7 +26,7 @@
 	<!-- Options Button -->
 	<button
 		class="btn btn-ghost btn-sm"
-		onclick={() => gridUiStore.actions.toggleOptionsModal()}
+		onclick={() => gridUiActions.toggleOptionsModal()}
 		title="Options"
 	>
 		<Icon icon="lucide:settings" class="h-4 w-4" />
@@ -29,7 +35,7 @@
 	<!-- Filter Button -->
 	<button
 		class="btn btn-ghost btn-sm {showFilterPanel ? 'btn-active btn-primary' : ''}"
-		onclick={() => gridUiStore.actions.toggleFilterPanel()}
+		onclick={() => gridUiActions.toggleFilterPanel()}
 		title="Toggle Filters"
 	>
 		<Icon icon="lucide:filter" class="h-4 w-4" />
@@ -39,7 +45,7 @@
 	{#if 0 < filteredImageCount}
 		<button
 			class="btn btn-ghost btn-sm"
-			onclick={() => imageSelectionStore.actions.toggleSelectAll()}
+			onclick={() => imageSelectionActions.toggleSelectAll()}
 			title={selectedImages.size === filteredImageCount ? 'Deselect All' : 'Select All'}
 		>
 			<Icon

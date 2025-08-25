@@ -1,12 +1,15 @@
 <script lang="ts">
 	import GridPage from '$lib/GridPage.svelte';
+	import { transitionToGrid, transitionToViewer } from '$lib/services/app-transitions';
+	import { dragAndDropService } from '$lib/services/drag-and-drop';
+	import { appStore } from '$lib/stores/app-store.svelte';
 	import Toast from '$lib/Toast.svelte';
 	import ViewerPage from '$lib/ViewerPage.svelte';
 	import WelcomeScreen from '$lib/WelcomeScreen.svelte';
-	import { dragAndDropService } from '$lib/services/drag-and-drop';
-	import { appStore } from '$lib/stores/app-store.svelte';
 	import { getCurrentWebview } from '@tauri-apps/api/webview';
 	import { onMount } from 'svelte';
+
+	const { state: appState } = appStore;
 
 	// ドラッグ&ドロップハンドラー
 	const handleDroppedPaths = async (paths: string[]) => {
@@ -16,11 +19,11 @@
 
 		switch (result.kind) {
 			case 'file':
-				await appStore.actions.transitionToViewer(result.path);
+				transitionToViewer(result.path);
 				break;
 
 			case 'directory':
-				await appStore.actions.transitionToGrid(result.path);
+				transitionToGrid(result.path);
 				break;
 		}
 	};
@@ -28,24 +31,18 @@
 	onMount(() => {
 		const setupDragDrop = async () => {
 			const webview = getCurrentWebview();
-			const unlisten = await webview.onDragDropEvent((event) => {
+			return await webview.onDragDropEvent((event) => {
 				if (event.payload.type !== 'drop' || (event.payload.paths ?? []).length === 0) {
 					return;
 				}
 				handleDroppedPaths(event.payload.paths);
 			});
-
-			return unlisten;
 		};
 
-		let unlistenPromise: Promise<() => void> | null = null;
-
-		unlistenPromise = setupDragDrop();
+		const unlistenPromise: Promise<() => void> = setupDragDrop();
 
 		return () => {
-			if (unlistenPromise) {
-				unlistenPromise.then((unlisten) => unlisten());
-			}
+			unlistenPromise.then((unlisten) => unlisten());
 		};
 	});
 </script>
@@ -56,15 +53,14 @@
 
 <div class="min-h-screen bg-base-100">
 	<main class="h-screen">
-		{#if appStore.state.viewMode === 'welcome'}
+		{#if appState.viewMode === 'welcome'}
 			<WelcomeScreen />
-		{:else if appStore.state.viewMode === 'grid'}
+		{:else if appState.viewMode === 'grid'}
 			<GridPage />
-		{:else if appStore.state.viewMode === 'viewer'}
+		{:else if appState.viewMode === 'viewer'}
 			<ViewerPage />
 		{/if}
 	</main>
 
-	<!-- Toast Display -->
 	<Toast />
 </div>

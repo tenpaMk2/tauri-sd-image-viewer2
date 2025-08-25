@@ -1,30 +1,25 @@
 <script lang="ts">
-	import { appStore } from '$lib/stores/app-store.svelte';
+	import { directoryImagePathsStore } from '$lib/stores/directory-image-paths-store.svelte';
+	import { filteredImagesStore } from '$lib/stores/filtered-images-paths-store.svelte';
 	import { tagStore } from '$lib/stores/tag-store.svelte';
-	import { filteredImagesStore } from '$lib/stores/filtered-images-store.svelte';
-	import { path } from '@tauri-apps/api';
 
-	const directory = appStore.state.directory!;
-	const tagData = tagStore.state.tagData;
-	const totalImageCount = filteredImagesStore.getters.totalImageCount;
-	const filteredImageCount = filteredImagesStore.getters.filteredImageCount;
+	const { state: tagState } = tagStore;
+	const { deriveds: filteredImagesDeriveds } = filteredImagesStore;
 </script>
 
 <div class="flex items-center gap-4">
-	{#await path.basename(directory) then folderName}
-		<h1 class="truncate text-lg font-semibold">
-			{folderName || 'Folder'}
-		</h1>
-	{/await}
-	{#if 0 < totalImageCount}
+	<h1 class="truncate text-lg font-semibold">
+		{directoryImagePathsStore.state.currentDirectory || 'Folder'}
+	</h1>
+	{#if 0 < filteredImagesDeriveds.totalImageCount}
 		<div class="text-sm opacity-80">
-			{#if filteredImageCount < totalImageCount}
-				{filteredImageCount} of {totalImageCount} images
+			{#if filteredImagesDeriveds.filteredImageCount < filteredImagesDeriveds.totalImageCount}
+				{filteredImagesDeriveds.filteredImageCount} of {filteredImagesDeriveds.totalImageCount} images
 			{:else}
-				{totalImageCount} images
+				{filteredImagesDeriveds.totalImageCount} images
 			{/if}
-			{#if tagData && tagData.allTags.length > 0}
-				• {tagData.allTags.length} SD tags
+			{#if tagState.tagData && tagState.tagData.allTags.length > 0}
+				• {tagState.tagData.allTags.length} SD tags
 			{/if}
 		</div>
 	{/if}

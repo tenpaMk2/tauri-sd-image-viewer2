@@ -3,12 +3,12 @@
 	import { viewerUIStore } from '$lib/stores/viewer-ui-store.svelte';
 	import Icon from '@iconify/svelte';
 
-	const { state: navigationState, getters: navigationGetters } = navigationStore;
+	const { state: navigationState, deriveds: navigationDeriveds } = navigationStore;
 	const { state: viewerUIState } = viewerUIStore;
 </script>
 
 <!-- 前の画像ボタン -->
-{#if navigationGetters.hasPrevious}
+{#if navigationDeriveds.hasPrevious}
 	<div
 		class="absolute top-1/2 left-6 flex h-16 w-16 -translate-y-1/2 items-center justify-center transition-opacity duration-300"
 		class:pointer-events-none={!viewerUIState.isVisible}
@@ -29,7 +29,7 @@
 {/if}
 
 <!-- 次の画像ボタン -->
-{#if navigationGetters.hasNext}
+{#if navigationDeriveds.hasNext}
 	<div
 		class="absolute top-1/2 right-6 flex h-16 w-16 -translate-y-1/2 items-center justify-center transition-opacity duration-300"
 		class:pointer-events-none={!viewerUIState.isVisible}

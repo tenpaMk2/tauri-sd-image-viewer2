@@ -1,25 +1,29 @@
 <script lang="ts">
 	import RatingComponent from '$lib/components/RatingComponent.svelte';
 	import { thumbnailRegistry } from '$lib/services/thumbnail-registry';
-	import { appStore } from '$lib/stores/app-store.svelte';
+	import { imageSelectionStore } from '$lib/stores/image-selection-store.svelte';
+	import { transitionToViewer } from './services/app-transitions';
 
 	const {
 		imagePath,
-		isSelected = false,
-		onToggleSelection,
 	}: {
 		imagePath: string;
-		isSelected?: boolean;
-		onToggleSelection?: (imagePath: string, shiftKey?: boolean, metaKey?: boolean) => void;
 	} = $props();
+
+	const { state: imageSelectionState, actions: imageSelectionActions } = imageSelectionStore;
 
 	// サムネイルアイテムを取得（$stateオブジェクトなので$derivedは不要）
 	const thumbnail = thumbnailRegistry.getOrCreateStore(imagePath);
 
+	// 選択状態をストアから直接取得
+	const isSelected = $derived(imageSelectionState.selectedImages.has(imagePath));
+
 	const handleClick = (event?: MouseEvent): void => {
-		if (onToggleSelection) {
-			onToggleSelection(imagePath, event?.shiftKey, event?.metaKey);
-		}
+		imageSelectionActions.toggleImageSelection(imagePath, event?.shiftKey, event?.metaKey);
+	};
+
+	const handleDoubleClick = (): void => {
+		transitionToViewer(imagePath);
 	};
 </script>
 
@@ -30,7 +34,7 @@
 		class:ring-blue-500={isSelected}
 		class:opacity-80={isSelected}
 		onclick={handleClick}
-		ondblclick={async () => await appStore.actions.transitionToViewer(imagePath)}
+		ondblclick={handleDoubleClick}
 		onkeydown={(e) => e.key === 'Enter' && handleClick()}
 		aria-label="Select image (double-click to open)"
 	>

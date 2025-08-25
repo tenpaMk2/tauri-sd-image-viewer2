@@ -1,25 +1,16 @@
 <script lang="ts">
 	import ImageThumbnail from '$lib/ImageThumbnail.svelte';
+	import { filteredImagesStore } from '$lib/stores/filtered-images-paths-store.svelte';
 
-	const {
-		imageFiles,
-		selectedImages = new Set(),
-		onToggleSelection,
-	}: {
-		imageFiles: string[];
-		selectedImages?: Set<string>;
-		onToggleSelection?: (imagePath: string, shiftKey?: boolean, metaKey?: boolean) => void;
-	} = $props();
+	const { deriveds } = filteredImagesStore;
+
+	// フィルタリング済み画像リストをストアから直接取得
+	const imageFiles = deriveds.filteredImageFiles;
 </script>
 
 <!-- サムネイルグリッド -->
 <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8">
 	{#each imageFiles as imagePath (imagePath)}
-		<ImageThumbnail {imagePath} isSelected={selectedImages.has(imagePath)} {onToggleSelection} />
+		<ImageThumbnail {imagePath} />
 	{/each}
-</div>
-
-<!-- 画像数表示 -->
-<div class="mt-4 text-center text-sm text-gray-500">
-	{imageFiles.length} images
 </div>

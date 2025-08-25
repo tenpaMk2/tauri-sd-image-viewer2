@@ -19,17 +19,17 @@ const INITIAL_TOAST_STATE: ToastState = {
 	idCounter: 0,
 };
 
-let state = $state<MutableToastState>({ ...INITIAL_TOAST_STATE });
+const _state = $state<MutableToastState>({ ...INITIAL_TOAST_STATE });
 
 const generateToastId = (): string => {
-	return `toast-${++state.idCounter}-${Date.now()}`;
+	return `toast-${++_state.idCounter}-${Date.now()}`;
 };
 
 const showToast = (message: string, type: ToastType = 'info', duration: number = 3000): void => {
 	const id = generateToastId();
 	const toast: Toast = { id, message, type, duration };
 
-	state.toasts = [...state.toasts, toast];
+	_state.toasts = [..._state.toasts, toast];
 
 	// 自動削除タイマー
 	if (0 < duration) {
@@ -40,7 +40,7 @@ const showToast = (message: string, type: ToastType = 'info', duration: number =
 };
 
 const removeToast = (id: string): void => {
-	state.toasts = state.toasts.filter((toast) => toast.id !== id);
+	_state.toasts = _state.toasts.filter((toast) => toast.id !== id);
 };
 
 const showSuccessToast = (message: string, duration?: number): void => {
@@ -60,9 +60,8 @@ const showErrorToast = (message: string, duration?: number): void => {
 };
 
 export const toastStore = {
-	state: state as ToastState,
+	state: _state as ToastState,
 	actions: {
-		showToast,
 		removeToast,
 		showSuccessToast,
 		showInfoToast,

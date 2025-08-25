@@ -1,5 +1,5 @@
 import { imageCacheService } from '$lib/services/image-cache';
-import { getImageFiles } from '$lib/services/image-loader';
+import { getImagePaths } from '$lib/services/image-loader';
 import { path } from '@tauri-apps/api';
 
 export type ImageLoadingStatus = 'idle' | 'loading' | 'loaded';
@@ -27,15 +27,15 @@ const INITIAL_NAVIGATION_STATE: NavigationState = {
 	currentImageUrl: '',
 };
 
-let state = $state<MutableNavigationState>({ ...INITIAL_NAVIGATION_STATE });
+const _state = $state<MutableNavigationState>({ ...INITIAL_NAVIGATION_STATE });
 
 const currentIndex = $derived.by(() => {
-	const paths = state.directoryImagePaths;
-	const targetPath = state.currentImagePath;
+	const paths = _state.directoryImagePaths;
+	const targetPath = _state.currentImagePath;
 	return paths.findIndex((path) => path === targetPath);
 });
 const hasPrevious = $derived(0 < currentIndex);
-const hasNext = $derived(0 <= currentIndex && currentIndex < state.directoryImagePaths.length - 1);
+const hasNext = $derived(0 <= currentIndex && currentIndex < _state.directoryImagePaths.length - 1);
 
 // ナビゲーション関連アクション
 const navigateNext = async (): Promise<void> => {
@@ -46,18 +46,18 @@ const navigateNext = async (): Promise<void> => {
 	}
 
 	const nextIndex = currentIndex + 1;
-	const nextPath = state.directoryImagePaths[nextIndex];
+	const nextPath = _state.directoryImagePaths[nextIndex];
 	console.log('🔄 Next image path: ' + nextPath.split('/').pop());
 
 	// ナビゲーション開始
-	state.isNavigating = true;
+	_state.isNavigating = true;
 
-	state.currentImagePath = nextPath;
-	_loadImage(nextPath).then(() => (state.isNavigating = false));
+	_state.currentImagePath = nextPath;
+	_loadImage(nextPath).then(() => (_state.isNavigating = false));
 
 	// プリロード（非同期で実行）
 	if (hasNext) {
-		_preloadImage(state.directoryImagePaths[currentIndex + 1]);
+		_preloadImage(_state.directoryImagePaths[currentIndex + 1]);
 	}
 };
 
@@ -69,63 +69,63 @@ const navigatePrevious = async (): Promise<void> => {
 	}
 
 	const prevIndex = currentIndex - 1;
-	const prevPath = state.directoryImagePaths[prevIndex];
+	const prevPath = _state.directoryImagePaths[prevIndex];
 	console.log('🔄 Previous image path: ' + prevPath.split('/').pop());
 
 	// ナビゲーション開始
-	state.isNavigating = true;
+	_state.isNavigating = true;
 
-	state.currentImagePath = prevPath;
-	_loadImage(prevPath).then(() => (state.isNavigating = false));
+	_state.currentImagePath = prevPath;
+	_loadImage(prevPath).then(() => (_state.isNavigating = false));
 
 	// プリロード（非同期で実行）
 	if (hasPrevious) {
-		_preloadImage(state.directoryImagePaths[prevIndex]);
+		_preloadImage(_state.directoryImagePaths[prevIndex]);
 	}
 };
 
 const initializeNavigation = async (imagePath: string): Promise<void> => {
-	state.isNavigating = true;
+	_state.isNavigating = true;
 
 	try {
 		const dirPath = await path.dirname(imagePath);
-		const files = await getImageFiles(dirPath);
+		const files = await getImagePaths(dirPath);
 
-		state.directoryImagePaths = files;
-		state.currentImagePath = imagePath;
+		_state.directoryImagePaths = files;
+		_state.currentImagePath = imagePath;
 
 		_loadImage(imagePath).catch((error: any) => {
 			console.error('Failed to load the image on initialization: ' + error);
 		});
 
 		if (hasNext) {
-			_preloadImage(state.directoryImagePaths[currentIndex + 1]);
+			_preloadImage(_state.directoryImagePaths[currentIndex + 1]);
 		}
 		if (hasPrevious) {
-			_preloadImage(state.directoryImagePaths[currentIndex - 1]);
+			_preloadImage(_state.directoryImagePaths[currentIndex - 1]);
 		}
 
 		// 初期化時に現在の画像の隣接する画像をプリロード
 		if (0 <= currentIndex) {
 			imageCacheService
-				.preloadAdjacentImages(state.directoryImagePaths, currentIndex)
+				.preloadAdjacentImages(_state.directoryImagePaths, currentIndex)
 				.catch((error: any) => {
 					console.warn('Failed to preload adjacent images on initialization: ' + error);
 				});
 		}
 	} catch (error) {
-		state.imageFileLoadError = error instanceof Error ? error.message : String(error);
-		state.directoryImagePaths = [];
-		state.currentImagePath = '';
+		_state.imageFileLoadError = error instanceof Error ? error.message : String(error);
+		_state.directoryImagePaths = [];
+		_state.currentImagePath = '';
 	} finally {
-		state.isNavigating = false;
+		_state.isNavigating = false;
 	}
 };
 
 const _loadImage = async (path: string): Promise<void> => {
-	state.imageLoadingStatus = 'loading';
-	state.currentImageUrl = await imageCacheService.loadImage(path);
-	state.imageLoadingStatus = 'loaded';
+	_state.imageLoadingStatus = 'loading';
+	_state.currentImageUrl = await imageCacheService.loadImage(path);
+	_state.imageLoadingStatus = 'loaded';
 
 	return;
 };
@@ -136,10 +136,9 @@ const _preloadImage = async (path: string): Promise<void> => {
 };
 
 export const navigationStore = {
-	state: state as NavigationState,
+	state: _state as NavigationState,
 
-	// 計算プロパティ（getters）
-	getters: {
+	deriveds: {
 		get currentIndex() {
 			return currentIndex;
 		},
@@ -152,7 +151,6 @@ export const navigationStore = {
 	},
 
 	actions: {
-		// ナビゲーション関連
 		navigateNext,
 		navigatePrevious,
 		initializeNavigation,

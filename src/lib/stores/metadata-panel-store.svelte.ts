@@ -14,31 +14,31 @@ const INITIAL_METADATA_PANEL_STATE: MetadataPanelState = {
 	isResizing: false,
 };
 
-let state = $state<MetadataPanelState>({ ...INITIAL_METADATA_PANEL_STATE });
+const _state = $state<MetadataPanelState>({ ...INITIAL_METADATA_PANEL_STATE });
 
 // Panel Controls
 const toggle = (): void => {
-	state.isVisible = !state.isVisible;
+	_state.isVisible = !_state.isVisible;
 };
 
 const setFocus = (focused: boolean): void => {
-	state.isFocused = focused;
+	_state.isFocused = focused;
 };
 
 const setWidth = (width: number): void => {
-	state.width = width;
+	_state.width = width;
 };
 
 const setResizing = (isResizing: boolean): void => {
-	state.isResizing = isResizing;
+	_state.isResizing = isResizing;
 };
 
 const show = (): void => {
-	state.isVisible = true;
+	_state.isVisible = true;
 };
 
 const hide = (): void => {
-	state.isVisible = false;
+	_state.isVisible = false;
 };
 
 // Resize handling
@@ -47,7 +47,7 @@ const handleResize = (event: MouseEvent, minWidth: number, maxWidth: number): vo
 	event.preventDefault();
 
 	const handleMouseMove = (e: MouseEvent): void => {
-		if (!state.isResizing) return;
+		if (!_state.isResizing) return;
 
 		const containerWidth = window.innerWidth;
 		const newWidth = containerWidth - e.clientX;
@@ -68,14 +68,15 @@ const handleResize = (event: MouseEvent, minWidth: number, maxWidth: number): vo
 };
 
 const reset = (): void => {
-	state.isVisible = INITIAL_METADATA_PANEL_STATE.isVisible;
-	state.isFocused = INITIAL_METADATA_PANEL_STATE.isFocused;
-	state.width = INITIAL_METADATA_PANEL_STATE.width;
-	state.isResizing = INITIAL_METADATA_PANEL_STATE.isResizing;
+	_state.isVisible = INITIAL_METADATA_PANEL_STATE.isVisible;
+	_state.isFocused = INITIAL_METADATA_PANEL_STATE.isFocused;
+	_state.width = INITIAL_METADATA_PANEL_STATE.width;
+	_state.isResizing = INITIAL_METADATA_PANEL_STATE.isResizing;
 };
 
 export const metadataPanelStore = {
-	state: state as MetadataPanelStoreState,
+	state: _state as MetadataPanelStoreState,
+	deriveds: {},
 	actions: {
 		toggle,
 		setFocus,

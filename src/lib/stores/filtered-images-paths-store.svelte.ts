@@ -1,30 +1,30 @@
 import { filterStore } from '$lib/stores/filter-store.svelte';
-import { navigationStore } from '$lib/stores/navigation-store.svelte';
 import { tagStore } from '$lib/stores/tag-store.svelte';
+import { directoryImagePathsStore } from '$lib/stores/directory-image-paths-store.svelte';
 
 // フィルタリングされた画像リスト
 const filteredImageFiles = $derived.by(() => {
-	const imageFiles = navigationStore.state.directoryImagePaths;
-	if (imageFiles.length === 0) return [];
+	const imagePaths = directoryImagePathsStore.state.imagePaths;
+	if (!imagePaths || imagePaths.length === 0) return [];
 
 	// レーティングマップを同期的に取得
-	const ratingsMap = tagStore.state.tagAggregationService?.getRatingsMapSync(imageFiles);
-	if (!ratingsMap) return imageFiles;
+	const ratingsMap =
+		tagStore.state.tagAggregationService?.getRatingsMapSync(imagePaths) ?? new Map();
 
 	// フィルタを適用
 	return filterStore.actions.filterImages(
-		imageFiles,
+		imagePaths,
 		ratingsMap,
 		tagStore.state.tagAggregationService,
 	);
 });
 
 // 画像数情報
-const totalImageCount = $derived(navigationStore.state.directoryImagePaths.length);
+const totalImageCount = $derived(directoryImagePathsStore.state.imagePaths?.length ?? 0);
 const filteredImageCount = $derived(filteredImageFiles.length);
 
 export const filteredImagesStore = {
-	getters: {
+	deriveds: {
 		get filteredImageFiles() {
 			return filteredImageFiles;
 		},

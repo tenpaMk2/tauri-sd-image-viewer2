@@ -22,33 +22,27 @@ type MutableFilterState = {
 export type FilterState = Readonly<MutableFilterState>;
 
 const INITIAL_FILTER_STATE: MutableFilterState = {
-	targetRating: 0,
-	ratingComparison: 'gte',
-	filenamePattern: '',
-	selectedTags: [],
-	isActive: false,
-};
-
-let state = $state<MutableFilterState>({
 	targetRating: 0, // Always active: 0 = unrated, 1-5 = rated
 	ratingComparison: 'gte', // Default: >= 0 (show all)
 	filenamePattern: '',
 	selectedTags: [],
 	isActive: false,
-});
+};
+
+const _state = $state<MutableFilterState>({ ...INITIAL_FILTER_STATE });
 
 // debouncing用のタイマー
 let patternTimeout: number | undefined;
 
 const updateRatingFilter = (rating: number, comparison: RatingComparison) => {
 	// Always keep rating filter active: 0 = unrated, 1-5 = rated
-	state.targetRating = Math.max(0, Math.min(5, rating));
-	state.ratingComparison = comparison;
+	_state.targetRating = Math.max(0, Math.min(5, rating));
+	_state.ratingComparison = comparison;
 	updateActiveState();
 };
 
 const updateFilenamePattern = (pattern: string) => {
-	state.filenamePattern = pattern.trim();
+	_state.filenamePattern = pattern.trim();
 	updateActiveState();
 };
 
@@ -62,29 +56,29 @@ const updateFilenamePatternWithDebounce = (pattern: string) => {
 
 const addTag = (tagName: string) => {
 	const normalizedTag = tagName.trim().toLowerCase();
-	if (normalizedTag && !state.selectedTags.includes(normalizedTag)) {
-		state.selectedTags = [...state.selectedTags, normalizedTag];
+	if (normalizedTag && !_state.selectedTags.includes(normalizedTag)) {
+		_state.selectedTags = [..._state.selectedTags, normalizedTag];
 		updateActiveState();
 	}
 };
 
 const removeTag = (tagName: string) => {
 	const normalizedTag = tagName.trim().toLowerCase();
-	state.selectedTags = state.selectedTags.filter((tag) => tag !== normalizedTag);
+	_state.selectedTags = _state.selectedTags.filter((tag) => tag !== normalizedTag);
 	updateActiveState();
 };
 
 const clearAllTags = () => {
-	state.selectedTags = [];
+	_state.selectedTags = [];
 	updateActiveState();
 };
 
 const clearFilters = () => {
-	state.targetRating = INITIAL_FILTER_STATE.targetRating;
-	state.ratingComparison = INITIAL_FILTER_STATE.ratingComparison;
-	state.filenamePattern = INITIAL_FILTER_STATE.filenamePattern;
-	state.selectedTags = INITIAL_FILTER_STATE.selectedTags;
-	state.isActive = INITIAL_FILTER_STATE.isActive;
+	_state.targetRating = INITIAL_FILTER_STATE.targetRating;
+	_state.ratingComparison = INITIAL_FILTER_STATE.ratingComparison;
+	_state.filenamePattern = INITIAL_FILTER_STATE.filenamePattern;
+	_state.selectedTags = INITIAL_FILTER_STATE.selectedTags;
+	_state.isActive = INITIAL_FILTER_STATE.isActive;
 };
 
 const reset = () => {
@@ -94,7 +88,7 @@ const reset = () => {
 
 const updateActiveState = () => {
 	// Filename pattern and SD tags affect isActive (rating is always active)
-	state.isActive = state.filenamePattern !== '' || state.selectedTags.length > 0;
+	_state.isActive = _state.filenamePattern !== '' || _state.selectedTags.length > 0;
 };
 
 /**
@@ -112,8 +106,8 @@ const filterImages = (
 	let filtered = imagePaths;
 
 	// Apply filename pattern filter
-	if (state.filenamePattern) {
-		filtered = filterFilesByGlob(filtered, state.filenamePattern);
+	if (_state.filenamePattern) {
+		filtered = filterFilesByGlob(filtered, _state.filenamePattern);
 	}
 
 	// Apply rating filter (always active)
@@ -122,22 +116,22 @@ const filterImages = (
 		// rating: undefined または 0 = unrated (星0扱い)
 		const normalizedRating = rating === undefined ? 0 : rating;
 
-		switch (state.ratingComparison) {
+		switch (_state.ratingComparison) {
 			case 'gte':
-				return normalizedRating >= state.targetRating;
+				return normalizedRating >= _state.targetRating;
 			case 'eq':
-				return normalizedRating === state.targetRating;
+				return normalizedRating === _state.targetRating;
 			case 'lte':
-				return normalizedRating <= state.targetRating;
+				return normalizedRating <= _state.targetRating;
 			default:
 				return true;
 		}
 	});
 
 	// Apply SD tags filter (AND condition) - 同期処理で高速化
-	if (state.selectedTags.length > 0 && tagAggregationService) {
+	if (_state.selectedTags.length > 0 && tagAggregationService) {
 		filtered = filtered.filter((imagePath) => {
-			return tagAggregationService.imageContainsAllTagsSync(imagePath, state.selectedTags);
+			return tagAggregationService.imageContainsAllTagsSync(imagePath, _state.selectedTags);
 		});
 	}
 
@@ -148,25 +142,25 @@ const filterImages = (
  * Get filter summary text for UI display
  */
 const getFilterSummary = (totalCount: number, filteredCount: number): string => {
-	if (!state.isActive) return '';
+	if (!_state.isActive) return '';
 
 	const filters = [];
 	// Always show rating filter (only show if not default >= 0)
-	if (!(state.targetRating === 0 && state.ratingComparison === 'gte')) {
+	if (!(_state.targetRating === 0 && _state.ratingComparison === 'gte')) {
 		const comparisonSymbol =
-			state.ratingComparison === 'gte' ? '+' : state.ratingComparison === 'eq' ? '' : '-';
+			_state.ratingComparison === 'gte' ? '+' : _state.ratingComparison === 'eq' ? '' : '-';
 		const ratingText =
-			state.targetRating === 0 ? 'Unrated' : `${state.targetRating}${comparisonSymbol}`;
+			_state.targetRating === 0 ? 'Unrated' : `${_state.targetRating}${comparisonSymbol}`;
 		filters.push(`Rating ${ratingText}`);
 	}
-	if (state.filenamePattern) {
-		filters.push(`"${state.filenamePattern}"`);
+	if (_state.filenamePattern) {
+		filters.push(`"${_state.filenamePattern}"`);
 	}
-	if (state.selectedTags.length > 0) {
+	if (_state.selectedTags.length > 0) {
 		const tagText =
-			state.selectedTags.length === 1
-				? `Tag: ${state.selectedTags[0]}`
-				: `Tags: ${state.selectedTags.join(', ')}`;
+			_state.selectedTags.length === 1
+				? `Tag: ${_state.selectedTags[0]}`
+				: `Tags: ${_state.selectedTags.join(', ')}`;
 		filters.push(tagText);
 	}
 
@@ -177,7 +171,7 @@ const getFilterSummary = (totalCount: number, filteredCount: number): string => 
 };
 
 export const filterStore = {
-	state: state as FilterState,
+	state: _state as FilterState,
 	actions: {
 		updateRatingFilter,
 		updateFilenamePattern,

@@ -1,47 +1,43 @@
 type MutableGridUiState = {
-	showFilterPanel: boolean;
+	filterPanelVisible: boolean;
 	filteredImageCount: number;
-	showOptionsModal: boolean;
+	optionsModalVisible: boolean;
 };
 
 export type GridUiState = Readonly<MutableGridUiState>;
 
 const INITIAL_GRID_UI_STATE: MutableGridUiState = {
-	showFilterPanel: false,
+	filterPanelVisible: false,
 	filteredImageCount: 0,
-	showOptionsModal: false,
+	optionsModalVisible: false,
 };
 
-let gridUiState = $state<MutableGridUiState>({
-	showFilterPanel: false,
-	filteredImageCount: 0,
-	showOptionsModal: false,
-});
+const _state = $state<MutableGridUiState>({ ...INITIAL_GRID_UI_STATE });
 
 const toggleFilterPanel = () => {
-	gridUiState.showFilterPanel = !gridUiState.showFilterPanel;
+	_state.filterPanelVisible = !_state.filterPanelVisible;
 };
 
 const toggleOptionsModal = () => {
-	gridUiState.showOptionsModal = !gridUiState.showOptionsModal;
+	_state.optionsModalVisible = !_state.optionsModalVisible;
 };
 
 const closeOptionsModal = () => {
-	gridUiState.showOptionsModal = false;
+	_state.optionsModalVisible = false;
 };
 
 const setFilteredImageCount = (count: number) => {
-	gridUiState.filteredImageCount = count;
+	_state.filteredImageCount = count;
 };
 
 const reset = () => {
-	gridUiState.showFilterPanel = INITIAL_GRID_UI_STATE.showFilterPanel;
-	gridUiState.filteredImageCount = INITIAL_GRID_UI_STATE.filteredImageCount;
-	gridUiState.showOptionsModal = INITIAL_GRID_UI_STATE.showOptionsModal;
+	_state.filterPanelVisible = INITIAL_GRID_UI_STATE.filterPanelVisible;
+	_state.filteredImageCount = INITIAL_GRID_UI_STATE.filteredImageCount;
+	_state.optionsModalVisible = INITIAL_GRID_UI_STATE.optionsModalVisible;
 };
 
 export const gridUiStore = {
-	state: gridUiState as GridUiState,
+	state: _state as GridUiState,
 	actions: {
 		toggleFilterPanel,
 		toggleOptionsModal,

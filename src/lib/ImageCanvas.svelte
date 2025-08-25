@@ -6,7 +6,7 @@
 	const { state: navigationState } = navigationStore;
 	const {
 		state: imageViewState,
-		getters: imageViewGetters,
+		deriveds: imageViewDeriveds,
 		actions: imageViewActions,
 	} = imageViewStore;
 
@@ -102,7 +102,7 @@
 	{/if}
 
 	<!-- ズームリセットボタン -->
-	{#if imageViewGetters.isZoomed}
+	{#if imageViewDeriveds.isZoomed}
 		<button
 			class="btn absolute right-4 bottom-4 bg-black/60 text-white btn-ghost backdrop-blur-sm btn-sm hover:bg-black/80"
 			onclick={() => imageViewActions.resetZoom()}

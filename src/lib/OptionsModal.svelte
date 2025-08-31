@@ -6,60 +6,68 @@
 
 	const { state: gridUiState, actions: gridUiActions } = gridUiStore;
 
-	const optionsModalVisible = $derived(gridUiState.optionsModalVisible);
+	let dialog: HTMLDialogElement;
+
+	$effect(() => {
+		if (gridUiState.optionsModalVisible && dialog) {
+			dialog.showModal();
+		} else if (!gridUiState.optionsModalVisible && dialog) {
+			dialog.close();
+		}
+	});
 </script>
 
-{#if optionsModalVisible}
-	<div class="modal-open modal">
-		<div class="modal-box">
-			<h3 class="mb-4 text-lg font-bold">Options</h3>
+<dialog bind:this={dialog} class="modal">
+	<div class="modal-box">
+		<h3 class="mb-4 text-lg font-bold">Options</h3>
 
-			<div class="space-y-4">
-				<div class="flex items-center justify-between">
-					<div>
-						<div class="font-medium">Clear Thumbnail Cache</div>
-						<div class="text-sm opacity-70">Remove all cached thumbnails.</div>
-					</div>
-					<button
-						class="btn btn-outline btn-sm"
-						onclick={() =>
-							imageActions.clearThumbnailCache(
-								(message: string) => toastStore.actions.showSuccessToast(message),
-								(message: string) => toastStore.actions.showErrorToast(message),
-								() => gridUiStore.actions.closeOptionsModal(),
-							)}
-					>
-						<Icon icon="lucide:trash-2" class="h-4 w-4" />
-						Clear
-					</button>
+		<div class="space-y-4">
+			<div class="flex items-center justify-between">
+				<div>
+					<div class="font-medium">Clear Thumbnail Cache</div>
+					<div class="text-sm opacity-70">Remove all cached thumbnails.</div>
 				</div>
-
-				<div class="flex items-center justify-between">
-					<div>
-						<div class="font-medium">Clear Metadata Cache</div>
-						<div class="text-sm opacity-70">Remove all cached image metadata.</div>
-					</div>
-					<button
-						class="btn btn-outline btn-sm"
-						onclick={() =>
-							imageActions.clearMetadataCache(
-								(message: string) => toastStore.actions.showSuccessToast(message),
-								(message: string) => toastStore.actions.showErrorToast(message),
-								() => gridUiStore.actions.closeOptionsModal(),
-							)}
-					>
-						<Icon icon="lucide:database" class="h-4 w-4" />
-						Clear
-					</button>
-				</div>
+				<button
+					class="btn btn-sm btn-secondary"
+					onclick={() =>
+						imageActions.clearThumbnailCache(
+							(message: string) => toastStore.actions.showSuccessToast(message),
+							(message: string) => toastStore.actions.showErrorToast(message),
+							() => gridUiStore.actions.closeOptionsModal(),
+						)}
+				>
+					<Icon icon="lucide:trash-2" class="h-4 w-4" />
+					Clear
+				</button>
 			</div>
 
-			<div class="modal-action">
-				<button class="btn" onclick={() => gridUiActions.toggleOptionsModal()}>Close</button>
+			<div class="flex items-center justify-between">
+				<div>
+					<div class="font-medium">Clear Metadata Cache</div>
+					<div class="text-sm opacity-70">Remove all cached image metadata.</div>
+				</div>
+				<button
+					class="btn btn-sm btn-secondary"
+					onclick={() =>
+						imageActions.clearMetadataCache(
+							(message: string) => toastStore.actions.showSuccessToast(message),
+							(message: string) => toastStore.actions.showErrorToast(message),
+							() => gridUiStore.actions.closeOptionsModal(),
+						)}
+				>
+					<Icon icon="lucide:database" class="h-4 w-4" />
+					Clear
+				</button>
 			</div>
 		</div>
-		<!-- svelte-ignore a11y_click_events_have_key_events -->
-		<!-- svelte-ignore a11y_no_static_element_interactions -->
-		<div class="modal-backdrop" onclick={() => gridUiActions.toggleOptionsModal()}></div>
+
+		<div class="modal-action">
+			<form method="dialog">
+				<button class="btn" onclick={() => gridUiActions.closeOptionsModal()}>Close</button>
+			</form>
+		</div>
 	</div>
-{/if}
+	<form method="dialog" class="modal-backdrop">
+		<button onclick={() => gridUiActions.closeOptionsModal()}>close</button>
+	</form>
+</dialog>

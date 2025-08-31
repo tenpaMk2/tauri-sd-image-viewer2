@@ -28,7 +28,7 @@ type MutableMetadataState = {
 export type MetadataState = Readonly<MutableMetadataState>;
 
 export type MetadataActions = {
-	_load: (abortSignal: AbortSignal) => Promise<void>;
+	_load: () => Promise<void>;
 	ensureLoaded: () => Promise<void>;
 	updateRating: (newRating: number) => Promise<boolean>;
 	reload: () => Promise<void>;
@@ -81,7 +81,7 @@ export const createMetadataStore = (imagePath: string): MetadataStore => {
 
 			// キューサービス経由でロード処理を開始
 			state.loadingPromise = metadataQueue
-				.enqueue(imagePath, (abortSignal) => actions._load(abortSignal), 'metadata')
+				.enqueue(imagePath, () => actions._load(), { debugLabel: 'metadata' })
 				.then(() => {
 					// 完了時に破棄済みでなければPromiseをクリア
 					if (!state._isDestroyed) {
@@ -101,10 +101,10 @@ export const createMetadataStore = (imagePath: string): MetadataStore => {
 			return state.loadingPromise;
 		},
 
-		_load: async (abortSignal: AbortSignal): Promise<void> => {
+		_load: async (): Promise<void> => {
 			try {
-				// 破棄済みまたは中断チェック
-				if (state._isDestroyed || abortSignal.aborted) {
+				// 破棄済みチェック
+				if (state._isDestroyed) {
 					throw new Error('Aborted');
 				}
 
@@ -116,8 +116,8 @@ export const createMetadataStore = (imagePath: string): MetadataStore => {
 					path: imagePath,
 				});
 
-				// Rust完了後に破棄済みまたは中断チェック
-				if (state._isDestroyed || abortSignal.aborted) {
+				// Rust完了後に破棄済みチェック
+				if (state._isDestroyed) {
 					throw new Error('Aborted');
 				}
 

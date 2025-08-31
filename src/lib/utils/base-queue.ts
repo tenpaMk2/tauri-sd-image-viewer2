@@ -1,7 +1,11 @@
 type QueueTask = {
 	id: string;
-	handler: (abortSignal: AbortSignal) => Promise<void>;
-	abortController: AbortController;
+	handler: () => Promise<void>;
+};
+
+type EnqueueOptions = {
+	priority?: 'high' | 'normal';
+	debugLabel?: string;
 };
 
 /**
@@ -11,8 +15,7 @@ export class BaseQueue {
 	protected queue: QueueTask[] = [];
 	protected processing = false;
 	protected maxConcurrent = 10;
-	protected activeJobs = new Map<string, { promise: Promise<void>; task: QueueTask }>(); // 統合管理
-	protected stopped = false;
+	protected activeJobs = new Map<string, Promise<void>>();
 
 	// 進行中のロード処理を管理（パスごとにresolve関数を保持）
 	protected pendingResolvers = new Map<
@@ -25,17 +28,16 @@ export class BaseQueue {
 
 	/**
 	 * タスクをキューに追加してPromiseを返す
+	 * @param id タスクの一意識別子
+	 * @param handler 実行する処理
+	 * @param options オプション（優先度、デバッグラベル等）
 	 */
 	async enqueue(
 		id: string,
-		handler: (abortSignal: AbortSignal) => Promise<void>,
-		taskTypeName: string,
+		handler: () => Promise<void>,
+		options: EnqueueOptions = {},
 	): Promise<void> {
-		// キューが停止している場合は即座にreject
-		if (this.stopped) {
-			throw new Error('Queue is stopped');
-		}
-
+		const { priority = 'normal', debugLabel = 'task' } = options;
 		// 進行中のロード処理に参加
 		if (this.pendingResolvers.has(id)) {
 			return new Promise<void>((resolve, reject) => {
@@ -49,24 +51,27 @@ export class BaseQueue {
 			this.pendingResolvers.set(id, [{ resolve, reject }]);
 		});
 
-		// AbortControllerを作成
-		const abortController = new AbortController();
-
 		// キューに追加
 		const task: QueueTask = {
 			id,
 			handler,
-			abortController,
 		};
 
 		if (!this.queue.some((t) => t.id === id)) {
-			this.queue.push(task);
+			// 優先度に基づいてキューに追加
+			if (priority === 'high') {
+				this.queue.unshift(task); // 先頭に追加
+			} else {
+				this.queue.push(task); // 末尾に追加
+			}
+
+			const priorityIcon = priority === 'high' ? '⚡' : '📋';
 			console.log(
-				`📋 ${taskTypeName} queued: ${id.split('/').pop()} | Queue size: ${this.queue.length}, Active: ${this.activeJobs.size}/${this.maxConcurrent}`,
+				`${priorityIcon} ${debugLabel} queued (${priority}): ${id.split('/').pop()} | Queue size: ${this.queue.length}, Active: ${this.activeJobs.size}/${this.maxConcurrent}`,
 			);
 
 			// 処理を開始
-			this.processQueue(taskTypeName);
+			this.processQueue(debugLabel);
 		}
 
 		return promise;
@@ -74,85 +79,61 @@ export class BaseQueue {
 
 	/**
 	 * キューの処理を開始
+	 * @param debugLabel ログ出力用のラベル（処理に影響しないメタ情報）
 	 */
-	private async processQueue(taskTypeName: string): Promise<void> {
+	private async processQueue(debugLabel: string): Promise<void> {
 		if (this.processing) return;
 		this.processing = true;
 
-		while ((this.queue.length > 0 || this.activeJobs.size > 0) && !this.stopped) {
+		while (this.queue.length > 0 || this.activeJobs.size > 0) {
 			// 最大同時実行数に達していない場合、新しいジョブを開始
-			while (this.activeJobs.size < this.maxConcurrent && this.queue.length > 0 && !this.stopped) {
+			while (this.activeJobs.size < this.maxConcurrent && this.queue.length > 0) {
 				const task = this.queue.shift()!;
 				console.log(
-					`▶️ Processing ${taskTypeName}: ${task.id.split('/').pop()} | Queue remaining: ${this.queue.length}, Active: ${this.activeJobs.size + 1}/${this.maxConcurrent}`,
+					`▶️ Processing ${debugLabel}: ${task.id.split('/').pop()} | Queue remaining: ${this.queue.length}, Active: ${this.activeJobs.size + 1}/${this.maxConcurrent}`,
 				);
 
-				const job = this.executeQueueTask(task, taskTypeName);
-				this.activeJobs.set(task.id, { promise: job, task });
+				const job = this.executeTask(task.id, task.handler, debugLabel);
+				this.activeJobs.set(task.id, job);
 
 				// ジョブ完了時にアクティブジョブから削除
 				job.finally(() => {
 					this.activeJobs.delete(task.id);
 					console.log(
-						`✅ Completed ${taskTypeName}: ${task.id.split('/').pop()} | Active jobs remaining: ${this.activeJobs.size}`,
+						`✅ Completed ${debugLabel}: ${task.id.split('/').pop()} | Active jobs remaining: ${this.activeJobs.size}`,
 					);
 				});
 			}
 
 			// 少なくとも1つのジョブが完了するまで待機
-			if (this.activeJobs.size > 0 && !this.stopped) {
-				const promises = Array.from(this.activeJobs.values()).map((job) => job.promise);
+			if (this.activeJobs.size > 0) {
+				const promises = Array.from(this.activeJobs.values());
 				await Promise.race(promises);
 			}
 		}
 
 		this.processing = false;
-		console.log(`✅ ${taskTypeName} queue processing completed`);
+		console.log(`✅ ${debugLabel} queue processing completed`);
 	}
 
 	/**
-	 * キューのタスクを実行
-	 */
-	private async executeQueueTask(task: QueueTask, taskTypeName: string): Promise<void> {
-		try {
-			await this.executeTask(task.id, task.handler, task.abortController.signal, taskTypeName);
-		} catch (error) {
-			console.error(`❌ ${taskTypeName} execution failed: ${task.id.split('/').pop()} ${error}`);
-			throw error;
-		}
-	}
-
-	/**
-	 * 実際のタスク実行
+	 * タスクを実行
+	 * @param debugLabel ログ出力用のラベル（処理に影響しないメタ情報）
 	 */
 	private async executeTask(
 		id: string,
-		handler: (abortSignal: AbortSignal) => Promise<void>,
-		abortSignal: AbortSignal,
-		taskTypeName: string,
+		handler: () => Promise<void>,
+		debugLabel: string,
 	): Promise<void> {
 		try {
-			// 停止チェック
-			if (this.stopped || abortSignal.aborted) {
-				throw new Error('Task aborted');
-			}
+			console.log(`🔄 Loading ${debugLabel}: ${id.split('/').pop()}`);
 
-			console.log(`🔄 Loading ${taskTypeName}: ${id.split('/').pop()}`);
+			// 実際のロード処理を実行（Rust側処理含む）
+			await handler();
 
-			// 実際のロード処理を実行（Rust側処理含む、停止不可）
-			await handler(abortSignal);
+			console.log(`✅ Completed ${debugLabel} load: ${id.split('/').pop()}`);
 
-			// 完了後に停止状態を再チェック（Rust処理後の防御）
-			if (this.stopped || abortSignal.aborted) {
-				console.log(
-					`🛑 ${taskTypeName} ignored after completion (queue stopped): ${id.split('/').pop()}`,
-				);
-				return; // 結果を無視
-			}
-
-			console.log(`✅ Completed ${taskTypeName} load: ${id.split('/').pop()}`);
-
-			// 成功時にすべてのPromiseをresolve（停止されていない場合のみ）
+			// 成功時にすべてのPromiseをresolve
 			const resolvers = this.pendingResolvers.get(id);
 			if (resolvers) {
 				for (const resolver of resolvers) {
@@ -161,15 +142,9 @@ export class BaseQueue {
 				this.pendingResolvers.delete(id);
 			}
 		} catch (error) {
-			console.error(`❌ ${taskTypeName} load failed: ${id.split('/').pop()} ${error}`);
+			console.error(`❌ ${debugLabel} execution failed: ${id.split('/').pop()} ${error}`);
 
-			// エラー時も停止状態をチェック
-			if (this.stopped) {
-				console.log(`🛑 ${taskTypeName} error ignored (queue stopped): ${id.split('/').pop()}`);
-				return; // エラーも無視
-			}
-
-			// エラー時にすべてのPromiseをreject（停止されていない場合のみ）
+			// エラー時にすべてのPromiseをreject
 			const resolvers = this.pendingResolvers.get(id);
 			if (resolvers) {
 				for (const resolver of resolvers) {
@@ -177,47 +152,31 @@ export class BaseQueue {
 				}
 				this.pendingResolvers.delete(id);
 			}
+			throw error; // エラーを再スロー
 		}
 	}
 
 	/**
-	 * キューをクリア
+	 * 未処理のキューをクリア（実行中タスクは継続、新規タスクは受付可能）
 	 */
-	clear(): void {
-		console.log(`🧹 Clearing all tasks (including active jobs)`);
+	clearPendingTasks(): void {
+		console.log(`🧹 Clearing pending tasks`);
 
-		// 処理中タスクを全て中断
-		for (const [id, job] of this.activeJobs) {
-			console.log(`⏸️ Aborting: ${id.split('/').pop()}`);
-			job.task.abortController.abort();
-		}
-
-		// 未完了のPromiseをreject
-		for (const [, resolvers] of this.pendingResolvers) {
-			for (const resolver of resolvers) {
-				resolver.reject(new Error('Queue cleared'));
+		// 未実行のタスクのPromiseをreject
+		for (const [id, resolvers] of this.pendingResolvers) {
+			if (!this.activeJobs.has(id)) {
+				// 実行中でないもののみ
+				for (const resolver of resolvers) {
+					resolver.reject(new Error('Task cancelled'));
+				}
+				this.pendingResolvers.delete(id);
 			}
 		}
-		this.pendingResolvers.clear();
 
-		// キューをクリア
+		// 未処理のキューをクリア
 		this.queue.length = 0;
 
-		console.log(`🗑️ queue cleared`);
-	}
-
-	/**
-	 * 現在のキューサイズを取得
-	 */
-	get queueSize(): number {
-		return this.queue.length;
-	}
-
-	/**
-	 * アクティブジョブ数を取得
-	 */
-	get activeJobCount(): number {
-		return this.activeJobs.size;
+		console.log(`🗑️ pending tasks cleared`);
 	}
 
 	/**

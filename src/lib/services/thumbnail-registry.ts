@@ -49,7 +49,7 @@ export const thumbnailRegistry = {
 			store.actions.destroy();
 		}
 
-		thumbnailQueue.clear();
+		thumbnailQueue.clearPendingTasks();
 		storeRegistry.clear();
 		console.log('🗑️ All thumbnails cleared');
 	},

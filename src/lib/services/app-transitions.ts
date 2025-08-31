@@ -10,8 +10,8 @@ import { thumbnailQueue } from './thumbnail-queue';
  */
 export const transitionToWelcome = async (): Promise<void> => {
 	appStore.actions.transitionToWelcome();
-	thumbnailQueue.clear();
-	metadataQueue.clear();
+	thumbnailQueue.clearPendingTasks();
+	metadataQueue.clearPendingTasks();
 };
 
 /**
@@ -29,7 +29,7 @@ export const transitionToViewer = async (initialImagePath: string): Promise<void
 	const directory = await path.dirname(initialImagePath);
 	await directoryImagePathsStore.actions.loadImagePaths(directory);
 	navigationStore.actions.navigateTo(initialImagePath);
-	thumbnailQueue.clear();
-	metadataQueue.clear();
+	thumbnailQueue.clearPendingTasks();
+	metadataQueue.clearPendingTasks();
 	appStore.actions.transitionToViewer();
 };

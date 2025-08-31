@@ -22,7 +22,7 @@ const toggleImageSelection = (
 ) => {
 	const imagePaths = directoryImagePathsStore.state.imagePaths;
 	if (!imagePaths) return;
-	
+
 	const currentIndex = imagePaths.indexOf(imagePath);
 
 	if (shiftKey && _state.lastSelectedIndex !== -1) {
@@ -64,7 +64,7 @@ const toggleImageSelection = (
 const toggleSelectAll = () => {
 	const imagePaths = directoryImagePathsStore.state.imagePaths;
 	if (!imagePaths) return;
-	
+
 	if (_state.selectedImages.size === imagePaths.length) {
 		_state.selectedImages = new SvelteSet();
 	} else {

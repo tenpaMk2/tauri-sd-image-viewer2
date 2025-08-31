@@ -43,7 +43,7 @@ export const metadataRegistry = {
 			store.actions.destroy();
 		}
 
-		metadataQueue.clear();
+		metadataQueue.clearPendingTasks();
 		storeRegistry.clear();
 	},
 

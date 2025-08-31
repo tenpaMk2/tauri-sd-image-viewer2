@@ -9,6 +9,7 @@
 	import { copyFileToClipboard } from '$lib/utils/copy-utils';
 	import Icon from '@iconify/svelte';
 	import { path } from '@tauri-apps/api';
+	import { onDestroy } from 'svelte';
 	import { navigateToLast } from './services/image-navigation';
 
 	// ストアから状態を取得
@@ -62,6 +63,11 @@
 			transitionToViewer(result);
 		}
 	};
+
+	onDestroy(() => {
+		viewerUIStore.actions.stopAutoNavigation();
+		viewerUIStore.actions.resetUITimer();
+	});
 </script>
 
 <!-- Overlay Toolbar -->

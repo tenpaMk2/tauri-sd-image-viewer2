@@ -52,8 +52,6 @@
 		// アンマウント時のクリーンアップ
 		return () => {
 			window.removeEventListener('keydown', handleGlobalKeydown);
-			viewerUIActions.stopAutoNavigation();
-			viewerUIActions.resetUITimer();
 		};
 	});
 

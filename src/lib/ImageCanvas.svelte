@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Image from '$lib/Image.svelte';
 	import { imageViewStore } from '$lib/stores/image-view-store.svelte';
 	import { navigationStore } from '$lib/stores/navigation-store.svelte';
 	import Icon from '@iconify/svelte';
@@ -11,7 +12,6 @@
 	} = imageViewStore;
 
 	let containerRef: HTMLDivElement;
-	let imageRef = $state<HTMLImageElement>();
 
 	// トランジションを表示するかどうかの判定（ズーム中かつドラッグ中でない場合のみ）
 	const shouldShowTransition = $derived(imageViewState.isZooming && !imageViewState.isDragging);
@@ -41,11 +41,8 @@
 		imageViewActions.endDrag();
 	};
 
-	const onImageLoad = () => {
-		if (imageRef) {
-			// 画像読み込み完了時に全ての状態をリセット
-			imageViewActions.onImageLoaded(imageRef, containerRef);
-		}
+	const onImageLoad = (imgEl: HTMLImageElement) => {
+		imageViewActions.onImageLoaded(imgEl, containerRef);
 	};
 </script>
 
@@ -63,38 +60,17 @@
 	{onmouseup}
 	onmouseleave={onmouseup}
 >
-	{#if navigationState.imageFileLoadError}
-		<div class="flex flex-col items-center gap-2 text-red-400">
-			<svg class="h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-				<path
-					stroke-linecap="round"
-					stroke-linejoin="round"
-					stroke-width="2"
-					d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
-				></path>
-			</svg>
-			<span class="text-center">{navigationState.imageFileLoadError}</span>
-		</div>
-	{:else if navigationState.imageLoadingStatus === 'idle'}
-		<div class="flex flex-col items-center gap-2 text-white">
-			<span class="loading loading-lg loading-spinner"></span>
-			<span class="opacity-80">Idle</span>
-		</div>
-	{:else if navigationState.imageLoadingStatus === 'loading'}
-		<div class="flex flex-col items-center gap-2 text-white">
-			<span class="loading loading-lg loading-spinner"></span>
-			<span class="opacity-80">Loading image...</span>
-		</div>
-	{:else if navigationState.currentImageUrl}
-		<img
-			bind:this={imageRef}
-			src={navigationState.currentImageUrl}
-			alt=""
-			class={shouldShowTransition ? 'transition-transform duration-200' : ''}
-			style="transform: translate({imageViewState.panX}px, {imageViewState.panY}px) scale({imageViewState.fitScale *
-				imageViewState.zoomLevel}); transform-origin: center center; cursor: grab; max-width: none; max-height: none;"
-			onload={onImageLoad}
-		/>
+	{#if navigationState.currentImagePath}
+		{#key navigationState.currentImagePath}
+			<Image
+				imagePath={navigationState.currentImagePath}
+				class={shouldShowTransition ? 'transition-transform duration-200' : ''}
+				style="transform: translate({imageViewState.panX}px, {imageViewState.panY}px) scale({imageViewState.fitScale *
+					imageViewState.zoomLevel}); transform-origin: center center; cursor: grab; max-width: none; max-height: none;"
+				alt=""
+				{onImageLoad}
+			/>
+		{/key}
 	{:else}
 		<div class="flex flex-col items-center gap-2 text-gray-400">
 			<span class="opacity-80">No content to display</span>

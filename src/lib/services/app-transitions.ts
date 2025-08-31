@@ -18,8 +18,8 @@ export const transitionToWelcome = async (): Promise<void> => {
  * Grid表示への遷移 - ディレクトリの画像パスを初期化
  */
 export const transitionToGrid = async (directory: string): Promise<void> => {
-	directoryImagePathsStore.actions.loadImagePaths(directory);
 	appStore.actions.transitionToGrid();
+	directoryImagePathsStore.actions.loadImagePaths(directory);
 };
 
 /**
@@ -27,7 +27,7 @@ export const transitionToGrid = async (directory: string): Promise<void> => {
  */
 export const transitionToViewer = async (initialImagePath: string): Promise<void> => {
 	const directory = await path.dirname(initialImagePath);
-	await directoryImagePathsStore.actions.loadImagePaths(directory);
+	await directoryImagePathsStore.actions.loadImagePaths(directory); // NavigationStoreが使うのでawait必須
 	navigationStore.actions.navigateTo(initialImagePath);
 	thumbnailQueue.clearPendingTasks();
 	metadataQueue.clearPendingTasks();

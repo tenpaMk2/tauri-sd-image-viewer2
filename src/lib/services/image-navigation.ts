@@ -1,5 +1,6 @@
 import { directoryImagePathsStore } from '$lib/stores/directory-image-paths-store.svelte';
 import { navigationStore } from '$lib/stores/navigation-store.svelte';
+import { viewerUIStore } from '$lib/stores/viewer-ui-store.svelte';
 import { path } from '@tauri-apps/api';
 import { metadataRegistry } from './metadata-registry';
 
@@ -45,7 +46,8 @@ export const navigateToNext = async (): Promise<void> => {
 		return;
 	}
 
-	await navigateToImage(nextImagePath);
+	viewerUIStore.actions.stopAutoNavigation();
+	navigateToImage(nextImagePath);
 };
 
 /**
@@ -58,7 +60,8 @@ export const navigateToPrevious = async (): Promise<void> => {
 		return;
 	}
 
-	await navigateToImage(previousImagePath);
+	viewerUIStore.actions.stopAutoNavigation();
+	navigateToImage(previousImagePath);
 };
 
 /**

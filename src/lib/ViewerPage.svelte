@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { navigateToNext, navigateToPrevious } from '$lib/services/image-navigation';
 	import { imageViewStore } from '$lib/stores/image-view-store.svelte';
 	import { metadataPanelStore } from '$lib/stores/metadata-panel-store.svelte';
 	import { navigationStore } from '$lib/stores/navigation-store.svelte';
@@ -29,11 +30,11 @@
 			switch (event.key) {
 				case 'ArrowRight':
 					event.preventDefault();
-					await navigationStore.actions.navigateNext();
+					navigateToNext();
 					break;
 				case 'ArrowLeft':
 					event.preventDefault();
-					await navigationStore.actions.navigatePrevious();
+					navigateToPrevious();
 					break;
 			}
 		} catch (error) {

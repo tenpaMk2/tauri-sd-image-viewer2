@@ -19,10 +19,7 @@ const INITIAL_DIRECTORY_IMAGE_PATHS_STATE: DirectoryImagePathsState = {
 const _state = $state<MutableDirectoryImagePathsState>({ ...INITIAL_DIRECTORY_IMAGE_PATHS_STATE });
 
 const loadImagePaths = async (dir: string) => {
-	_state.currentDirectory = null;
-	_state.imagePaths = null;
 	_state.loadingError = null;
-
 	_state.loadingStatus = 'loading';
 	try {
 		_state.imagePaths = await getImagePaths(dir);
@@ -33,6 +30,7 @@ const loadImagePaths = async (dir: string) => {
 		} else {
 			_state.loadingError = 'Unknown error';
 		}
+		_state.currentDirectory = null;
 	} finally {
 		_state.loadingStatus = 'loaded';
 		_state.currentDirectory = dir;

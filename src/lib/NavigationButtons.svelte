@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { navigationStore } from '$lib/stores/navigation-store.svelte';
 	import { viewerUIStore } from '$lib/stores/viewer-ui-store.svelte';
+	import { navigateToNext, navigateToPrevious } from '$lib/services/image-navigation';
 	import Icon from '@iconify/svelte';
 
 	const { state: navigationState, deriveds: navigationDeriveds } = navigationStore;
@@ -17,7 +18,7 @@
 			class="btn btn-circle btn-ghost btn-lg"
 			class:btn-disabled={navigationState.isNavigating}
 			aria-label="Previous image"
-			onclick={() => navigationStore.actions.navigatePrevious()}
+			onclick={() => navigateToPrevious()}
 		>
 			{#if navigationState.isNavigating}
 				<span class="loading loading-sm loading-spinner"></span>
@@ -38,7 +39,7 @@
 			class="btn btn-circle btn-ghost btn-lg"
 			class:btn-disabled={navigationState.isNavigating}
 			aria-label="Next image"
-			onclick={() => navigationStore.actions.navigateNext()}
+			onclick={() => navigateToNext()}
 		>
 			{#if navigationState.isNavigating}
 				<span class="loading loading-sm loading-spinner"></span>

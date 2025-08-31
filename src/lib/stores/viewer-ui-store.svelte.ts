@@ -38,13 +38,14 @@ const resetUITimer = (): void => {
 // Auto Navigation
 const startAutoNavigation = (onNavigate: () => Promise<void>): void => {
 	if (_state.isAutoNavActive) {
-		stopAutoNavigation();
-	} else {
-		_state.isAutoNavActive = true;
-		autoNavTimer = setInterval(async () => {
-			await onNavigate();
-		}, 2000);
+		// Do nothing
+		return;
 	}
+
+	_state.isAutoNavActive = true;
+	autoNavTimer = setInterval(async () => {
+		onNavigate();
+	}, 2000);
 };
 
 const stopAutoNavigation = (): void => {

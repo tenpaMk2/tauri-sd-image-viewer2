@@ -1,6 +1,5 @@
 import { imageCacheService } from '$lib/services/image-cache';
-import { getImagePaths } from '$lib/services/image-loader';
-import { path } from '@tauri-apps/api';
+import { directoryImagePathsStore } from './directory-image-paths-store.svelte';
 
 export type ImageLoadingStatus = 'idle' | 'loading' | 'loaded';
 
@@ -8,7 +7,6 @@ export type ImageLoadingStatus = 'idle' | 'loading' | 'loaded';
 export type CurrentFilePathChangeCallback = (newPath: string) => void | Promise<void>;
 
 type MutableNavigationState = {
-	directoryImagePaths: string[];
 	currentImagePath: string;
 	currentImageUrl: string;
 	isNavigating: boolean;
@@ -19,7 +17,6 @@ type MutableNavigationState = {
 export type NavigationState = Readonly<MutableNavigationState>;
 
 const INITIAL_NAVIGATION_STATE: NavigationState = {
-	directoryImagePaths: [],
 	currentImagePath: '',
 	isNavigating: false,
 	imageLoadingStatus: 'idle',
@@ -29,94 +26,56 @@ const INITIAL_NAVIGATION_STATE: NavigationState = {
 
 const _state = $state<MutableNavigationState>({ ...INITIAL_NAVIGATION_STATE });
 
+// directoryImagePathsStore からディレクトリデータを取得
+const directoryImages = $derived(directoryImagePathsStore.state.imagePaths || []);
+
 const currentIndex = $derived.by(() => {
-	const paths = _state.directoryImagePaths;
+	const paths = directoryImages;
 	const targetPath = _state.currentImagePath;
-	return paths.findIndex((path) => path === targetPath);
+	const idx = paths.findIndex((path) => path === targetPath);
+	return idx === -1 ? 0 : idx; // もし見つからなければ0にフォールバック
 });
+const lastIndex = $derived(directoryImages.length - 1);
 const hasPrevious = $derived(0 < currentIndex);
-const hasNext = $derived(0 <= currentIndex && currentIndex < _state.directoryImagePaths.length - 1);
+const hasNext = $derived(0 <= currentIndex && currentIndex < directoryImages.length - 1);
+const nextImagePath = $derived(hasNext ? directoryImages[currentIndex + 1] : null);
+const lastImagePath = $derived(0 < lastIndex ? directoryImages[lastIndex] : null);
+const previousImagePath = $derived(hasPrevious ? directoryImages[currentIndex - 1] : null);
 
-// ナビゲーション関連アクション
-const navigateNext = async (): Promise<void> => {
-	console.log('🔄 NavigationStore.navigateNext called');
-	if (!hasNext) {
-		console.log('❌ No next image available');
+// 指定された画像パスにナビゲーションする（フル機能）
+const navigateTo = async (imagePath: string): Promise<void> => {
+	console.log('🔄 NavigationStore.navigateTo called: ' + imagePath.split('/').pop());
+
+	// 同じディレクトリ内で画像が存在するかチェック
+	const targetIndex = directoryImages.findIndex((path) => path === imagePath);
+	if (targetIndex < 0) {
+		console.error('❌ Image path not found in current directory: ' + imagePath);
 		return;
 	}
 
-	const nextIndex = currentIndex + 1;
-	const nextPath = _state.directoryImagePaths[nextIndex];
-	console.log('🔄 Next image path: ' + nextPath.split('/').pop());
-
 	// ナビゲーション開始
-	_state.isNavigating = true;
-
-	_state.currentImagePath = nextPath;
-	_loadImage(nextPath).then(() => (_state.isNavigating = false));
-
-	// プリロード（非同期で実行）
-	if (hasNext) {
-		_preloadImage(_state.directoryImagePaths[currentIndex + 1]);
-	}
-};
-
-const navigatePrevious = async (): Promise<void> => {
-	console.log('🔄 NavigationStore.navigatePrevious called');
-	if (!hasPrevious) {
-		console.log('❌ No previous image available');
-		return;
-	}
-
-	const prevIndex = currentIndex - 1;
-	const prevPath = _state.directoryImagePaths[prevIndex];
-	console.log('🔄 Previous image path: ' + prevPath.split('/').pop());
-
-	// ナビゲーション開始
-	_state.isNavigating = true;
-
-	_state.currentImagePath = prevPath;
-	_loadImage(prevPath).then(() => (_state.isNavigating = false));
-
-	// プリロード（非同期で実行）
-	if (hasPrevious) {
-		_preloadImage(_state.directoryImagePaths[prevIndex]);
-	}
-};
-
-const initializeNavigation = async (imagePath: string): Promise<void> => {
 	_state.isNavigating = true;
 
 	try {
-		const dirPath = await path.dirname(imagePath);
-		const files = await getImagePaths(dirPath);
-
-		_state.directoryImagePaths = files;
 		_state.currentImagePath = imagePath;
 
-		_loadImage(imagePath).catch((error: any) => {
-			console.error('Failed to load the image on initialization: ' + error);
-		});
+		// 画像ロード
+		await _loadImage(imagePath);
 
-		if (hasNext) {
-			_preloadImage(_state.directoryImagePaths[currentIndex + 1]);
+		// 隣接画像のプリロード（非同期で実行）
+		if (nextImagePath) {
+			_preloadImage(nextImagePath).catch((error) => {
+				console.warn('Failed to preload next image: ' + error);
+			});
 		}
-		if (hasPrevious) {
-			_preloadImage(_state.directoryImagePaths[currentIndex - 1]);
-		}
-
-		// 初期化時に現在の画像の隣接する画像をプリロード
-		if (0 <= currentIndex) {
-			imageCacheService
-				.preloadAdjacentImages(_state.directoryImagePaths, currentIndex)
-				.catch((error: any) => {
-					console.warn('Failed to preload adjacent images on initialization: ' + error);
-				});
+		if (previousImagePath) {
+			_preloadImage(previousImagePath).catch((error) => {
+				console.warn('Failed to preload previous image: ' + error);
+			});
 		}
 	} catch (error) {
 		_state.imageFileLoadError = error instanceof Error ? error.message : String(error);
-		_state.directoryImagePaths = [];
-		_state.currentImagePath = '';
+		console.error('❌ Failed to navigate to image: ' + error);
 	} finally {
 		_state.isNavigating = false;
 	}
@@ -139,6 +98,9 @@ export const navigationStore = {
 	state: _state as NavigationState,
 
 	deriveds: {
+		get directoryImageCount() {
+			return lastIndex;
+		},
 		get currentIndex() {
 			return currentIndex;
 		},
@@ -148,11 +110,18 @@ export const navigationStore = {
 		get hasNext() {
 			return hasNext;
 		},
+		get nextImagePath() {
+			return nextImagePath;
+		},
+		get previousImagePath() {
+			return previousImagePath;
+		},
+		get lastImagePath() {
+			return lastImagePath;
+		},
 	},
 
 	actions: {
-		navigateNext,
-		navigatePrevious,
-		initializeNavigation,
+		navigateTo,
 	},
 };

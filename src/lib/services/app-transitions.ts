@@ -1,6 +1,7 @@
 import { appStore } from '$lib/stores/app-store.svelte';
 import { directoryImagePathsStore } from '$lib/stores/directory-image-paths-store.svelte';
 import { navigationStore } from '$lib/stores/navigation-store.svelte';
+import { path } from '@tauri-apps/api';
 import { metadataQueue } from './metadata-queue';
 import { thumbnailQueue } from './thumbnail-queue';
 
@@ -22,10 +23,12 @@ export const transitionToGrid = async (directory: string): Promise<void> => {
 };
 
 /**
- * Viewer表示への遷移 - ナビゲーションを初期化
+ * Viewer表示への遷移 - ディレクトリを初期化
  */
 export const transitionToViewer = async (initialImagePath: string): Promise<void> => {
-	navigationStore.actions.initializeNavigation(initialImagePath);
+	const directory = await path.dirname(initialImagePath);
+	await directoryImagePathsStore.actions.loadImagePaths(directory);
+	navigationStore.actions.navigateTo(initialImagePath);
 	thumbnailQueue.clear();
 	metadataQueue.clear();
 	appStore.actions.transitionToViewer();

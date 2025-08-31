@@ -76,11 +76,26 @@ export const clearThumbnailCache = async (
 	onComplete?: () => void,
 ): Promise<void> => {
 	try {
-		await invoke('clear_thumbnail_cache');
-		onSuccess?.('Thumbnail cache cleared');
+		const resultMessage: string = await invoke('clear_thumbnail_cache');
+		onSuccess?.(resultMessage);
 		onComplete?.();
 	} catch (error) {
-		console.error('Failed to clear cache: ' + error);
-		onError?.('Failed to clear cache');
+		console.error('Failed to clear thumbnail cache: ' + error);
+		onError?.(error as string);
+	}
+};
+
+export const clearMetadataCache = async (
+	onSuccess?: (message: string) => void,
+	onError?: (message: string) => void,
+	onComplete?: () => void,
+): Promise<void> => {
+	try {
+		const resultMessage: string = await invoke('clear_metadata_cache');
+		onSuccess?.(resultMessage);
+		onComplete?.();
+	} catch (error) {
+		console.error('Failed to clear metadata cache: ' + error);
+		onError?.(error as string);
 	}
 };

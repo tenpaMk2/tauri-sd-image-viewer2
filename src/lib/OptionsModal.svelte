@@ -18,7 +18,7 @@
 				<div class="flex items-center justify-between">
 					<div>
 						<div class="font-medium">Clear Thumbnail Cache</div>
-						<div class="text-sm opacity-70">Remove all cached thumbnails to free up disk space</div>
+						<div class="text-sm opacity-70">Remove all cached thumbnails.</div>
 					</div>
 					<button
 						class="btn btn-outline btn-sm"
@@ -30,6 +30,25 @@
 							)}
 					>
 						<Icon icon="lucide:trash-2" class="h-4 w-4" />
+						Clear
+					</button>
+				</div>
+
+				<div class="flex items-center justify-between">
+					<div>
+						<div class="font-medium">Clear Metadata Cache</div>
+						<div class="text-sm opacity-70">Remove all cached image metadata.</div>
+					</div>
+					<button
+						class="btn btn-outline btn-sm"
+						onclick={() =>
+							imageActions.clearMetadataCache(
+								(message: string) => toastStore.actions.showSuccessToast(message),
+								(message: string) => toastStore.actions.showErrorToast(message),
+								() => gridUiStore.actions.closeOptionsModal(),
+							)}
+					>
+						<Icon icon="lucide:database" class="h-4 w-4" />
 						Clear
 					</button>
 				</div>

@@ -1,8 +1,8 @@
-use log::{info, warn};
 use super::ThumbnailGeneratorConfig;
 use super::generator::ThumbnailGenerator;
 use crate::common::log_with_file_context;
 use crate::image_file_lock_service::ImageFileLockService;
+use log::{info, warn};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::fs;
@@ -223,6 +223,37 @@ impl AsyncThumbnailService {
             },
         )
         .await
+    }
+
+    /// Clear thumbnail cache
+    pub async fn clear_cache(&self) -> Result<String, String> {
+        if !self.cache_dir.exists() {
+            let message = "Thumbnail cache directory does not exist, nothing to clear".to_string();
+            info!("{}", message);
+            return Ok(message);
+        }
+
+        let mut removed_count = 0;
+        let entries = fs::read_dir(&self.cache_dir)
+            .map_err(|e| format!("Failed to read cache directory: {}", e))?;
+
+        for entry in entries {
+            if let Ok(entry) = entry {
+                if let Err(e) = fs::remove_file(entry.path()) {
+                    warn!(
+                        "Failed to remove thumbnail cache file {:?}: {}",
+                        entry.path(),
+                        e
+                    );
+                } else {
+                    removed_count += 1;
+                }
+            }
+        }
+
+        let message = format!("Cleared thumbnail cache: {} files removed", removed_count);
+        info!("{}", message);
+        Ok(message)
     }
 
     /// Save thumbnail to cache (static function for use in tokio::spawn)

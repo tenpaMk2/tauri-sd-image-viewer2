@@ -19,3 +19,11 @@ pub async fn generate_thumbnail_async(
 
     Ok(())
 }
+
+/// Clear thumbnail cache (Tauri command)
+#[tauri::command]
+pub async fn clear_thumbnail_cache(
+    thumbnail_service: State<'_, AsyncThumbnailService>,
+) -> Result<String, String> {
+    thumbnail_service.clear_cache().await
+}

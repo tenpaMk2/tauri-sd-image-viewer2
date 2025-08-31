@@ -78,6 +78,18 @@ pub async fn write_xmp_image_rating(
     .await
 }
 
+/// Clear metadata cache (Tauri command)
+#[tauri::command]
+pub async fn clear_metadata_cache(
+    cache: tauri::State<'_, super::cache::MetadataCache>,
+) -> Result<String, String> {
+    let cleared_entries_count = cache.clear_cache().await;
+    Ok(format!(
+        "Metadata cache cleared: {} entries removed",
+        cleared_entries_count
+    ))
+}
+
 #[cfg(test)]
 mod tests {
     use log::{debug, info};

@@ -1,6 +1,6 @@
-use log::{error, info, warn};
 use super::image_metadata::ImageMetadata;
 use crate::image_file_lock_service::ImageFileLockService;
+use log::{error, info, warn};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
@@ -135,7 +135,9 @@ impl MetadataCache {
         let cache = self.memory_cache.lock().unwrap();
 
         if cache.is_empty() {
-            info!("Cache is empty, skipping disk save");
+            info!("Cache is empty, remove cache file");
+            fs::remove_file(&self.cache_file_path)
+                .map_err(|e| format!("Failed to remove cache file: {}", e))?;
             return Ok(());
         }
 
@@ -171,7 +173,7 @@ impl MetadataCache {
             Err(e) => {
                 error!("Cache file parse error: {}", e);
                 warn!("Corrupted cache file detected, creating backup and starting fresh");
-                
+
                 // Create backup by renaming corrupted file
                 let backup_path = path.with_extension("json.backup");
                 if let Err(rename_err) = fs::rename(path, &backup_path) {
@@ -185,7 +187,7 @@ impl MetadataCache {
                 } else {
                     info!("Corrupted cache renamed to: {}", backup_path.display());
                 }
-                
+
                 // Return empty cache to continue operation
                 info!("Starting with empty cache");
                 return Ok(HashMap::new());
@@ -227,6 +229,14 @@ impl MetadataCache {
             removed_count
         );
         Ok(filtered)
+    }
+
+    pub async fn clear_cache(&self) -> usize {
+        let mut cache = self.memory_cache.lock().unwrap();
+        let count = cache.len();
+        cache.clear();
+        info!("Cleared metadata cache: {} entries removed", count);
+        count
     }
 
     async fn is_file_unchanged(

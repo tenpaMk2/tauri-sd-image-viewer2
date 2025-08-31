@@ -66,8 +66,10 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             clipboard_api::set_clipboard_files,
             thumbnail_api::commands::generate_thumbnail_async,
+            thumbnail_api::commands::clear_thumbnail_cache,
             metadata_api::commands::read_image_metadata,
             metadata_api::commands::write_xmp_image_rating,
+            metadata_api::commands::clear_metadata_cache,
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application");

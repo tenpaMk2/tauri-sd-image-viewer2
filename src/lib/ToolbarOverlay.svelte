@@ -27,6 +27,7 @@
 			viewerUIStore.actions.stopAutoNavigation();
 			return;
 		}
+
 		const navigateToLastWithReloading = async () => {
 			const d = directoryImagePathsStore.state.currentDirectory;
 
@@ -39,6 +40,8 @@
 			await directoryImagePathsStore.actions.loadImagePaths(d);
 			navigateToLast();
 		};
+
+		navigateToLastWithReloading(); // ボタンを押した瞬間に最新画像へナビゲーション
 		viewerUIStore.actions.startAutoNavigation(navigateToLastWithReloading);
 	};
 

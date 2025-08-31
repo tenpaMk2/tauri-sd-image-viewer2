@@ -1,4 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
+import * as fs from '@tauri-apps/plugin-fs';
 
 export const copyImagesToClipboard = async (
 	imagePaths: string[],
@@ -33,8 +34,6 @@ export const deleteImages = async (
 	}
 
 	try {
-		const { remove } = await import('@tauri-apps/plugin-fs');
-
 		console.log('Starting deletion: ' + JSON.stringify(imagePaths));
 
 		let successCount = 0;
@@ -43,7 +42,7 @@ export const deleteImages = async (
 
 		for (const imagePath of imagePaths) {
 			try {
-				await remove(imagePath);
+				await fs.remove(imagePath);
 				successCount++;
 				console.log(`Deletion successful: ${imagePath}`);
 			} catch (fileErr) {

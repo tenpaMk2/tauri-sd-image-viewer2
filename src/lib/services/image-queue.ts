@@ -1,6 +1,6 @@
 import { BaseQueue } from '$lib/utils/base-queue';
 
-const metadataLogger = {
+const imageLogger = {
 	onEnqueue: (id: string, priority: string, debugLabel: string, queueSize: number, activeCount: number) => {
 		const priorityIcon = priority === 'high' ? '⚡' : '📋';
 		console.log(`${priorityIcon} ${debugLabel} queued (${priority}): ${id.split('/').pop()} | Queue size: ${queueSize}, Active: ${activeCount}/10`);
@@ -29,6 +29,6 @@ const metadataLogger = {
 };
 
 /**
- * メタデータ処理専用のシングルトンキュー
+ * 画像読み込み処理専用のシングルトンキュー
  */
-export const metadataQueue = new BaseQueue(metadataLogger);
+export const imageQueue = new BaseQueue(imageLogger);

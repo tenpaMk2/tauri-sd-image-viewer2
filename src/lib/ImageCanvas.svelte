@@ -11,8 +11,6 @@
 		actions: imageViewActions,
 	} = imageViewStore;
 
-	let containerRef: HTMLDivElement;
-
 	// トランジションを表示するかどうかの判定（ズーム中かつドラッグ中でない場合のみ）
 	const shouldShowTransition = $derived(imageViewState.isZooming && !imageViewState.isDragging);
 
@@ -40,17 +38,12 @@
 		event.preventDefault();
 		imageViewActions.endDrag();
 	};
-
-	const onImageLoad = (imgEl: HTMLImageElement) => {
-		imageViewActions.onImageLoaded(imgEl, containerRef);
-	};
 </script>
 
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 <div
 	class="absolute inset-0 flex items-center justify-center overflow-hidden"
-	bind:this={containerRef}
 	role="img"
 	tabindex="0"
 	aria-label="画像表示キャンバス"
@@ -61,16 +54,21 @@
 	onmouseleave={onmouseup}
 >
 	{#if navigationState.currentImagePath}
-		{#key navigationState.currentImagePath}
-			<Image
-				imagePath={navigationState.currentImagePath}
-				class={shouldShowTransition ? 'transition-transform duration-200' : ''}
-				style="transform: translate({imageViewState.panX}px, {imageViewState.panY}px) scale({imageViewState.fitScale *
-					imageViewState.zoomLevel}); transform-origin: center center; cursor: grab; max-width: none; max-height: none;"
-				alt=""
-				{onImageLoad}
-			/>
-		{/key}
+		<div
+			class="flex h-full w-full items-center justify-center"
+			class:transition-transform={shouldShowTransition}
+			class:duration-200={shouldShowTransition}
+			style="transform: translate({imageViewState.panX}px, {imageViewState.panY}px) scale({imageViewState.zoomLevel}); transform-origin: center center; cursor: grab;"
+		>
+			{#key navigationState.currentImagePath}
+				<Image
+					imagePath={navigationState.currentImagePath}
+					class="h-full w-full object-contain"
+					alt=""
+					previousImagePath={navigationState.oldImagePath}
+				/>
+			{/key}
+		</div>
 	{:else}
 		<div class="flex flex-col items-center gap-2 text-gray-400">
 			<span class="opacity-80">No content to display</span>

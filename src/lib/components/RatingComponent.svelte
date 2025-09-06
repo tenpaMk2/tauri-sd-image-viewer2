@@ -8,8 +8,9 @@
 	const { imagePath }: Props = $props();
 
 	// メタデータストアを取得（imagePathが変更されるたびに新しいストアを取得）
-	const store = $derived(metadataRegistry.getOrCreateStore(imagePath));
-	const metadata = $derived(store.state);
+	const metadataStore = metadataRegistry.getOrCreateStore(imagePath);
+	metadataStore.actions.ensureLoaded();
+	const { state: metadataState, actions: metadataActions } = metadataStore;
 
 	let isRatingHovered = $state(false);
 	let hoveredRating = $state(0);
@@ -29,10 +30,10 @@
 		e.stopPropagation(); // 親要素のクリックイベントを防ぐ
 
 		// 同じ星をクリックした場合は0に戻す、そうでなければ新しいRating値を設定
-		const newRating = (metadata.rating ?? 0) === clickedRating ? 0 : clickedRating;
+		const newRating = (metadataState.rating ?? 0) === clickedRating ? 0 : clickedRating;
 
 		try {
-			await store.actions.updateRating(newRating);
+			await metadataStore.actions.updateRating(newRating);
 		} catch (error) {
 			console.error('Failed to update rating for ' + imagePath.split('/').pop() + ': ' + error);
 		}
@@ -46,28 +47,31 @@
 	aria-label="Image Rating"
 	{onmouseleave}
 >
-	{#if metadata.loadingStatus === 'unloaded'}
+	{#if metadataState.loadingStatus === 'unloaded'}
 		<!-- unloaded状態は初期化中のため非表示 -->
 		<div class="flex items-center gap-1 rounded bg-black/50 px-2 py-1">
 			<span class="loading loading-xs loading-ball text-white opacity-30"></span>
 			<span class="text-xs text-white opacity-30">Init...</span>
 		</div>
-	{:else if metadata.loadingStatus === 'queued'}
+	{:else if metadataState.loadingStatus === 'queued'}
 		<!-- メタデータキュー待ちの表示 -->
 		<div class="flex items-center gap-1 rounded bg-black/50 px-2 py-1">
 			<span class="loading loading-xs loading-ring text-white opacity-50"></span>
 			<span class="text-xs text-white">Queue...</span>
 		</div>
-	{:else if metadata.loadingStatus === 'loading'}
+	{:else if metadataState.loadingStatus === 'loading'}
 		<!-- メタデータ処理中のスピナー -->
 		<div class="flex items-center gap-1 rounded bg-black/50 px-2 py-1">
 			<span class="loading loading-xs loading-spinner text-white"></span>
 			<span class="text-xs text-white">Loading...</span>
 		</div>
-	{:else if metadata.loadingStatus === 'loaded'}
+	{:else if metadataState.loadingStatus === 'loaded'}
 		<!-- DaisyUI Rating表示 -->
-		{@const displayRating = isRatingHovered ? hoveredRating : (metadata.rating ?? 0)}
-		<div class="rating-xs rating" title={`Rating: ${metadata.rating || 0}/5 (click to change)`}>
+		{@const displayRating = isRatingHovered ? hoveredRating : (metadataState.rating ?? 0)}
+		<div
+			class="rating-xs rating"
+			title={`Rating: ${metadataState.rating || 0}/5 (click to change)`}
+		>
 			{#each Array(5) as _, i}
 				<input
 					type="radio"
@@ -84,7 +88,7 @@
 				/>
 			{/each}
 		</div>
-	{:else if metadata.loadingStatus === 'error'}
+	{:else if metadataState.loadingStatus === 'error'}
 		<!-- エラー状態の表示 -->
 		<div class="flex items-center gap-1 rounded bg-red-600/50 px-2 py-1">
 			<span class="text-xs text-white">Error</span>

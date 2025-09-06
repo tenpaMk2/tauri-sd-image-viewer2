@@ -6,7 +6,6 @@ type MutableImageViewState = {
 	isDragging: boolean;
 	dragStartX: number;
 	dragStartY: number;
-	fitScale: number;
 	isZooming: boolean;
 };
 
@@ -21,7 +20,6 @@ const INITIAL_IMAGE_VIEW_STATE: MutableImageViewState = {
 	isDragging: false,
 	dragStartX: 0,
 	dragStartY: 0,
-	fitScale: 1,
 	isZooming: false,
 };
 
@@ -30,27 +28,6 @@ const _state = $state<MutableImageViewState>({ ...INITIAL_IMAGE_VIEW_STATE });
 // ズーム状態が変更されたかどうかを判定
 const isZoomed = $derived(1 < _state.zoomLevel || _state.panX !== 0 || _state.panY !== 0);
 
-// 画像のウィンドウフィット用スケールを計算（内部関数）
-const _calculateFitScale = (
-	imageElement: HTMLImageElement,
-	containerElement: HTMLDivElement,
-): number => {
-	if (!imageElement || !containerElement) return 1;
-
-	const containerRect = containerElement.getBoundingClientRect();
-	const availableWidth = containerRect.width;
-	const availableHeight = containerRect.height;
-
-	const imageNaturalWidth = imageElement.naturalWidth;
-	const imageNaturalHeight = imageElement.naturalHeight;
-
-	if (imageNaturalWidth === 0 || imageNaturalHeight === 0) return 1;
-
-	const scaleX = availableWidth / imageNaturalWidth;
-	const scaleY = availableHeight / imageNaturalHeight;
-
-	return Math.min(scaleX, scaleY);
-};
 
 const actions = {
 	// 状態リセット
@@ -60,16 +37,10 @@ const actions = {
 		_state.panY = 0;
 		_state.isDragging = false;
 		_state.isZooming = false;
-		// fitScaleは保持してトランジション問題を回避
 	},
 
 	// 画像読み込み完了時の処理（ズーム状態をリセット）
-	onImageLoaded(imageElement: HTMLImageElement, containerElement: HTMLDivElement): void {
-		// まずフィットスケールを計算
-		const newFitScale = _calculateFitScale(imageElement, containerElement);
-		_state.fitScale = newFitScale;
-
-		// その後にズーム状態をリセット
+	onImageLoaded(): void {
 		_state.zoomLevel = 1;
 		_state.panX = 0;
 		_state.panY = 0;
@@ -77,14 +48,13 @@ const actions = {
 		_state.isZooming = false;
 	},
 
-	// 画像切り替え準備（fitScaleは保持、ズーム状態のみリセット）
+	// 画像切り替え準備（ズーム状態のみリセット）
 	prepareForNewImage(): void {
 		_state.zoomLevel = 1;
 		_state.panX = 0;
 		_state.panY = 0;
 		_state.isDragging = false;
 		_state.isZooming = false;
-		// fitScaleは保持して、新しい画像が読み込まれるまで前のスケールを使用
 	},
 
 	// ズーム操作
@@ -154,10 +124,6 @@ const actions = {
 		}
 	},
 
-	// フィットスケール設定
-	setFitScale(scale: number): void {
-		_state.fitScale = scale;
-	},
 };
 
 export const imageViewStore = {

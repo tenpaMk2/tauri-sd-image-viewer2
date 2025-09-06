@@ -8,6 +8,17 @@ type EnqueueOptions = {
 	debugLabel?: string;
 };
 
+type QueueLogger = {
+	onEnqueue?: (id: string, priority: string, debugLabel: string, queueSize: number, activeCount: number) => void;
+	onProcessStart?: (id: string, debugLabel: string, queueRemaining: number, activeCount: number) => void;
+	onTaskStart?: (id: string, debugLabel: string) => void;
+	onTaskComplete?: (id: string, debugLabel: string, activeCount: number) => void;
+	onTaskError?: (id: string, debugLabel: string, error: any) => void;
+	onQueueComplete?: (debugLabel: string) => void;
+	onClearPending?: () => void;
+	onClearComplete?: () => void;
+};
+
 /**
  * 画像ファイルアクセス基底キュー管理クラス
  */
@@ -16,15 +27,11 @@ export class BaseQueue {
 	protected processing = false;
 	protected maxConcurrent = 10;
 	protected activeJobs = new Map<string, Promise<void>>();
+	protected logger?: QueueLogger;
 
-	// 進行中のロード処理を管理（パスごとにresolve関数を保持）
-	protected pendingResolvers = new Map<
-		string,
-		{
-			resolve: () => void;
-			reject: (error: any) => void;
-		}[]
-	>();
+	constructor(logger?: QueueLogger) {
+		this.logger = logger;
+	}
 
 	/**
 	 * タスクをキューに追加してPromiseを返す
@@ -38,18 +45,6 @@ export class BaseQueue {
 		options: EnqueueOptions = {},
 	): Promise<void> {
 		const { priority = 'normal', debugLabel = 'task' } = options;
-		// 進行中のロード処理に参加
-		if (this.pendingResolvers.has(id)) {
-			return new Promise<void>((resolve, reject) => {
-				const resolvers = this.pendingResolvers.get(id)!;
-				resolvers.push({ resolve, reject });
-			});
-		}
-
-		// 新しいPromiseを作成
-		const promise = new Promise<void>((resolve, reject) => {
-			this.pendingResolvers.set(id, [{ resolve, reject }]);
-		});
 
 		// キューに追加
 		const task: QueueTask = {
@@ -57,24 +52,34 @@ export class BaseQueue {
 			handler,
 		};
 
-		if (!this.queue.some((t) => t.id === id)) {
-			// 優先度に基づいてキューに追加
-			if (priority === 'high') {
-				this.queue.unshift(task); // 先頭に追加
-			} else {
-				this.queue.push(task); // 末尾に追加
-			}
-
-			const priorityIcon = priority === 'high' ? '⚡' : '📋';
-			console.log(
-				`${priorityIcon} ${debugLabel} queued (${priority}): ${id.split('/').pop()} | Queue size: ${this.queue.length}, Active: ${this.activeJobs.size}/${this.maxConcurrent}`,
-			);
-
-			// 処理を開始
-			this.processQueue(debugLabel);
+		// 優先度に基づいてキューに追加
+		if (priority === 'high') {
+			this.queue.unshift(task); // 先頭に追加
+		} else {
+			this.queue.push(task); // 末尾に追加
 		}
 
-		return promise;
+		this.logger?.onEnqueue?.(id, priority, debugLabel, this.queue.length, this.activeJobs.size);
+
+		// 処理を開始
+		this.processQueue(debugLabel);
+
+		// タスク完了まで待機
+		return this.waitForTask(id);
+	}
+
+	/**
+	 * 指定されたタスクの完了を待機
+	 */
+	private async waitForTask(id: string): Promise<void> {
+		while (this.activeJobs.has(id) || this.queue.some(task => task.id === id)) {
+			if (this.activeJobs.has(id)) {
+				await this.activeJobs.get(id);
+				return;
+			}
+			// まだキューにある場合は少し待ってから再チェック
+			await new Promise(resolve => setTimeout(resolve, 10));
+		}
 	}
 
 	/**
@@ -89,9 +94,7 @@ export class BaseQueue {
 			// 最大同時実行数に達していない場合、新しいジョブを開始
 			while (this.activeJobs.size < this.maxConcurrent && this.queue.length > 0) {
 				const task = this.queue.shift()!;
-				console.log(
-					`▶️ Processing ${debugLabel}: ${task.id.split('/').pop()} | Queue remaining: ${this.queue.length}, Active: ${this.activeJobs.size + 1}/${this.maxConcurrent}`,
-				);
+				this.logger?.onProcessStart?.(task.id, debugLabel, this.queue.length, this.activeJobs.size + 1);
 
 				const job = this.executeTask(task.id, task.handler, debugLabel);
 				this.activeJobs.set(task.id, job);
@@ -99,9 +102,7 @@ export class BaseQueue {
 				// ジョブ完了時にアクティブジョブから削除
 				job.finally(() => {
 					this.activeJobs.delete(task.id);
-					console.log(
-						`✅ Completed ${debugLabel}: ${task.id.split('/').pop()} | Active jobs remaining: ${this.activeJobs.size}`,
-					);
+					this.logger?.onTaskComplete?.(task.id, debugLabel, this.activeJobs.size);
 				});
 			}
 
@@ -113,7 +114,7 @@ export class BaseQueue {
 		}
 
 		this.processing = false;
-		console.log(`✅ ${debugLabel} queue processing completed`);
+		this.logger?.onQueueComplete?.(debugLabel);
 	}
 
 	/**
@@ -126,32 +127,13 @@ export class BaseQueue {
 		debugLabel: string,
 	): Promise<void> {
 		try {
-			console.log(`🔄 Loading ${debugLabel}: ${id.split('/').pop()}`);
+			this.logger?.onTaskStart?.(id, debugLabel);
 
 			// 実際のロード処理を実行（Rust側処理含む）
 			await handler();
 
-			console.log(`✅ Completed ${debugLabel} load: ${id.split('/').pop()}`);
-
-			// 成功時にすべてのPromiseをresolve
-			const resolvers = this.pendingResolvers.get(id);
-			if (resolvers) {
-				for (const resolver of resolvers) {
-					resolver.resolve();
-				}
-				this.pendingResolvers.delete(id);
-			}
 		} catch (error) {
-			console.error(`❌ ${debugLabel} execution failed: ${id.split('/').pop()} ${error}`);
-
-			// エラー時にすべてのPromiseをreject
-			const resolvers = this.pendingResolvers.get(id);
-			if (resolvers) {
-				for (const resolver of resolvers) {
-					resolver.reject(error);
-				}
-				this.pendingResolvers.delete(id);
-			}
+			this.logger?.onTaskError?.(id, debugLabel, error);
 			throw error; // エラーを再スロー
 		}
 	}
@@ -160,23 +142,12 @@ export class BaseQueue {
 	 * 未処理のキューをクリア（実行中タスクは継続、新規タスクは受付可能）
 	 */
 	clearPendingTasks(): void {
-		console.log(`🧹 Clearing pending tasks`);
-
-		// 未実行のタスクのPromiseをreject
-		for (const [id, resolvers] of this.pendingResolvers) {
-			if (!this.activeJobs.has(id)) {
-				// 実行中でないもののみ
-				for (const resolver of resolvers) {
-					resolver.reject(new Error('Task cancelled'));
-				}
-				this.pendingResolvers.delete(id);
-			}
-		}
+		this.logger?.onClearPending?.();
 
 		// 未処理のキューをクリア
 		this.queue.length = 0;
 
-		console.log(`🗑️ pending tasks cleared`);
+		this.logger?.onClearComplete?.();
 	}
 
 	/**

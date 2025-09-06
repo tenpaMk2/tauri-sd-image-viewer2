@@ -15,6 +15,9 @@
 	// サムネイルアイテムを取得（$stateオブジェクトなので$derivedは不要）
 	const thumbnail = thumbnailRegistry.getOrCreateStore(imagePath);
 
+	// サムネイルロードを開始
+	thumbnail.actions.ensureLoaded();
+
 	// 選択状態をストアから直接取得
 	const isSelected = $derived(imageSelectionState.selectedImages.has(imagePath));
 
@@ -38,7 +41,22 @@
 		onkeydown={(e) => e.key === 'Enter' && handleClick()}
 		aria-label="Select image (double-click to open)"
 	>
-		{#if thumbnail.state.loadingStatus === 'loaded'}
+		{#if thumbnail.state.loadingStatus === 'unloaded'}
+			<div class="flex h-full flex-col items-center justify-center bg-base-300/20">
+				<div class="mb-1 text-xl opacity-30">📂</div>
+				<div class="text-xs text-base-content/50">Unloaded</div>
+			</div>
+		{:else if thumbnail.state.loadingStatus === 'queued'}
+			<div class="flex h-full flex-col items-center justify-center bg-base-300/20">
+				<div class="mb-1 text-xl opacity-30">⏳</div>
+				<div class="text-xs text-base-content/50">Queued</div>
+			</div>
+		{:else if thumbnail.state.loadingStatus === 'loading'}
+			<div class="flex h-full flex-col items-center justify-center bg-base-300/30">
+				<div class="loading mb-2 loading-sm loading-spinner"></div>
+				<div class="text-xs text-base-content/50">Loading...</div>
+			</div>
+		{:else if thumbnail.state.loadingStatus === 'loaded'}
 			{#if thumbnail.state.thumbnailUrl}
 				<div class="relative flex h-full w-full items-center justify-center p-1">
 					<img
@@ -54,16 +72,23 @@
 					<div class="text-xs text-base-content/50">No Image</div>
 				</div>
 			{/if}
-		{:else}
-			<div class="flex h-full flex-col items-center justify-center bg-base-300/30">
-				<div class="loading mb-2 loading-sm loading-spinner"></div>
-				<div class="text-xs text-base-content/50">Loading...</div>
+		{:else if thumbnail.state.loadingStatus === 'error'}
+			<div class="flex h-full flex-col items-center justify-center bg-error/10">
+				<div class="mb-1 text-xl opacity-50">❌</div>
+				<div class="text-xs text-error/70">Error</div>
+				{#if thumbnail.state.loadError}
+					<div class="px-1 text-center text-xs break-words text-error/50">
+						{thumbnail.state.loadError}
+					</div>
+				{/if}
 			</div>
 		{/if}
 	</button>
 
 	<!-- Rating Component -->
 	<div class="absolute bottom-1 left-1/2 -translate-x-1/2">
-		<RatingComponent {imagePath} />
+		{#key imagePath}
+			<RatingComponent {imagePath} />
+		{/key}
 	</div>
 </div>

@@ -10,7 +10,6 @@ type MutableThumbnailState = {
 	thumbnailUrl: string | undefined;
 	loadingStatus: LoadingStatus;
 	loadError: string | undefined;
-	loadingPromise: Promise<void> | undefined;
 	// 内部管理用（外部からは触らない）
 	_isDestroyed: boolean;
 };
@@ -36,7 +35,6 @@ export const createThumbnailStore = (imagePath: string): ThumbnailStore => {
 		thumbnailUrl: undefined,
 		loadingStatus: 'unloaded',
 		loadError: undefined,
-		loadingPromise: undefined,
 		_isDestroyed: false,
 	});
 
@@ -52,34 +50,20 @@ export const createThumbnailStore = (imagePath: string): ThumbnailStore => {
 				return;
 			}
 
-			// 既にロード中の場合は既存のPromiseを待つ
-			if (state.loadingPromise) {
-				return state.loadingPromise;
-			}
-
 			// 状態を'queued'に変更
 			state.loadingStatus = 'queued';
 
 			// キューサービス経由でロード処理を開始
-			state.loadingPromise = thumbnailQueue
-				.enqueue(imagePath, () => actions._load(), { debugLabel: 'thumbnail' })
-				.then(() => {
-					// 完了時に破棄済みでなければPromiseをクリア
-					if (!state._isDestroyed) {
-						state.loadingPromise = undefined;
-					}
-				})
-				.catch((error) => {
-					// エラー時も破棄済みでなければPromiseをクリア
-					if (!state._isDestroyed) {
-						state.loadingPromise = undefined;
-						state.loadingStatus = 'error'; // エラー状態に更新
-						state.loadError = error instanceof Error ? error.message : String(error);
-					}
-					throw error;
-				});
-
-			return state.loadingPromise;
+			try {
+				await thumbnailQueue.enqueue(imagePath, () => actions._load(), { debugLabel: 'thumbnail' });
+			} catch (error) {
+				// エラー時も破棄済みでなければ状態更新
+				if (!state._isDestroyed) {
+					state.loadingStatus = 'error';
+					state.loadError = error instanceof Error ? error.message : String(error);
+				}
+				throw error;
+			}
 		},
 
 		_load: async (): Promise<void> => {
@@ -183,17 +167,12 @@ export const createThumbnailStore = (imagePath: string): ThumbnailStore => {
 				}
 			}
 
-			// 進行中のPromiseは継続するが、結果は無視される
-			state.loadingPromise = undefined;
-
 			// 状態をクリア
 			state.thumbnailUrl = undefined;
 			state.loadingStatus = 'unloaded';
 			state.loadError = undefined;
 		},
 	};
-
-	actions.ensureLoaded();
 
 	return { state: state as ThumbnailState, actions };
 };

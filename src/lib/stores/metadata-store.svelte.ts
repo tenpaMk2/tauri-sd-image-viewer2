@@ -20,7 +20,6 @@ type MutableMetadataState = {
 	// ロード状態管理
 	loadingStatus: LoadingStatus;
 	loadingError: string | undefined;
-	loadingPromise: Promise<void> | undefined;
 	// 内部管理用（外部からは触らない）
 	_isDestroyed: boolean;
 };
@@ -55,7 +54,6 @@ export const createMetadataStore = (imagePath: string): MetadataStore => {
 		sdParameters: undefined,
 		loadingStatus: 'unloaded',
 		loadingError: undefined,
-		loadingPromise: undefined,
 		_isDestroyed: false,
 	});
 
@@ -71,34 +69,20 @@ export const createMetadataStore = (imagePath: string): MetadataStore => {
 				return;
 			}
 
-			// 既にロード中の場合は既存のPromiseを待つ
-			if (state.loadingPromise) {
-				return state.loadingPromise;
-			}
-
 			// 状態を'queued'に変更
 			state.loadingStatus = 'queued';
 
 			// キューサービス経由でロード処理を開始
-			state.loadingPromise = metadataQueue
-				.enqueue(imagePath, () => actions._load(), { debugLabel: 'metadata' })
-				.then(() => {
-					// 完了時に破棄済みでなければPromiseをクリア
-					if (!state._isDestroyed) {
-						state.loadingPromise = undefined;
-					}
-				})
-				.catch((error) => {
-					// エラー時も破棄済みでなければPromiseをクリア
-					if (!state._isDestroyed) {
-						state.loadingPromise = undefined;
-						state.loadingStatus = 'error'; // エラー状態に更新
-						state.loadingError = error instanceof Error ? error.message : String(error);
-					}
-					throw error;
-				});
-
-			return state.loadingPromise;
+			try {
+				await metadataQueue.enqueue(imagePath, () => actions._load(), { debugLabel: 'metadata' });
+			} catch (error) {
+				// エラー時も破棄済みでなければ状態更新
+				if (!state._isDestroyed) {
+					state.loadingStatus = 'error';
+					state.loadingError = error instanceof Error ? error.message : String(error);
+				}
+				throw error;
+			}
 		},
 
 		_load: async (): Promise<void> => {
@@ -172,7 +156,6 @@ export const createMetadataStore = (imagePath: string): MetadataStore => {
 			state.rating = undefined;
 			state.sdParameters = undefined;
 			state.loadingError = undefined;
-			state.loadingPromise = undefined;
 			state.loadingStatus = 'unloaded';
 
 			// ensureLoadedで再ロード
@@ -188,7 +171,6 @@ export const createMetadataStore = (imagePath: string): MetadataStore => {
 			state.rating = undefined;
 			state.sdParameters = undefined;
 			state.loadingError = undefined;
-			state.loadingPromise = undefined;
 			state.loadingStatus = 'unloaded';
 		},
 
@@ -196,15 +178,10 @@ export const createMetadataStore = (imagePath: string): MetadataStore => {
 			// 破棄フラグを設定（以降の操作を無効化）
 			state._isDestroyed = true;
 
-			// 進行中のPromiseは継続するが、結果は無視される
-			state.loadingPromise = undefined;
-
 			// 状態をクリア
 			actions.reset();
 		},
 	};
-
-	actions.ensureLoaded();
 
 	return { state: state as MetadataState, actions };
 };

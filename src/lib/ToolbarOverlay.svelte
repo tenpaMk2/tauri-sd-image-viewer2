@@ -1,4 +1,5 @@
 <script lang="ts">
+	import ToolbarButton from '$lib/components/ui/ToolbarButton.svelte';
 	import { transitionToGrid, transitionToViewer } from '$lib/services/app-transitions';
 	import { dialogService } from '$lib/services/dialog';
 	import { directoryImagePathsStore } from '$lib/stores/directory-image-paths-store.svelte';
@@ -7,7 +8,6 @@
 	import { toastStore } from '$lib/stores/toast-store.svelte';
 	import { viewerUIStore } from '$lib/stores/viewer-ui-store.svelte';
 	import { copyFileToClipboard } from '$lib/utils/copy-utils';
-	import Icon from '@iconify/svelte';
 	import { path } from '@tauri-apps/api';
 	import { onDestroy } from 'svelte';
 	import { navigateToLast } from './services/image-navigation';
@@ -88,55 +88,46 @@
 
 		<!-- Center: Main Buttons -->
 		<div class="flex flex-1 items-center justify-center gap-2">
-			<button class="btn text-white btn-ghost btn-sm" onclick={openFileDialog} title="Open File">
-				<Icon icon="lucide:image-plus" class="h-4 w-4" />
-			</button>
-			<button
-				class="btn text-white btn-ghost btn-sm"
-				onclick={handleCopyToClipboard}
-				title={'Copy image files to clipboard'}
-			>
-				<Icon icon="lucide:clipboard-copy" class="h-4 w-4" />
-			</button>
-			<button
-				class="btn text-white btn-sm"
-				class:btn-ghost={!viewerUIState.isAutoNavActive}
-				class:btn-active={viewerUIState.isAutoNavActive}
-				onclick={handleToggleAutoNavigation}
+			<ToolbarButton icon="image-plus" title="Open File" onClick={openFileDialog} variant="white" />
+
+			<ToolbarButton
+				icon="clipboard-copy"
+				title="Copy image files to clipboard"
+				onClick={handleCopyToClipboard}
+				variant="white"
+			/>
+
+			<ToolbarButton
+				icon="skip-forward"
 				title={viewerUIState.isAutoNavActive
 					? 'Stop Auto Navigation'
 					: 'Start Auto Navigation to Latest Image'}
-			>
-				<Icon icon="lucide:skip-forward" class="h-4 w-4" />
-			</button>
-			<button
-				class="btn text-white btn-ghost btn-sm"
-				onclick={async () => {
+				onClick={handleToggleAutoNavigation}
+				extraClass={viewerUIState.isAutoNavActive ? 'btn-active' : ''}
+				variant="white"
+			/>
+
+			<ToolbarButton
+				icon="layout-grid"
+				title="Grid View"
+				onClick={async () => {
 					const directory = await path.dirname(navigationState.currentImagePath);
 					if (directory) {
 						transitionToGrid(directory);
 					}
 				}}
-				title="Grid View"
-			>
-				<Icon icon="lucide:layout-grid" class="h-4 w-4" />
-			</button>
+				variant="white"
+			/>
 		</div>
 
 		<!-- Right: Info Panel Button -->
 		<div class="flex items-center gap-2">
-			<button
-				class="btn text-white btn-ghost btn-sm"
-				onclick={handleToggleInfoPanel}
+			<ToolbarButton
+				icon={metadataPanelState.isVisible ? 'panel-right-close' : 'panel-right-open'}
 				title={metadataPanelState.isVisible ? 'Hide Info Panel' : 'Show Info Panel'}
-			>
-				<Icon
-					icon={metadataPanelState.isVisible
-						? 'lucide:panel-right-close'
-						: 'lucide:panel-right-open'}
-					class="h-4 w-4"
-				/>
-			</button>
+				onClick={handleToggleInfoPanel}
+				variant="white"
+			/>
 		</div>
 	</div>
 </div>

@@ -1,8 +1,8 @@
 <script lang="ts">
+	import ToolbarButton from '$lib/components/ui/ToolbarButton.svelte';
 	import * as imageActions from '$lib/services/image-actions';
 	import { imageSelectionStore } from '$lib/stores/image-selection-store.svelte';
 	import { toastStore } from '$lib/stores/toast-store.svelte';
-	import Icon from '@iconify/svelte';
 
 	const { state: imageSelectionState, actions: imageSelectionActions } = imageSelectionStore;
 	const { actions: toastActions } = toastStore;
@@ -19,21 +19,22 @@
 				{selectedImages.size} images selected
 			</div>
 			<div class="flex items-center gap-4">
-				<button
-					class="btn text-white btn-ghost btn-sm"
-					onclick={() =>
+				<ToolbarButton
+					icon="copy"
+					title="Copy to Clipboard"
+					onClick={() =>
 						imageActions.copyImagesToClipboard(
 							Array.from(selectedImages),
 							(message: string) => toastActions.showSuccessToast(message),
 							(message: string) => toastActions.showErrorToast(message),
 						)}
-					title="Copy to Clipboard"
-				>
-					<Icon icon="lucide:copy" class="h-4 w-4" />
-				</button>
-				<button
-					class="btn text-white btn-ghost btn-sm"
-					onclick={async () => {
+					variant="white"
+				/>
+
+				<ToolbarButton
+					icon="trash-2"
+					title="Delete"
+					onClick={async () => {
 						const shouldClear = await imageActions.deleteImages(
 							Array.from(selectedImages),
 							async (count: number) => {
@@ -47,10 +48,8 @@
 							imageSelectionActions.clearSelection();
 						}
 					}}
-					title="Delete"
-				>
-					<Icon icon="lucide:trash-2" class="h-4 w-4" />
-				</button>
+					variant="white"
+				/>
 			</div>
 		</div>
 	</div>

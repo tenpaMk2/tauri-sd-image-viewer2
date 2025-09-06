@@ -81,24 +81,41 @@
 	};
 </script>
 
+{#snippet starRating(currentRating: number, onStarClick: (rating: number) => void)}
+	<div class="rating-sm rating">
+		{#each [1, 2, 3, 4, 5] as rating}
+			<input
+				type="radio"
+				name="rating-filter"
+				class="mask bg-orange-400 mask-star-2"
+				checked={currentRating === rating}
+				onclick={() => onStarClick(rating)}
+				title={`${rating} star${rating !== 1 ? 's' : ''} (click again for unrated)`}
+			/>
+		{/each}
+	</div>
+{/snippet}
+
+{#snippet tagBadge(tagName: string, onRemove: (tag: string) => void)}
+	<div class="badge gap-1 badge-sm badge-primary">
+		{tagName}
+		<button
+			class="btn h-3 min-h-0 w-3 p-0 btn-ghost btn-xs"
+			onclick={() => onRemove(tagName)}
+			title="Remove tag"
+		>
+			<Icon icon="lucide:x" class="h-2 w-2" />
+		</button>
+	</div>
+{/snippet}
+
 <div class="border-b border-base-300 bg-base-100 p-4">
 	<!-- Compact Filter Controls -->
 	<div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
 		<!-- Rating Filter -->
 		<div class="flex items-center gap-2">
 			<!-- DaisyUI Rating Component -->
-			<div class="rating-sm rating">
-				{#each [1, 2, 3, 4, 5] as rating}
-					<input
-						type="radio"
-						name="rating-filter"
-						class="mask bg-orange-400 mask-star-2"
-						checked={selectedRating === rating}
-						onclick={() => handleStarClick(rating)}
-						title={`${rating} star${rating !== 1 ? 's' : ''} (click again for unrated)`}
-					/>
-				{/each}
-			</div>
+			{@render starRating(selectedRating, handleStarClick)}
 
 			<select
 				class="select-bordered select w-16 select-sm"
@@ -157,16 +174,7 @@
 			{#if selectedTags.length > 0}
 				<div class="flex flex-wrap gap-1">
 					{#each selectedTags as tagName}
-						<div class="badge gap-1 badge-sm badge-primary">
-							{tagName}
-							<button
-								class="btn h-3 min-h-0 w-3 p-0 btn-ghost btn-xs"
-								onclick={() => removeTag(tagName)}
-								title="Remove tag"
-							>
-								<Icon icon="lucide:x" class="h-2 w-2" />
-							</button>
-						</div>
+						{@render tagBadge(tagName, removeTag)}
 					{/each}
 				</div>
 			{/if}

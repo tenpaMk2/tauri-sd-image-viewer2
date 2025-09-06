@@ -1,4 +1,5 @@
 <script lang="ts">
+	import InfoRow from '$lib/components/ui/InfoRow.svelte';
 	import { metadataRegistry } from '$lib/services/metadata-registry';
 
 	type Props = {
@@ -15,15 +16,9 @@
 	<h3 class="mb-2 text-sm font-semibold">XMP Data</h3>
 	<div class="space-y-1.5 text-xs">
 		<!-- Rating -->
-		<div class="flex justify-between">
-			<div class="text-base-content/70">Rating:</div>
-			<div>
-				{#if metadata.loadingStatus === 'loaded'}
-					{metadata.rating ?? 0}/5
-				{:else}
-					Loading...
-				{/if}
-			</div>
-		</div>
+		<InfoRow
+			label="Rating"
+			value={metadata.loadingStatus === 'loaded' ? `${metadata.rating ?? 0}/5` : 'Loading...'}
+		/>
 	</div>
 </div>

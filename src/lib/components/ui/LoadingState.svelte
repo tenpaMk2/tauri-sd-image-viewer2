@@ -8,7 +8,7 @@
 	};
 
 	const { status, variant = 'default' }: Props = $props();
-	const config = LOADING_STATUS_CONFIG[status];
+	const config = $derived(LOADING_STATUS_CONFIG[status]);
 </script>
 
 {#if variant === 'compact'}

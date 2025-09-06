@@ -1,5 +1,6 @@
 <script lang="ts">
 	import InfoRow from '$lib/components/ui/InfoRow.svelte';
+	import LoadingState from '$lib/components/ui/LoadingState.svelte';
 	import { metadataRegistry } from '$lib/services/metadata-registry';
 	import { toastStore } from '$lib/stores/toast-store.svelte';
 	import { copyToClipboard } from '$lib/utils/copy-utils';
@@ -46,22 +47,24 @@
 	</div>
 {/snippet}
 
-{#if metadataState.loadingStatus === 'loaded'}
-	{#if metadataState.sdParameters}
-		<div class="rounded-lg bg-base-300 p-3">
-			<h3 class="mb-2 flex items-center gap-2 text-sm font-semibold">
-				Stable Diffusion
-				<button
-					class="btn btn-ghost btn-xs"
-					onclick={async () => {
-						await copyToClipboard(metadataState.sdParameters?.raw || '');
-						toastStore.actions.showSuccessToast('SD parameters copied to clipboard');
-					}}
-					title="Copy raw text"
-				>
-					<Icon icon="lucide:copy" class="h-3 w-3" />
-				</button>
-			</h3>
+<div class="rounded-lg bg-base-300 p-3">
+	<h3 class="mb-2 flex items-center gap-2 text-sm font-semibold">
+		Stable Diffusion
+		{#if metadataState.loadingStatus === 'loaded' && metadataState.sdParameters}
+			<button
+				class="btn btn-ghost btn-xs"
+				onclick={async () => {
+					await copyToClipboard(metadataState.sdParameters?.raw || '');
+					toastStore.actions.showSuccessToast('SD parameters copied to clipboard');
+				}}
+				title="Copy raw text"
+			>
+				<Icon icon="lucide:copy" class="h-3 w-3" />
+			</button>
+		{/if}
+	</h3>
+	{#if metadataState.loadingStatus === 'loaded'}
+		{#if metadataState.sdParameters}
 			<div class="space-y-2 text-xs">
 				<!-- ポジティブプロンプト -->
 				{#if 0 < (metadataState.sdParameters?.positive_sd_tags.length ?? 0)}
@@ -144,11 +147,10 @@
 					{/if}
 				</div>
 			</div>
-		</div>
+		{:else}
+			<div class="text-xs text-base-content/70">No SD parameters found</div>
+		{/if}
+	{:else}
+		<LoadingState status={metadataState.loadingStatus} />
 	{/if}
-{:else}
-	<div class="rounded-lg bg-base-300 p-3">
-		<h3 class="mb-2 text-sm font-semibold">Stable Diffusion</h3>
-		<div class="text-xs text-base-content/70">Loading...</div>
-	</div>
-{/if}
+</div>

@@ -1,9 +1,8 @@
 <script lang="ts">
 	import RatingComponent from '$lib/components/RatingComponent.svelte';
+	import LoadingState from '$lib/components/ui/LoadingState.svelte';
 	import { thumbnailRegistry } from '$lib/services/thumbnail-registry';
 	import { imageSelectionStore } from '$lib/stores/image-selection-store.svelte';
-	import { LOADING_STATUS_CONFIG } from '$lib/ui/loading-status-config';
-	import Icon from '@iconify/svelte';
 	import { transitionToViewer } from './services/app-transitions';
 
 	const {
@@ -32,44 +31,8 @@
 	};
 </script>
 
-{#snippet loadingState(
-	config: (typeof LOADING_STATUS_CONFIG)[keyof typeof LOADING_STATUS_CONFIG],
-	errorMessage?: string,
-)}
-	<div
-		class="flex h-full flex-col items-center justify-center {config.icon === 'triangle-alert'
-			? 'bg-error/10'
-			: 'bg-base-300/20'}"
-	>
-		{#if config.icon}
-			<Icon
-				icon="lucide:{config.icon}"
-				class="mb-1 text-xl {config.icon === 'triangle-alert' ? 'opacity-50' : 'opacity-30'}"
-			/>
-		{:else if config.loadingIcon}
-			<span class="loading mb-2 loading-sm {config.loadingIcon}"></span>
-		{/if}
-		<div
-			class="text-xs {config.icon === 'triangle-alert' ? 'text-error/70' : 'text-base-content/50'}"
-		>
-			{config.text}
-		</div>
-		{#if errorMessage}
-			<div class="px-1 text-center text-xs break-words text-error/50">
-				{errorMessage}
-			</div>
-		{/if}
-	</div>
-{/snippet}
-
 {#snippet thumbnailContent()}
-	{#if thumbnail.state.loadingStatus === 'unloaded'}
-		{@render loadingState(LOADING_STATUS_CONFIG.unloaded)}
-	{:else if thumbnail.state.loadingStatus === 'queued'}
-		{@render loadingState(LOADING_STATUS_CONFIG.queued)}
-	{:else if thumbnail.state.loadingStatus === 'loading'}
-		{@render loadingState(LOADING_STATUS_CONFIG.loading)}
-	{:else if thumbnail.state.loadingStatus === 'loaded'}
+	{#if thumbnail.state.loadingStatus === 'loaded'}
 		{#if thumbnail.state.thumbnailUrl}
 			<div class="relative flex h-full w-full items-center justify-center p-1">
 				<img
@@ -85,8 +48,10 @@
 				<div class="text-xs text-base-content/50">No Image</div>
 			</div>
 		{/if}
-	{:else if thumbnail.state.loadingStatus === 'error'}
-		{@render loadingState(LOADING_STATUS_CONFIG.error, thumbnail.state.loadError)}
+	{:else}
+		<div class="flex h-full items-center justify-center bg-base-300/20">
+			<LoadingState status={thumbnail.state.loadingStatus} />
+		</div>
 	{/if}
 {/snippet}
 

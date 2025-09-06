@@ -1,7 +1,6 @@
 <script lang="ts">
+	import LoadingState from '$lib/components/ui/LoadingState.svelte';
 	import { metadataRegistry } from '$lib/services/metadata-registry';
-	import { LOADING_STATUS_CONFIG } from '$lib/ui/loading-status-config';
-	import Icon from '@iconify/svelte';
 
 	type Props = {
 		imagePath: string;
@@ -42,35 +41,6 @@
 	};
 </script>
 
-{#snippet statusDisplay(config: (typeof LOADING_STATUS_CONFIG)[keyof typeof LOADING_STATUS_CONFIG])}
-	<div
-		class="flex items-center gap-1 rounded {config.icon === 'triangle-alert'
-			? 'bg-red-600/50'
-			: 'bg-black/50'} px-2 py-1"
-	>
-		{#if config.icon}
-			<Icon
-				icon="lucide:{config.icon}"
-				class="h-3 w-3 text-white {config.icon === 'triangle-alert' ? '' : 'opacity-30'}"
-			/>
-		{:else if config.loadingIcon}
-			<span
-				class="loading loading-xs {config.loadingIcon} text-white {config.loadingIcon ===
-				'loading-ring'
-					? 'opacity-50'
-					: ''}"
-			></span>
-		{/if}
-		<span
-			class="text-xs text-white {config.icon === 'triangle-alert'
-				? ''
-				: config.loadingIcon === 'loading-ring'
-					? ''
-					: 'opacity-30'}">{config.text}</span
-		>
-	</div>
-{/snippet}
-
 {#snippet starRating(rating: number, isHovered: boolean, hoveredValue: number)}
 	{@const displayRating = isHovered ? hoveredValue : rating}
 	<div class="rating-xs rating" title={`Rating: ${rating || 0}/5 (click to change)`}>
@@ -99,20 +69,11 @@
 	aria-label="Image Rating"
 	{onmouseleave}
 >
-	{#if metadataState.loadingStatus === 'unloaded'}
-		{@render statusDisplay(LOADING_STATUS_CONFIG.unloaded)}
-	{:else if metadataState.loadingStatus === 'queued'}
-		{@render statusDisplay(LOADING_STATUS_CONFIG.queued)}
-	{:else if metadataState.loadingStatus === 'loading'}
-		{@render statusDisplay(LOADING_STATUS_CONFIG.loading)}
-	{:else if metadataState.loadingStatus === 'loaded'}
+	{#if metadataState.loadingStatus === 'loaded'}
 		{@render starRating(metadataState.rating ?? 0, isRatingHovered, hoveredRating)}
-	{:else if metadataState.loadingStatus === 'error'}
-		{@render statusDisplay(LOADING_STATUS_CONFIG.error)}
 	{:else}
-		<!-- 予期しない状態 -->
-		<div class="flex items-center gap-1 rounded bg-orange-600/50 px-2 py-1">
-			<span class="text-xs text-white opacity-75">-</span>
+		<div class="rounded bg-black/50 px-2 py-1 text-white">
+			<LoadingState status={metadataState.loadingStatus} variant="compact" />
 		</div>
 	{/if}
 </div>

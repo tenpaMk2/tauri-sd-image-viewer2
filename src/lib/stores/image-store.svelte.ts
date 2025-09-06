@@ -49,8 +49,12 @@ export const createImageStore = (imagePath: string): ImageStore => {
 				throw new Error('Store is destroyed');
 			}
 
-			// 既にロード済みの場合は何もしない
-			if (state.loadingStatus === 'loaded') {
+			// 既にロード済み、キュー済み、ロード中の場合は何もしない
+			if (
+				state.loadingStatus === 'loaded' ||
+				state.loadingStatus === 'queued' ||
+				state.loadingStatus === 'loading'
+			) {
 				return;
 			}
 

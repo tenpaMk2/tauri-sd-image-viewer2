@@ -7,9 +7,9 @@
 	};
 	const { imagePath }: Props = $props();
 
-	// メタデータストアを取得（imagePathが変更されるたびに新しいストアを取得）
-	const store = $derived(metadataRegistry.getOrCreateStore(imagePath));
-	const metadata = $derived(store.state);
+	const { state: metadataState, actions: metadataActions } =
+		metadataRegistry.getOrCreateStore(imagePath);
+	metadataActions.ensureLoaded();
 </script>
 
 <div class="rounded-lg bg-base-300 p-3">
@@ -18,7 +18,9 @@
 		<!-- Rating -->
 		<InfoRow
 			label="Rating"
-			value={metadata.loadingStatus === 'loaded' ? `${metadata.rating ?? 0}/5` : 'Loading...'}
+			value={metadataState.loadingStatus === 'loaded'
+				? `${metadataState.rating ?? 0}/5`
+				: 'Loading...'}
 		/>
 	</div>
 </div>

@@ -12,9 +12,9 @@
 
 	const { imagePath }: Props = $props();
 
-	// メタデータストアを取得（imagePathが変更されるたびに新しいストアを取得）
-	const store = $derived(metadataRegistry.getOrCreateStore(imagePath));
-	const metadata = $derived(store.state);
+	const { state: metadataState, actions: metadataActions } =
+		metadataRegistry.getOrCreateStore(imagePath);
+	metadataActions.ensureLoaded();
 </script>
 
 {#snippet promptSection(
@@ -46,15 +46,15 @@
 	</div>
 {/snippet}
 
-{#if metadata.loadingStatus === 'loaded'}
-	{#if metadata.sdParameters}
+{#if metadataState.loadingStatus === 'loaded'}
+	{#if metadataState.sdParameters}
 		<div class="rounded-lg bg-base-300 p-3">
 			<h3 class="mb-2 flex items-center gap-2 text-sm font-semibold">
 				Stable Diffusion
 				<button
 					class="btn btn-ghost btn-xs"
 					onclick={async () => {
-						await copyToClipboard(metadata.sdParameters?.raw || '');
+						await copyToClipboard(metadataState.sdParameters?.raw || '');
 						toastStore.actions.showSuccessToast('SD parameters copied to clipboard');
 					}}
 					title="Copy raw text"
@@ -64,77 +64,81 @@
 			</h3>
 			<div class="space-y-2 text-xs">
 				<!-- ポジティブプロンプト -->
-				{#if 0 < (metadata.sdParameters?.positive_sd_tags.length ?? 0)}
+				{#if 0 < (metadataState.sdParameters?.positive_sd_tags.length ?? 0)}
 					{@render promptSection(
 						'Positive Prompt',
-						metadata.sdParameters?.positive_sd_tags ?? [],
-						formatSdTags(metadata.sdParameters?.positive_sd_tags ?? []),
+						metadataState.sdParameters?.positive_sd_tags ?? [],
+						formatSdTags(metadataState.sdParameters?.positive_sd_tags ?? []),
 					)}
 				{/if}
 
 				<!-- ネガティブプロンプト -->
-				{#if 0 < (metadata.sdParameters?.negative_sd_tags.length ?? 0)}
+				{#if 0 < (metadataState.sdParameters?.negative_sd_tags.length ?? 0)}
 					{@render promptSection(
 						'Negative Prompt',
-						metadata.sdParameters?.negative_sd_tags ?? [],
-						formatSdTags(metadata.sdParameters?.negative_sd_tags ?? []),
+						metadataState.sdParameters?.negative_sd_tags ?? [],
+						formatSdTags(metadataState.sdParameters?.negative_sd_tags ?? []),
 					)}
 				{/if}
 
 				<!-- パラメータ一覧 -->
 				<div class="grid grid-cols-1 gap-1 text-xs">
-					{#if metadata.sdParameters?.steps}
+					{#if metadataState.sdParameters?.steps}
 						<InfoRow
 							label="Steps"
-							value={metadata.sdParameters.steps.toString()}
+							value={metadataState.sdParameters.steps.toString()}
 							extraClass="font-mono"
 						/>
 					{/if}
 
-					{#if metadata.sdParameters?.sampler}
-						<InfoRow label="Sampler" value={metadata.sdParameters.sampler} extraClass="font-mono" />
+					{#if metadataState.sdParameters?.sampler}
+						<InfoRow
+							label="Sampler"
+							value={metadataState.sdParameters.sampler}
+							extraClass="font-mono"
+						/>
 					{/if}
 
-					{#if metadata.sdParameters?.cfg_scale}
+					{#if metadataState.sdParameters?.cfg_scale}
 						<InfoRow
 							label="CFG Scale"
-							value={metadata.sdParameters.cfg_scale.toString()}
+							value={metadataState.sdParameters.cfg_scale.toString()}
 							extraClass="font-mono"
 						/>
 					{/if}
 
-					{#if metadata.sdParameters?.seed}
+					{#if metadataState.sdParameters?.seed}
 						<InfoRow
 							label="Seed"
-							value={metadata.sdParameters.seed.toString()}
+							value={metadataState.sdParameters.seed.toString()}
 							extraClass="font-mono"
 						/>
 					{/if}
 
-					{#if metadata.sdParameters?.size}
-						<InfoRow label="Size" value={metadata.sdParameters.size} extraClass="font-mono" />
+					{#if metadataState.sdParameters?.size}
+						<InfoRow label="Size" value={metadataState.sdParameters.size} extraClass="font-mono" />
 					{/if}
 
-					{#if metadata.sdParameters?.model}
+					{#if metadataState.sdParameters?.model}
 						<InfoRow
 							label="Model"
-							value={metadata.sdParameters.model}
+							value={metadataState.sdParameters.model}
 							extraClass="font-mono break-all"
 						/>
 					{/if}
 
-					{#if metadata.sdParameters?.denoising_strength}
+					{#if metadataState.sdParameters?.denoising_strength}
 						<InfoRow
 							label="Denoising Strength"
-							value={metadata.sdParameters.denoising_strength.toString()}
+							value={metadataState.sdParameters.denoising_strength.toString()}
 							extraClass="font-mono"
 						/>
 					{/if}
 
-					{#if metadata.sdParameters?.clip_skip}
+					{#if metadataState.sdParameters?.clip_skip}
 						<InfoRow
 							label="Clip Skip"
-							value={metadata.sdParameters.clip_skip.toString()}
+							value={metadataState.sdParameters.clip_skip.toString()}
 							extraClass="font-mono"
 						/>
 					{/if}

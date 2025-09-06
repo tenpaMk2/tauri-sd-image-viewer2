@@ -32,9 +32,11 @@
 >
 	<div class="p-3">
 		<div class="metadata-content space-y-3">
-			<BasicInfoSection {imagePath} />
-			<SdParamsSection {imagePath} />
-			<XmpSection {imagePath} />
+			{#key imagePath}
+				<BasicInfoSection {imagePath} />
+				<SdParamsSection {imagePath} />
+				<XmpSection {imagePath} />
+			{/key}
 		</div>
 	</div>
 </div>

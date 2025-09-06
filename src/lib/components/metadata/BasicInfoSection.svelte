@@ -7,9 +7,9 @@
 	};
 	const { imagePath }: Props = $props();
 
-	// メタデータストアを取得（imagePathが変更されるたびに新しいストアを取得）
-	const store = $derived(metadataRegistry.getOrCreateStore(imagePath));
-	const metadata = $derived(store.state);
+	const { state: metadataState, actions: metadataActions } =
+		metadataRegistry.getOrCreateStore(imagePath);
+	metadataActions.ensureLoaded();
 </script>
 
 <div class="rounded-lg bg-base-300 p-3">
@@ -17,31 +17,33 @@
 	<div class="space-y-1.5 text-xs">
 		<InfoRow
 			label="Filename"
-			value={metadata.filename || 'Unknown'}
+			value={metadataState.filename || 'Unknown'}
 			extraClass="overflow-wrap-anywhere max-w-[60%] text-right font-mono break-words"
 		/>
 
 		<InfoRow
 			label="Size"
-			value={metadata.loadingStatus === 'loaded'
-				? metadata.fileSize
-					? `${Math.round(metadata.fileSize / 1024)} KB`
+			value={metadataState.loadingStatus === 'loaded'
+				? metadataState.fileSize
+					? `${Math.round(metadataState.fileSize / 1024)} KB`
 					: 'Unknown'
 				: 'Loading...'}
 		/>
 
 		<InfoRow
 			label="Resolution"
-			value={metadata.loadingStatus === 'loaded'
-				? metadata.width && metadata.height
-					? `${metadata.width} × ${metadata.height}`
+			value={metadataState.loadingStatus === 'loaded'
+				? metadataState.width && metadataState.height
+					? `${metadataState.width} × ${metadataState.height}`
 					: 'Unknown'
 				: 'Loading...'}
 		/>
 
 		<InfoRow
 			label="Format"
-			value={metadata.loadingStatus === 'loaded' ? metadata.mimeType || 'Unknown' : 'Loading...'}
+			value={metadataState.loadingStatus === 'loaded'
+				? metadataState.mimeType || 'Unknown'
+				: 'Loading...'}
 		/>
 
 		<InfoRow label="Created" value="TODO" extraClass="text-right font-mono text-xs" />

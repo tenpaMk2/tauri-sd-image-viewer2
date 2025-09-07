@@ -6,6 +6,9 @@
 
 	const { state: navigationState, deriveds: navigationDeriveds } = navigationStore;
 	const { state: viewerUIState } = viewerUIStore;
+
+	const hasPrevious = $derived(navigationStore.deriveds.hasPrevious);
+	const hasNext = $derived(navigationStore.deriveds.hasNext);
 </script>
 
 {#snippet navigationButton(
@@ -38,12 +41,7 @@
 {/snippet}
 
 <!-- 前の画像ボタン -->
-{@render navigationButton(
-	'left',
-	navigationDeriveds.hasPrevious,
-	navigateToPrevious,
-	'Previous image',
-)}
+{@render navigationButton('left', hasPrevious, navigateToPrevious, 'Previous image')}
 
 <!-- 次の画像ボタン -->
-{@render navigationButton('right', navigationDeriveds.hasNext, navigateToNext, 'Next image')}
+{@render navigationButton('right', hasNext, navigateToNext, 'Next image')}

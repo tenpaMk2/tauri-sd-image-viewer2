@@ -18,6 +18,8 @@
 	const { state: navigationState } = navigationStore;
 	const { state: directoryState } = directoryImagePathsStore;
 
+	const navigationStoreCurrentIndex = $derived(navigationStore.deriveds.currentIndex);
+
 	// ツールバー用のイベントハンドラー
 	const handleToggleInfoPanel = () => {
 		metadataPanelActions.toggle();
@@ -76,7 +78,7 @@
 		<div class="flex items-center gap-4">
 			{#if directoryState.imagePaths && 1 < directoryState.imagePaths.length}
 				<div class="text-sm opacity-80">
-					{navigationStore.deriveds.currentIndex + 1} / {directoryState.imagePaths.length}
+					{navigationStoreCurrentIndex + 1} / {directoryState.imagePaths.length}
 				</div>
 			{/if}
 		</div>

@@ -10,7 +10,7 @@
 	import ViewerUiOverlay from './ViewerUIOverlay.svelte';
 
 	// imageViewStoreからズーム状態を取得
-	const { deriveds: imageViewDeriveds } = imageViewStore;
+	const isZoomed = $derived(imageViewStore.deriveds.isZoomed);
 
 	// metadataPanelStoreから状態とアクションを取得
 	const { state: metadataPanelState } = metadataPanelStore;
@@ -73,7 +73,7 @@
 		<ImageCanvas />
 
 		<!-- UI要素のオーバーレイ（ズーム時は非表示） -->
-		{#if !imageViewDeriveds.isZoomed}
+		{#if !isZoomed}
 			<ViewerUiOverlay />
 		{/if}
 	</div>

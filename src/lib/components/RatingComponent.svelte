@@ -16,6 +16,9 @@
 	let isRatingHovered = $state(false);
 	let hoveredRating = $state(0);
 
+	// 楽観的UIのため、$derivedした値を使用
+	let currentRating = $derived(metadataState.rating ?? 0);
+
 	const onmouseleave = () => {
 		isRatingHovered = false;
 		hoveredRating = 0;
@@ -31,11 +34,16 @@
 		e.stopPropagation(); // 親要素のクリックイベントを防ぐ
 
 		// 同じ星をクリックした場合は0に戻す、そうでなければ新しいRating値を設定
-		const newRating = (metadataState.rating ?? 0) === clickedRating ? 0 : clickedRating;
+		const newRating = currentRating === clickedRating ? 0 : clickedRating;
+
+		// 楽観的UIのため、$derivedした値を直接override
+		currentRating = newRating;
 
 		try {
 			await metadataActions.updateRating(newRating);
 		} catch (error) {
+			// エラーが発生したら元の値に戻す
+			currentRating = metadataState.rating ?? 0;
 			console.error('Failed to update rating for ' + imagePath.split('/').pop() + ': ' + error);
 		}
 	};
@@ -70,7 +78,7 @@
 	{onmouseleave}
 >
 	{#if metadataState.loadingStatus === 'loaded'}
-		{@render starRating(metadataState.rating ?? 0, isRatingHovered, hoveredRating)}
+		{@render starRating(currentRating, isRatingHovered, hoveredRating)}
 	{:else}
 		<div class="rounded bg-black/50 px-2 py-1 text-white">
 			<LoadingState status={metadataState.loadingStatus} variant="compact" />

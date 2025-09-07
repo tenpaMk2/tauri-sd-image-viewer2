@@ -23,7 +23,7 @@
 
 <!-- UI要素のオーバーレイ -->
 <div
-	class="absolute inset-0 transition-opacity duration-300"
+	class="pointer-events-none absolute inset-0 transition-opacity duration-300"
 	class:opacity-0={!viewerUIState.isVisible}
 	onmousemove={viewerUIActions.handleMouseMove}
 	role="presentation"

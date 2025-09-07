@@ -1,4 +1,5 @@
 import { SUPPORTED_IMAGE_EXTS } from '$lib/services/mime-type';
+import { sdTagsAggregationStore } from '$lib/stores/sd-tags-aggregation-store.svelte';
 import { join } from '@tauri-apps/api/path';
 import { readDir } from '@tauri-apps/plugin-fs';
 
@@ -56,6 +57,19 @@ const loadImagePaths = async (dir: string) => {
 	_state.loadingStatus = 'loading';
 	try {
 		_state.imagePaths = await getImagePaths(dir);
+		_state.loadingStatus = 'loaded';
+		_state.currentDirectory = dir;
+		_state.loadingError = null;
+
+		// 画像パスが変更されたらSD Tags集計ストアに通知
+		if (_state.imagePaths) {
+			console.log(
+				'Directory image paths changed, notifying SD tags aggregation store with ' +
+					_state.imagePaths.length +
+					' images',
+			);
+			sdTagsAggregationStore.actions.handleImageFilesChange(_state.imagePaths);
+		}
 	} catch (error) {
 		_state.loadingStatus = 'error';
 		if (error instanceof Error) {
@@ -64,10 +78,9 @@ const loadImagePaths = async (dir: string) => {
 			_state.loadingError = 'Unknown error';
 		}
 		_state.currentDirectory = null;
-	} finally {
-		_state.loadingStatus = 'loaded';
-		_state.currentDirectory = dir;
-		_state.loadingError = null;
+		// エラー時はSD Tags集計ストアをクリア
+		console.log('Directory image paths loading failed, clearing SD tags aggregation store');
+		sdTagsAggregationStore.actions.clear();
 	}
 };
 

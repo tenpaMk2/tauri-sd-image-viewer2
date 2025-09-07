@@ -124,7 +124,7 @@ const handleImageFilesChange = (imageFiles: string[]): void => {
 	}
 };
 
-export const tagStore = {
+export const sdTagsAggregationStore = {
 	state: state as TagState,
 	actions: {
 		loadTags,

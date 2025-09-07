@@ -91,12 +91,33 @@ export const createImageStore = (imagePath: string): ImageStore => {
 				throw new Error('Store is destroyed');
 			}
 
-			// 既にロード済み、キュー済み、ロード中の場合は何もしない
-			if (
-				state.loadingStatus === 'loaded' ||
-				state.loadingStatus === 'queued' ||
-				state.loadingStatus === 'loading'
-			) {
+			// 既にロード済みの場合は何もしない
+			if (state.loadingStatus === 'loaded') {
+				return;
+			}
+
+			// キュー済み、ロード中の場合は完了まで待機
+			if (state.loadingStatus === 'queued' || state.loadingStatus === 'loading') {
+				// ロード完了まで待機
+				await new Promise<void>((resolve, reject) => {
+					const checkStatus = () => {
+						if (state._isDestroyed) {
+							reject(new Error('Store is destroyed'));
+							return;
+						}
+						if (state.loadingStatus === 'loaded') {
+							resolve();
+							return;
+						}
+						if (state.loadingStatus === 'error') {
+							reject(new Error(state.loadingError || 'Loading failed'));
+							return;
+						}
+						// まだロード中の場合は少し待ってから再チェック
+						setTimeout(checkStatus, 10);
+					};
+					checkStatus();
+				});
 				return;
 			}
 

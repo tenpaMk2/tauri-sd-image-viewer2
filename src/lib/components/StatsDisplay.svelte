@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { directoryImagePathsStore } from '$lib/stores/directory-image-paths-store.svelte';
 	import { filteredImagesStore } from '$lib/stores/filtered-images-paths-store.svelte';
-	import { tagStore } from '$lib/stores/tag-store.svelte';
+	import { sdTagsAggregationStore } from '$lib/stores/sd-tags-aggregation-store.svelte';
 
-	const { state: tagState } = tagStore;
+	const { state: tagState } = sdTagsAggregationStore;
 
 	const totalImageCount = $derived(filteredImagesStore.deriveds.totalImageCount);
 	const filteredImageCount = $derived(filteredImagesStore.deriveds.filteredImageCount);

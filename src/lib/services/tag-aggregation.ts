@@ -43,16 +43,29 @@ export class TagAggregationService {
 
 		for (const imagePath of imagePaths) {
 			try {
+				console.log(
+					`Processing image ${successCount + errorCount + 1}/${imagePaths.length}: ${imagePath}`,
+				);
+
 				// メタデータストアから取得
 				const store = metadataRegistry.getOrCreateStore(imagePath);
+				console.log(`Store loading status: ${store.state.loadingStatus}`);
+
 				// ロード完了を待つ
 				if (store.state.loadingStatus !== 'loaded') {
+					console.log('Waiting for metadata to load...');
 					await store.actions.ensureLoaded();
+					console.log(`After ensureLoaded, status: ${store.state.loadingStatus}`);
 				}
 
 				const sdParameters = store.state.sdParameters;
+				console.log(`SD parameters found: ${sdParameters ? 'yes' : 'no'}`);
 
 				if (sdParameters) {
+					const positiveTagCount = sdParameters.positive_sd_tags.length;
+					const negativeTagCount = sdParameters.negative_sd_tags.length;
+					console.log(`Tags found - positive: ${positiveTagCount}, negative: ${negativeTagCount}`);
+
 					// タグ情報をキャッシュに保存
 					const imageTags = new Set<string>();
 
@@ -76,7 +89,7 @@ export class TagAggregationService {
 					this.imageTagsCache.set(imagePath, new Set());
 				}
 			} catch (error) {
-				console.warn(`SDタグ取得失敗: ${imagePath}`, error);
+				console.error(`SDタグ取得失敗: ${imagePath}`, error);
 				errorCount++;
 				// エラーがあった場合も空のSetを保存
 				this.imageTagsCache.set(imagePath, new Set());

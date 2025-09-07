@@ -1,10 +1,12 @@
 <script lang="ts">
 	import { filterStore, type RatingComparison } from '$lib/stores/filter-store.svelte';
-	import { tagStore } from '$lib/stores/tag-store.svelte';
+	import { sdTagsAggregationStore } from '$lib/stores/sd-tags-aggregation-store.svelte';
 	import Icon from '@iconify/svelte';
 
 	// ストアから直接状態を取得
-	const tagData = tagStore.state.tagData;
+	const tagData = $derived(sdTagsAggregationStore.state.tagData);
+	const isTagsLoading = $derived(sdTagsAggregationStore.state.isLoading);
+	const tagError = $derived(sdTagsAggregationStore.state.error);
 
 	let selectedRating = $derived(filterStore.state.targetRating);
 	let selectedComparison = $derived(filterStore.state.ratingComparison);
@@ -147,35 +149,54 @@
 			<div class="flex items-center gap-2">
 				<input
 					type="text"
-					placeholder={tagData ? 'Filter by SD tags...' : 'Loading SD tags...'}
+					placeholder={isTagsLoading
+						? 'Loading SD tags...'
+						: tagError
+							? 'Error loading tags'
+							: tagData
+								? 'Filter by SD tags...'
+								: 'No SD tags available'}
 					class="input-bordered input input-sm flex-1"
 					list="sd-tags"
 					bind:value={tagInput}
 					oninput={handleTagInputChange}
 					onkeydown={handleTagInputSubmit}
-					disabled={tagData && tagData.uniqueTagNames.length === 0}
+					disabled={isTagsLoading ||
+						tagError !== null ||
+						(tagData && tagData.uniqueTagNames.length === 0)}
 				/>
 				<!-- Simplified datalist condition -->
-				{#if tagData && tagData.uniqueTagNames && tagData.uniqueTagNames.length > 0}
+				{#if tagData && tagData.uniqueTagNames && 0 < tagData.uniqueTagNames.length}
 					<datalist id="sd-tags">
 						{#each tagData.uniqueTagNames as tagName}
 							<option value={tagName}>{tagName}</option>
 						{/each}
 					</datalist>
 				{/if}
-				{#if selectedTags.length > 0}
+				{#if 0 < selectedTags.length}
 					<button class="btn btn-ghost btn-xs" onclick={clearAllTags} title="Clear All Tags">
 						<Icon icon="lucide:x" class="h-3 w-3" />
 					</button>
 				{/if}
+				{#if isTagsLoading}
+					<div class="loading loading-xs loading-spinner"></div>
+				{/if}
 			</div>
 
 			<!-- Selected tags display -->
-			{#if selectedTags.length > 0}
+			{#if 0 < selectedTags.length}
 				<div class="flex flex-wrap gap-1">
 					{#each selectedTags as tagName}
 						{@render tagBadge(tagName, removeTag)}
 					{/each}
+				</div>
+			{/if}
+
+			<!-- Error display -->
+			{#if tagError}
+				<div class="text-xs text-error">
+					<Icon icon="lucide:alert-circle" class="inline h-3 w-3" />
+					Error loading tags: {tagError}
 				</div>
 			{/if}
 		</div>
@@ -183,6 +204,7 @@
 </div>
 
 <!-- Help Modal -->
+<!-- TODO: <dialog> を使おう -->
 <div class="modal {showHelpModal ? 'modal-open' : ''}">
 	<div class="modal-box">
 		<h3 class="text-lg font-bold">Filename Pattern Help</h3>

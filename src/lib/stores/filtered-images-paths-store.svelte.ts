@@ -1,7 +1,7 @@
 import { metadataRegistry } from '$lib/services/metadata-registry';
 import { directoryImagePathsStore } from '$lib/stores/directory-image-paths-store.svelte';
 import { filterStore } from '$lib/stores/filter-store.svelte';
-import { tagStore } from '$lib/stores/tag-store.svelte';
+import { sdTagsAggregationStore } from '$lib/stores/sd-tags-aggregation-store.svelte';
 
 // フィルタリングされた画像リスト
 const filteredImageFiles = $derived.by(() => {
@@ -25,7 +25,7 @@ const filteredImageFiles = $derived.by(() => {
 	return filterStore.actions.filterImages(
 		imagePaths,
 		ratingsMap,
-		tagStore.state.tagAggregationService,
+		sdTagsAggregationStore.state.tagAggregationService,
 	);
 }); // 画像数情報
 const totalImageCount = $derived(directoryImagePathsStore.state.imagePaths?.length ?? 0);

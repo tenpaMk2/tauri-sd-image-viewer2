@@ -59,7 +59,7 @@
 </script>
 
 <div
-	class="relative flex h-full bg-base-300 outline-none"
+	class="relative flex h-full bg-base-300 outline-none focus:outline-none"
 	role="application"
 	aria-label="Image viewer"
 	onmousemove={() => viewerUIActions.handleMouseMove()}
@@ -88,7 +88,7 @@
 			<!-- リサイズハンドル -->
 			<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 			<div
-				class="absolute top-0 left-0 h-full w-1 cursor-col-resize bg-transparent hover:bg-primary/30 active:bg-primary/50"
+				class="absolute top-0 left-0 h-full w-1 cursor-col-resize bg-transparent hover:bg-primary/30 focus:outline-none active:bg-primary/50"
 				role="separator"
 				aria-label="Resize metadata panel"
 				onmousedown={(e) => metadataPanelStore.actions.handleResize(e, 280, 600)}

@@ -23,7 +23,7 @@
 
 <!-- Right: Info Panel (Resizable) -->
 <div
-	class="h-full w-full overflow-y-auto bg-base-200 shadow-2xl"
+	class="h-full w-full overflow-y-auto bg-base-200 shadow-2xl focus:outline-none"
 	tabindex="0"
 	role="tabpanel"
 	aria-label="Image Info Panel"

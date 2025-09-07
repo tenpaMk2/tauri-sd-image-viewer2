@@ -43,7 +43,7 @@
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 <div
-	class="absolute inset-0 flex items-center justify-center overflow-hidden"
+	class="absolute inset-0 flex items-center justify-center overflow-hidden focus:outline-none"
 	role="img"
 	tabindex="0"
 	aria-label="画像表示キャンバス"

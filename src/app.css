@@ -2,6 +2,15 @@
 
 @plugin 'daisyui';
 
+/* macOSスクロールバーの安定化 */
+:root {
+	scrollbar-gutter: stable;
+}
+
+body {
+	scrollbar-gutter: stable;
+}
+
 /* 全体的にテキスト選択を無効化 */
 * {
 	user-select: none;

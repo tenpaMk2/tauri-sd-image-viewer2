@@ -34,7 +34,7 @@
 	</div>
 {/snippet}
 
-<div class="flex h-full flex-col">
+<div class="flex min-h-screen flex-col">
 	<!-- Header -->
 	<HeaderBar />
 
@@ -51,7 +51,9 @@
 					</div>
 				</div>
 			{:else}
-				<ThumbnailGrid />
+				<div class="p-4">
+					<ThumbnailGrid />
+				</div>
 			{/if}
 		{:else if directoryImagePathsState.loadingStatus === 'error'}
 			{@render centerStatus(

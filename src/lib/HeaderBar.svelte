@@ -7,7 +7,7 @@
 	const { actions: appActions } = appStore;
 </script>
 
-<div class="flex items-center justify-between bg-base-200 p-4">
+<div class="sticky top-0 z-10 flex items-center justify-between bg-base-200 p-4">
 	<div class="flex items-center gap-4">
 		<button
 			class="btn btn-ghost btn-sm"

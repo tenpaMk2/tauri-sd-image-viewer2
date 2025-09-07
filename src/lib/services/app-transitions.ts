@@ -3,40 +3,49 @@ import { directoryImagePathsStore } from '$lib/stores/directory-image-paths-stor
 import { navigationStore } from '$lib/stores/navigation-store.svelte';
 import { path } from '@tauri-apps/api';
 import { imageRegistry } from './image-registry';
-import { metadataQueue } from './metadata-queue';
 import { metadataRegistry } from './metadata-registry';
-import { thumbnailQueue } from './thumbnail-queue';
 import { thumbnailRegistry } from './thumbnail-registry';
 
 /**
  * Welcome画面への遷移
  */
 export const transitionToWelcome = async (): Promise<void> => {
-	appStore.actions.transitionToWelcome();
-	thumbnailQueue.clearPendingTasks();
-	metadataQueue.clearPendingTasks();
+	// まずトランジションすることが大事。
+	await appStore.actions.transitionToWelcome();
+
+	// その後、関連するストアを初期化
+	await thumbnailRegistry.clearAll();
+	await metadataRegistry.clearAll();
+	await imageRegistry.clearAll();
+	// TODO: 画像ビューやタグアグリのストアも初期化
 };
 
 /**
  * Grid表示への遷移 - ディレクトリの画像パスを初期化
  */
 export const transitionToGrid = async (directory: string): Promise<void> => {
+	// まずトランジションすることが大事。
+	await appStore.actions.transitionToGrid();
+
+	// その後、関連するストアを初期化
 	await thumbnailRegistry.clearAll();
 	await metadataRegistry.clearAll();
 	await imageRegistry.clearAll();
-	directoryImagePathsStore.actions.loadImagePaths(directory);
-	appStore.actions.transitionToGrid();
+	await directoryImagePathsStore.actions.loadImagePaths(directory);
 };
 
 /**
  * Viewer表示への遷移 - ディレクトリを初期化
  */
 export const transitionToViewer = async (initialImagePath: string): Promise<void> => {
+	// まずトランジションすることが大事。
+	await appStore.actions.transitionToViewer();
+
+	// その後、関連するストアを初期化
 	await thumbnailRegistry.clearAll();
 	await metadataRegistry.clearAll();
 	await imageRegistry.clearAll();
 	const directory = await path.dirname(initialImagePath);
 	await directoryImagePathsStore.actions.loadImagePaths(directory); // NavigationStoreが使うのでawait必須
-	navigationStore.actions.navigateTo(initialImagePath);
-	appStore.actions.transitionToViewer();
+	await navigationStore.actions.navigateTo(initialImagePath);
 };

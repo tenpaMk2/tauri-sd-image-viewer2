@@ -8,11 +8,13 @@
 
 	const { imagePath }: Props = $props();
 
+	console.log(`🎯 RatingComponent created for ${imagePath.split('/').pop()}`);
 	const { state: metadataState, actions: metadataActions } = $derived(
 		metadataRegistry.getOrCreateStore(imagePath),
 	);
 
-	$effect(() => {
+	// DOM更新前に実行してバッチング問題を回避
+	$effect.pre(() => {
 		metadataActions.ensureLoaded();
 	});
 

@@ -12,7 +12,7 @@
 		metadataRegistry.getOrCreateStore(imagePath),
 	);
 
-	$effect(() => {
+	$effect.pre(() => {
 		metadataActions.ensureLoaded();
 	});
 </script>

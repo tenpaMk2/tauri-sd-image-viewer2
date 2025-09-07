@@ -8,13 +8,9 @@
 	};
 	const { imagePath }: Props = $props();
 
-	const { state: metadataState, actions: metadataActions } = $derived(
-		metadataRegistry.getOrCreateStore(imagePath),
-	);
-
-	$effect.pre(() => {
-		metadataActions.ensureLoaded();
-	});
+	const { state: metadataState, actions: metadataActions } =
+		metadataRegistry.getOrCreateStore(imagePath);
+	metadataActions.ensureLoaded();
 </script>
 
 <div class="rounded-lg bg-base-300 p-3">

@@ -8,15 +8,10 @@
 
 	const { imagePath }: Props = $props();
 
-	console.log(`🎯 RatingComponent created for ${imagePath.split('/').pop()}`);
-	const { state: metadataState, actions: metadataActions } = $derived(
-		metadataRegistry.getOrCreateStore(imagePath),
-	);
-
-	// DOM更新前に実行してバッチング問題を回避
-	$effect.pre(() => {
-		metadataActions.ensureLoaded();
-	});
+	// メタデータストアを取得（imagePathが変更されるたびに新しいストアを取得）
+	const metadataStore = metadataRegistry.getOrCreateStore(imagePath);
+	metadataStore.actions.ensureLoaded();
+	const { state: metadataState, actions: metadataActions } = metadataStore;
 
 	let isRatingHovered = $state(false);
 	let hoveredRating = $state(0);

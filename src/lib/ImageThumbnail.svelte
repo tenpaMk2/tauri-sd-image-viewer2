@@ -66,6 +66,8 @@
 
 	<!-- Rating Component -->
 	<div class="absolute bottom-1 left-1/2 -translate-x-1/2">
-		<RatingComponent {imagePath} />
+		{#key imagePath}
+			<RatingComponent {imagePath} />
+		{/key}
 	</div>
 </div>

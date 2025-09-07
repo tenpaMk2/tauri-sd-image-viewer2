@@ -62,7 +62,6 @@
 	class="relative flex h-full bg-base-300 outline-none focus:outline-none"
 	role="application"
 	aria-label="Image viewer"
-	onmousemove={() => viewerUIActions.handleMouseMove()}
 >
 	<!-- メインキャンバスエリア -->
 	<div

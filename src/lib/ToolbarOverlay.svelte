@@ -66,16 +66,11 @@
 
 	onDestroy(() => {
 		viewerUIStore.actions.stopAutoNavigation();
-		viewerUIStore.actions.resetUITimer();
 	});
 </script>
 
 <!-- Overlay Toolbar -->
-<div
-	class="absolute top-0 right-0 left-0 z-10 bg-gradient-to-b from-black/70 to-transparent p-4 transition-opacity duration-300"
-	class:opacity-0={!viewerUIState.isVisible}
-	class:pointer-events-none={!viewerUIState.isVisible}
->
+<div class="absolute top-0 right-0 left-0 z-10 bg-gradient-to-b from-black/70 to-transparent p-4">
 	<div class="flex items-center text-white">
 		<!-- Left: Page Info -->
 		<div class="flex items-center gap-4">

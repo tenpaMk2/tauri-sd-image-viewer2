@@ -66,9 +66,24 @@ const handleMouseMove = (): void => {
 };
 
 const reset = (): void => {
+	// Clear existing timers
+	if (uiTimer !== null) {
+		clearTimeout(uiTimer);
+		uiTimer = null;
+	}
+	if (autoNavTimer !== null) {
+		clearInterval(autoNavTimer);
+		autoNavTimer = null;
+	}
+
 	// Reset to initial state
 	_state.isVisible = INITIAL_VIEWER_UI_STATE.isVisible;
 	_state.isAutoNavActive = INITIAL_VIEWER_UI_STATE.isAutoNavActive;
+
+	// Start the initial timer if UI should be visible
+	if (_state.isVisible) {
+		resetUITimer();
+	}
 };
 
 export const viewerUIStore = {

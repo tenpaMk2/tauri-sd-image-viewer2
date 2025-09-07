@@ -1,5 +1,12 @@
-import { loadImage, type ImageData } from '$lib/services/image-loader';
 import { imageQueue } from '$lib/services/image-queue';
+import { detectImageMimeType, type MimeType } from '$lib/services/mime-type';
+import { readFile } from '@tauri-apps/plugin-fs';
+
+export type ImageData = {
+	data: Uint8Array;
+	mimeType: MimeType;
+	filePath: string;
+};
 
 /**
  * 画像ロード状態
@@ -40,6 +47,29 @@ const createBlobUrl = (imageData: ImageData): string => {
 	) as ArrayBuffer;
 	const blob = new Blob([arrayBuffer], { type: imageData.mimeType });
 	return URL.createObjectURL(blob);
+};
+
+/**
+ * 画像ファイルを読み込み、バイナリデータを返す
+ */
+const loadImage = async (filePath: string): Promise<ImageData> => {
+	try {
+		const imageData = await readFile(filePath);
+		const detectedMimeType = await detectImageMimeType(filePath);
+		if (!detectedMimeType) {
+			throw new Error(`Unsupported image format: ${filePath}`);
+		}
+		const mimeType: MimeType = detectedMimeType;
+
+		return {
+			data: new Uint8Array(imageData),
+			mimeType,
+			filePath,
+		};
+	} catch (error) {
+		console.error('Failed to load image: ' + error);
+		throw new Error(`Failed to load image: ${filePath}`);
+	}
 };
 
 /**
@@ -99,7 +129,7 @@ export const createImageStore = (imagePath: string): ImageStore => {
 				// ロード開始時に状態を'loading'に変更
 				state.loadingStatus = 'loading';
 
-				// image-loader を使用して画像を読み込み
+				// 画像を読み込み
 				const imageData = await loadImage(imagePath);
 
 				// ロード完了後に破棄済みチェック

@@ -3,6 +3,7 @@
 	import LoadingState from '$lib/components/ui/LoadingState.svelte';
 	import { metadataRegistry } from '$lib/services/metadata-registry';
 	import { formatTimestamp } from '$lib/utils/date-format';
+	import { formatFileSize } from '$lib/utils/file-size-format';
 
 	type Props = {
 		imagePath: string;
@@ -26,9 +27,7 @@
 
 			<InfoRow
 				label="Size"
-				value={metadataState.fileSize
-					? `${Math.round(metadataState.fileSize / 1024)} KB`
-					: 'Unknown'}
+				value={metadataState.fileSize ? formatFileSize(metadataState.fileSize) : 'Unknown'}
 			/>
 
 			<InfoRow

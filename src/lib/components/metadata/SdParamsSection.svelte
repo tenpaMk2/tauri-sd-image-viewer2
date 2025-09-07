@@ -13,9 +13,13 @@
 
 	const { imagePath }: Props = $props();
 
-	const { state: metadataState, actions: metadataActions } =
-		metadataRegistry.getOrCreateStore(imagePath);
-	metadataActions.ensureLoaded();
+	const { state: metadataState, actions: metadataActions } = $derived(
+		metadataRegistry.getOrCreateStore(imagePath),
+	);
+
+	$effect(() => {
+		metadataActions.ensureLoaded();
+	});
 </script>
 
 {#snippet promptSection(

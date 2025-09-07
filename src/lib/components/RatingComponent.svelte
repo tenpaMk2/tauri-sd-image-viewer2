@@ -8,10 +8,13 @@
 
 	const { imagePath }: Props = $props();
 
-	// メタデータストアを取得（imagePathが変更されるたびに新しいストアを取得）
-	const metadataStore = metadataRegistry.getOrCreateStore(imagePath);
-	metadataStore.actions.ensureLoaded();
-	const { state: metadataState, actions: metadataActions } = metadataStore;
+	const { state: metadataState, actions: metadataActions } = $derived(
+		metadataRegistry.getOrCreateStore(imagePath),
+	);
+
+	$effect(() => {
+		metadataActions.ensureLoaded();
+	});
 
 	let isRatingHovered = $state(false);
 	let hoveredRating = $state(0);
@@ -34,7 +37,7 @@
 		const newRating = (metadataState.rating ?? 0) === clickedRating ? 0 : clickedRating;
 
 		try {
-			await metadataStore.actions.updateRating(newRating);
+			await metadataActions.updateRating(newRating);
 		} catch (error) {
 			console.error('Failed to update rating for ' + imagePath.split('/').pop() + ': ' + error);
 		}

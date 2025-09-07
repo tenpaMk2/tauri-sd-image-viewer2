@@ -24,8 +24,6 @@
 
 	<!-- Rating Component -->
 	<div class="pointer-events-auto absolute bottom-4 left-1/2 -translate-x-1/2 transform">
-		{#key navigationState.currentImagePath}
-			<RatingComponent imagePath={navigationState.currentImagePath} />
-		{/key}
+		<RatingComponent imagePath={navigationState.currentImagePath} />
 	</div>
 </div>

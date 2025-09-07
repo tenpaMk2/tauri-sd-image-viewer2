@@ -26,14 +26,7 @@ export const navigateToImage = async (imagePath: string): Promise<void> => {
 
 	// 新しい画像のメタデータロードを開始または再開
 	const metadataStore = metadataRegistry.getOrCreateStore(navigationStore.state.currentImagePath);
-	metadataStore.actions.ensureLoaded().catch((error) => {
-		console.error(
-			'Failed to load metadata for: ' +
-				navigationStore.state.currentImagePath.split('/').pop() +
-				', error: ' +
-				error,
-		);
-	});
+	metadataStore.actions.ensureLoaded();
 };
 
 /**

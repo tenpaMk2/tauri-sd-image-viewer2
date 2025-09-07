@@ -239,24 +239,4 @@ export class TagAggregationService {
 			),
 		};
 	};
-
-	/**
-	 * 同期的にレーティングマップを取得（フィルタリング用）
-	 */
-	getRatingsMapSync = (imagePaths: string[]): Map<string, number | undefined> => {
-		const ratingsMap = new Map<string, number | undefined>();
-
-		for (const imagePath of imagePaths) {
-			const store = metadataRegistry.getOrCreateStore(imagePath);
-			// メタデータが存在し、ロード済みの場合のみレーティングを取得
-			if (store && store.state.loadingStatus === 'loaded') {
-				ratingsMap.set(imagePath, store.state.rating);
-			} else {
-				// 未ロードの場合は undefined（未評価）として扱う
-				ratingsMap.set(imagePath, undefined);
-			}
-		}
-
-		return ratingsMap;
-	};
 }

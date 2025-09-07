@@ -1,6 +1,5 @@
 type MutableGridUiState = {
 	filterPanelVisible: boolean;
-	filteredImageCount: number;
 	optionsModalVisible: boolean;
 };
 
@@ -8,7 +7,6 @@ export type GridUiState = Readonly<MutableGridUiState>;
 
 const INITIAL_GRID_UI_STATE: MutableGridUiState = {
 	filterPanelVisible: false,
-	filteredImageCount: 0,
 	optionsModalVisible: false,
 };
 
@@ -26,13 +24,8 @@ const closeOptionsModal = () => {
 	_state.optionsModalVisible = false;
 };
 
-const setFilteredImageCount = (count: number) => {
-	_state.filteredImageCount = count;
-};
-
 const reset = () => {
 	_state.filterPanelVisible = INITIAL_GRID_UI_STATE.filterPanelVisible;
-	_state.filteredImageCount = INITIAL_GRID_UI_STATE.filteredImageCount;
 	_state.optionsModalVisible = INITIAL_GRID_UI_STATE.optionsModalVisible;
 };
 
@@ -42,7 +35,6 @@ export const gridUiStore = {
 		toggleFilterPanel,
 		toggleOptionsModal,
 		closeOptionsModal,
-		setFilteredImageCount,
 		reset,
 	},
 };

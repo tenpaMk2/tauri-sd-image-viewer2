@@ -7,12 +7,11 @@
 	import { imageSelectionStore } from '$lib/stores/image-selection-store.svelte';
 
 	const { state: imageSelectionState, actions: imageSelectionActions } = imageSelectionStore;
-	const { deriveds: filteredImagesDeriveds } = filteredImagesStore;
 	const { state: gridUiState, actions: gridUiActions } = gridUiStore;
 
 	const selectedImages = $derived(imageSelectionState.selectedImages);
 	const showFilterPanel = $derived(gridUiState.filterPanelVisible);
-	const filteredImageCount = filteredImagesDeriveds.filteredImageCount;
+	const filteredImageCount = $derived(filteredImagesStore.deriveds.filteredImageCount);
 
 	const openDirectoryDialog = async () => {
 		const result = await dialogService.openDirectoryDialog();

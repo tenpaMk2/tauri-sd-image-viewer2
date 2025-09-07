@@ -2,10 +2,8 @@
 	import ImageThumbnail from '$lib/ImageThumbnail.svelte';
 	import { filteredImagesStore } from '$lib/stores/filtered-images-paths-store.svelte';
 
-	const { deriveds } = filteredImagesStore;
-
 	// フィルタリング済み画像リストをストアから直接取得
-	const imageFiles = deriveds.filteredImageFiles;
+	const imageFiles = $derived(filteredImagesStore.deriveds.filteredImageFiles);
 </script>
 
 <!-- サムネイルグリッド -->

@@ -9,5 +9,5 @@ export const formatFileSize = (bytes: number): string => {
 		maximumFractionDigits: 0,
 	});
 
-	return `${formatter.format(bytes)} B`;
+	return `${formatter.format(bytes)} Byte`;
 };

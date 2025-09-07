@@ -1,5 +1,7 @@
 # Tauri SD Image Viewer
 
+![icon](./src-tauri/icons/icon.png)
+
 _[English🌐](README.md) | 日本語🇯🇵_
 
 Tauri v2で構築されたデスクトップ画像ビューアーアプリケーション。Stable Diffusionのメタデータ表示と管理に特化しています。

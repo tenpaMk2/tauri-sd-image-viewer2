@@ -12,6 +12,8 @@ pub struct ImageMetadata {
     pub height: u32,
     pub file_size: u64,
     pub mime_type: String,
+    pub created_time: Option<u64>, // Unix timestamp in seconds
+    pub modified_time: u64,        // Unix timestamp in seconds
     pub sd_parameters: Option<SdParameters>,
     pub rating: Option<u8>, // XMP Rating from xmp_handler
 }
@@ -24,6 +26,20 @@ impl ImageMetadata {
             .await
             .map_err(|e| format!("Failed to get file metadata: {}", e))?;
         let file_size = metadata.len();
+
+        // Extract timestamps from metadata
+        let modified_time = metadata
+            .modified()
+            .map_err(|e| format!("Failed to get modified time: {}", e))?
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_err(|e| format!("Invalid modified time: {}", e))?
+            .as_secs();
+
+        let created_time = metadata
+            .created()
+            .ok()
+            .and_then(|time| time.duration_since(std::time::UNIX_EPOCH).ok())
+            .map(|duration| duration.as_secs());
 
         // Detect MIME type from path
         let mime_type = crate::common::detect_mime_type_from_path(path);
@@ -68,6 +84,8 @@ impl ImageMetadata {
             height,
             file_size,
             mime_type,
+            created_time,
+            modified_time,
             sd_parameters,
             rating,
         })

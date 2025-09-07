@@ -2,6 +2,7 @@
 	import InfoRow from '$lib/components/ui/InfoRow.svelte';
 	import LoadingState from '$lib/components/ui/LoadingState.svelte';
 	import { metadataRegistry } from '$lib/services/metadata-registry';
+	import { formatTimestamp } from '$lib/utils/date-format';
 
 	type Props = {
 		imagePath: string;
@@ -39,9 +40,17 @@
 
 			<InfoRow label="Format" value={metadataState.mimeType || 'Unknown'} />
 
-			<InfoRow label="Created" value="TODO" extraClass="text-right font-mono text-xs" />
+			<InfoRow
+				label="Created"
+				value={metadataState.createdTime ? formatTimestamp(metadataState.createdTime) : 'Unknown'}
+				extraClass="text-right font-mono text-xs"
+			/>
 
-			<InfoRow label="Modified" value="TODO" extraClass="text-right font-mono text-xs" />
+			<InfoRow
+				label="Modified"
+				value={metadataState.modifiedTime ? formatTimestamp(metadataState.modifiedTime) : 'Unknown'}
+				extraClass="text-right font-mono text-xs"
+			/>
 		</div>
 	{:else}
 		<LoadingState status={metadataState.loadingStatus} />

@@ -71,6 +71,8 @@ export type ImageMetadataInfo = {
 	height: number; // Rust: u32
 	file_size: number; // Rust: u64
 	mime_type: string; // Rust: String
+	created_time?: number; // Rust: Option<u64> (UNIXタイムスタンプ)
+	modified_time: number; // Rust: u64 (UNIXタイムスタンプ)
 	sd_parameters?: SdParameters; // Rust: Option<SdParameters>
 	rating?: number; // Rust: Option<u8> - XMP Rating from xmp_handler
 	// image_data は除外（パフォーマンス最適化のため）

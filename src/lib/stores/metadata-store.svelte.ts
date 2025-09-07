@@ -14,6 +14,8 @@ type MutableMetadataState = {
 	height: number | undefined;
 	fileSize: number | undefined;
 	mimeType: string | undefined;
+	createdTime: number | undefined;
+	modifiedTime: number | undefined;
 	// 評価・メタデータ（undefinedは未ロード状態）
 	rating: number | undefined;
 	sdParameters: SdParameters | undefined;
@@ -50,6 +52,8 @@ export const createMetadataStore = (imagePath: string): MetadataStore => {
 		height: undefined,
 		fileSize: undefined,
 		mimeType: undefined,
+		createdTime: undefined,
+		modifiedTime: undefined,
 		rating: undefined,
 		sdParameters: undefined,
 		loadingStatus: 'unloaded',
@@ -115,6 +119,8 @@ export const createMetadataStore = (imagePath: string): MetadataStore => {
 				state.height = metadata.height;
 				state.fileSize = metadata.file_size;
 				state.mimeType = metadata.mime_type;
+				state.createdTime = metadata.created_time ?? undefined;
+				state.modifiedTime = metadata.modified_time;
 				state.rating = metadata.rating ?? undefined;
 				state.sdParameters = metadata.sd_parameters ?? undefined;
 
@@ -157,6 +163,8 @@ export const createMetadataStore = (imagePath: string): MetadataStore => {
 			state.height = undefined;
 			state.fileSize = undefined;
 			state.mimeType = undefined;
+			state.createdTime = undefined;
+			state.modifiedTime = undefined;
 			state.rating = undefined;
 			state.sdParameters = undefined;
 			state.loadingError = undefined;
@@ -172,6 +180,8 @@ export const createMetadataStore = (imagePath: string): MetadataStore => {
 			state.height = undefined;
 			state.fileSize = undefined;
 			state.mimeType = undefined;
+			state.createdTime = undefined;
+			state.modifiedTime = undefined;
 			state.rating = undefined;
 			state.sdParameters = undefined;
 			state.loadingError = undefined;

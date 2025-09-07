@@ -38,7 +38,8 @@
 					: 'Unknown'}
 			/>
 
-			<InfoRow label="Format" value={metadataState.mimeType || 'Unknown'} />
+			<!-- 不要 -->
+			<!-- <InfoRow label="Format" value={metadataState.mimeType || 'Unknown'} /> -->
 
 			<InfoRow
 				label="Created"

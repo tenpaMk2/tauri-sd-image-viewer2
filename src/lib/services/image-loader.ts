@@ -3,7 +3,7 @@ import { join } from '@tauri-apps/api/path';
 import { readDir, readFile } from '@tauri-apps/plugin-fs';
 
 export type ImageData = {
-	url: string;
+	data: Uint8Array;
 	mimeType: MimeType;
 	filePath: string;
 };
@@ -40,7 +40,7 @@ export const getImagePaths = async (directoryPath: string): Promise<string[]> =>
 };
 
 /**
- * 画像ファイルを読み込み、Blob URLを作成
+ * 画像ファイルを読み込み、バイナリデータを返す
  */
 export const loadImage = async (filePath: string): Promise<ImageData> => {
 	try {
@@ -51,11 +51,8 @@ export const loadImage = async (filePath: string): Promise<ImageData> => {
 		}
 		const mimeType: MimeType = detectedMimeType;
 
-		const blob = new Blob([new Uint8Array(imageData)], { type: mimeType });
-		const url = URL.createObjectURL(blob);
-
 		return {
-			url,
+			data: new Uint8Array(imageData),
 			mimeType,
 			filePath,
 		};

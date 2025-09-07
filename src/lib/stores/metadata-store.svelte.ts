@@ -32,8 +32,6 @@ export type MetadataActions = {
 	_load: () => Promise<void>;
 	ensureLoaded: () => Promise<void>;
 	updateRating: (newRating: number) => Promise<boolean>;
-	reload: () => Promise<void>;
-	reset: () => void;
 	destroy: () => void; // メモリリーク防止用
 };
 
@@ -156,44 +154,21 @@ export const createMetadataStore = (imagePath: string): MetadataStore => {
 			}
 		},
 
-		reload: async (): Promise<void> => {
-			// すべての状態をundefinedにしてリセット
-			state.filename = undefined;
-			state.width = undefined;
-			state.height = undefined;
-			state.fileSize = undefined;
-			state.mimeType = undefined;
-			state.createdTime = undefined;
-			state.modifiedTime = undefined;
-			state.rating = undefined;
-			state.sdParameters = undefined;
-			state.loadingError = undefined;
-			state.loadingStatus = 'unloaded';
-
-			// ensureLoadedで再ロード
-			await actions.ensureLoaded();
-		},
-
-		reset: (): void => {
-			state.filename = undefined;
-			state.width = undefined;
-			state.height = undefined;
-			state.fileSize = undefined;
-			state.mimeType = undefined;
-			state.createdTime = undefined;
-			state.modifiedTime = undefined;
-			state.rating = undefined;
-			state.sdParameters = undefined;
-			state.loadingError = undefined;
-			state.loadingStatus = 'unloaded';
-		},
-
 		destroy: (): void => {
 			// 破棄フラグを設定（以降の操作を無効化）
 			state._isDestroyed = true;
 
-			// 状態をクリア
-			actions.reset();
+			state.filename = undefined;
+			state.width = undefined;
+			state.height = undefined;
+			state.fileSize = undefined;
+			state.mimeType = undefined;
+			state.createdTime = undefined;
+			state.modifiedTime = undefined;
+			state.rating = undefined;
+			state.sdParameters = undefined;
+			state.loadingError = undefined;
+			state.loadingStatus = 'unloaded';
 		},
 	};
 

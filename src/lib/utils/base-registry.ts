@@ -16,7 +16,7 @@ export type RegistryLogger = {
 export const createRegistry = <TStore extends StoreWithDestroy>(
 	createStore: (imagePath: string) => TStore,
 	queue?: Queue,
-	logger?: RegistryLogger
+	logger?: RegistryLogger,
 ) => {
 	const storeRegistry = new Map<string, TStore>();
 
@@ -29,21 +29,14 @@ export const createRegistry = <TStore extends StoreWithDestroy>(
 			return storeRegistry.get(imagePath)!;
 		},
 
-		clearUnused: (currentImagePaths: string[]): void => {
-			const currentPathSet = new Set(currentImagePaths);
-			let removedCount = 0;
-
-			for (const [path, store] of storeRegistry) {
-				if (!currentPathSet.has(path)) {
-					store.actions.destroy();
-					storeRegistry.delete(path);
-					removedCount++;
-				}
+		removeStore: (imagePath: string): boolean => {
+			const store = storeRegistry.get(imagePath);
+			if (store) {
+				store.actions.destroy();
+				storeRegistry.delete(imagePath);
+				return true;
 			}
-
-			if (removedCount > 0) {
-				logger?.onClearUnused?.(removedCount, 'unused entries');
-			}
+			return false;
 		},
 
 		clearAll: (): void => {
@@ -53,7 +46,7 @@ export const createRegistry = <TStore extends StoreWithDestroy>(
 
 			queue?.clearPendingTasks();
 			storeRegistry.clear();
-			
+
 			logger?.onClearAll?.('all entries');
 		},
 

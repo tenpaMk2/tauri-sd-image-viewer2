@@ -1,4 +1,4 @@
-import { loadImage } from '$lib/services/image-loader';
+import { loadImage, type ImageData } from '$lib/services/image-loader';
 import { imageQueue } from '$lib/services/image-queue';
 
 /**
@@ -8,6 +8,8 @@ type LoadingStatus = 'unloaded' | 'queued' | 'loading' | 'loaded' | 'error';
 
 type MutableImageState = {
 	// 画像データ（undefinedは未ロード状態）
+	imageData: ImageData | undefined;
+	// BlobURL（undefinedは未作成状態）
 	imageUrl: string | undefined;
 	// ロード状態管理
 	loadingStatus: LoadingStatus;
@@ -21,8 +23,6 @@ export type ImageState = Readonly<MutableImageState>;
 export type ImageActions = {
 	_load: () => Promise<void>;
 	ensureLoaded: () => Promise<void>;
-	reload: () => Promise<void>;
-	reset: () => void;
 	destroy: () => void; // メモリリーク防止用
 };
 
@@ -31,11 +31,23 @@ export type ImageStore = {
 	actions: ImageActions;
 };
 
+// BlobURL作成のヘルパー関数
+const createBlobUrl = (imageData: ImageData): string => {
+	// Uint8ArrayからArrayBufferを取得してからBlobを作成
+	const arrayBuffer = imageData.data.buffer.slice(
+		imageData.data.byteOffset,
+		imageData.data.byteOffset + imageData.data.byteLength,
+	) as ArrayBuffer;
+	const blob = new Blob([arrayBuffer], { type: imageData.mimeType });
+	return URL.createObjectURL(blob);
+};
+
 /**
  * 個別画像の画像データストアを作成
  */
 export const createImageStore = (imagePath: string): ImageStore => {
 	const state = $state<MutableImageState>({
+		imageData: undefined,
 		imageUrl: undefined,
 		loadingStatus: 'unloaded',
 		loadingError: undefined,
@@ -96,7 +108,9 @@ export const createImageStore = (imagePath: string): ImageStore => {
 				}
 
 				// 状態を更新
-				state.imageUrl = imageData.url;
+				state.imageData = imageData;
+				// BlobURLを作成
+				state.imageUrl = createBlobUrl(imageData);
 				state.loadingError = undefined;
 
 				// ロード状態を更新
@@ -114,28 +128,24 @@ export const createImageStore = (imagePath: string): ImageStore => {
 			}
 		},
 
-		reload: async (): Promise<void> => {
-			// すべての状態をリセット
-			state.imageUrl = undefined;
-			state.loadingError = undefined;
-			state.loadingStatus = 'unloaded';
-
-			// ensureLoadedで再ロード
-			await actions.ensureLoaded();
-		},
-
-		reset: (): void => {
-			state.imageUrl = undefined;
-			state.loadingError = undefined;
-			state.loadingStatus = 'unloaded';
-		},
-
 		destroy: (): void => {
 			// 破棄フラグを設定（以降の操作を無効化）
 			state._isDestroyed = true;
 
+			// BlobURLを解放
+			if (state.imageUrl) {
+				try {
+					URL.revokeObjectURL(state.imageUrl);
+				} catch (error) {
+					console.warn('Failed to revoke image URL:', error);
+				}
+			}
+
 			// 状態をクリア
-			actions.reset();
+			state.imageData = undefined;
+			state.imageUrl = undefined;
+			state.loadingError = undefined;
+			state.loadingStatus = 'unloaded';
 		},
 	};
 

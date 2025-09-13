@@ -1,5 +1,5 @@
 <script lang="ts">
-	import ToolbarButton from '$lib/components/ui/ToolbarButton.svelte';
+	import ToolbarButton from '$lib/components/ui/IconButton.svelte';
 	import { transitionToGrid } from '$lib/services/app-transitions';
 	import { dialogService } from '$lib/services/dialog';
 	import { filteredImagesStore } from '$lib/stores/filtered-images-paths-store.svelte';

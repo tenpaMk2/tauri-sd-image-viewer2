@@ -1,10 +1,10 @@
 <script lang="ts">
 	import Image from '$lib/Image.svelte';
 	import { imageViewStore } from '$lib/stores/image-view-store.svelte';
-	import { navigationStore } from '$lib/stores/navigation-store.svelte';
+	// import { navigationStore } from '$lib/stores/navigation-store.svelte';
 	import Icon from '@iconify/svelte';
 
-	const { state: navigationState } = navigationStore;
+	// const { state: navigationState } = navigationStore; // TODO: 新しいアーキテクチャで実装予定
 	const {
 		state: imageViewState,
 		deriveds: imageViewDeriveds,

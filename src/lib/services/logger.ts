@@ -6,6 +6,8 @@ const forwardConsole = (
 ) => {
 	const original = console[fnName];
 	console[fnName] = (...args) => {
+		if (args.join().includes('For best results, use the `fetch` that is passed to you')) return;
+
 		original(...args);
 		logger(args.join(', '));
 	};

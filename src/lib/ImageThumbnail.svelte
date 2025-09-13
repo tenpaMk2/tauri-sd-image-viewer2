@@ -2,7 +2,7 @@
 	import LoadingState from '$lib/components/ui/LoadingState.svelte';
 	import { thumbnailRegistry } from '$lib/services/thumbnail-registry';
 	import { imageSelectionStore } from '$lib/stores/image-selection-store.svelte';
-	import RatingComponent from './components/RatingComponent.svelte';
+	import RatingComponent from './components/metadata/RatingComponent.svelte';
 	import { transitionToViewer } from './services/app-transitions';
 
 	const {

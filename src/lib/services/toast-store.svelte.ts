@@ -31,7 +31,6 @@ const showToast = (message: string, type: ToastType = 'info', duration: number =
 
 	_state.toasts = [..._state.toasts, toast];
 
-	// 自動削除タイマー
 	if (0 < duration) {
 		setTimeout(() => {
 			removeToast(id);

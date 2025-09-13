@@ -1,5 +1,5 @@
 <script lang="ts">
-	import ToolbarButton from '$lib/components/ui/ToolbarButton.svelte';
+	import ToolbarButton from '$lib/components/ui/IconButton.svelte';
 	import * as imageActions from '$lib/services/image-actions';
 	import { imageSelectionStore } from '$lib/stores/image-selection-store.svelte';
 	import { toastStore } from '$lib/stores/toast-store.svelte';
@@ -28,7 +28,6 @@
 							(message: string) => toastActions.showSuccessToast(message),
 							(message: string) => toastActions.showErrorToast(message),
 						)}
-					variant="white"
 				/>
 
 				<ToolbarButton

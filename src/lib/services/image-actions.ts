@@ -1,22 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 import * as fs from '@tauri-apps/plugin-fs';
 
-export const copyImagesToClipboard = async (
-	imagePaths: string[],
-	onSuccess?: (message: string) => void,
-	onError?: (message: string) => void,
-): Promise<void> => {
-	if (imagePaths.length === 0) return;
-
-	try {
-		await invoke('set_clipboard_files', { paths: imagePaths });
-		onSuccess?.(`${imagePaths.length} images copied to clipboard`);
-	} catch (error) {
-		console.error('Failed to copy to clipboard: ' + error);
-		onError?.('Failed to copy to clipboard');
-	}
-};
-
 export const deleteImages = async (
 	imagePaths: string[],
 	onConfirm?: (count: number) => Promise<boolean>,

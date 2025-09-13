@@ -50,6 +50,7 @@
 		"@tauri-apps/plugin-dialog": "^2.3.3",
 		"@tauri-apps/plugin-fs": "^2.4.2",
 		"@tauri-apps/plugin-log": "^2.6.0",
-		"@tauri-apps/plugin-os": "~2.3.1"
+		"@tauri-apps/plugin-os": "~2.3.1",
+		"paneforge": "^1.0.2"
 	}
 }

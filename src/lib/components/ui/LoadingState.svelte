@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { LOADING_STATUS_CONFIG, type LoadingStatusType } from '$lib/ui/loading-status-config';
+	import { LOADING_STATUS_CONFIG, type LoadingStatusType } from '$lib/utils/loading-status-config';
 	import Icon from '@iconify/svelte';
 
 	type Props = {

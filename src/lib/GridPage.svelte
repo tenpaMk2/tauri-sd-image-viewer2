@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { LOADING_STATUS_CONFIG } from '$lib/ui/loading-status-config';
+	import { LOADING_STATUS_CONFIG } from '$lib/utils/loading-status-config';
 	import Icon from '@iconify/svelte';
 	import BottomToolbar from './BottomToolbar.svelte';
 	import HeaderBar from './HeaderBar.svelte';

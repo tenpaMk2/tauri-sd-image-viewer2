@@ -75,7 +75,10 @@ export const createNavigationStore = async (imagePath: string): Promise<Navigati
 			toastStore.actions.showInfoToast('Moved to first image');
 		}
 
-		goto(`/viewer/${encodeURIComponent(nextImagePath)}`);
+		// キーボード操作の暗転を防ぐために少し遅延
+		setTimeout(() => {
+			goto(`/viewer/${encodeURIComponent(nextImagePath)}`);
+		}, 16);
 	};
 
 	const navigateToPrevious = () => {
@@ -88,7 +91,10 @@ export const createNavigationStore = async (imagePath: string): Promise<Navigati
 			toastStore.actions.showInfoToast('Moved to last image');
 		}
 
-		goto(`/viewer/${encodeURIComponent(previousImagePath)}`);
+		// キーボード操作の暗転を防ぐために少し遅延
+		setTimeout(() => {
+			goto(`/viewer/${encodeURIComponent(previousImagePath)}`);
+		}, 16);
 	};
 
 	return {

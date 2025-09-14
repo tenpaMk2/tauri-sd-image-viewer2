@@ -16,10 +16,6 @@
 	import type { LayoutProps } from './$types';
 	import type { ViewerPageData } from './+page';
 
-	$effect(() => {
-		console.warn('navigating changed:', JSON.stringify(navigating));
-	});
-
 	const { children }: LayoutProps = $props();
 
 	const { navigationStore, metadataStorePromise, imagePath, title, url } = $derived(

@@ -9,11 +9,11 @@
 
 	$effect(() => {
 		if (previousImagePath) {
-			console.log('♈️Preloading previous image:', previousImagePath);
+			console.log('◀️Preloading previous image:', previousImagePath);
 			preloadData(`/viewer/${encodeURIComponent(previousImagePath)}`);
 		}
 		if (nextImagePath) {
-			console.log('💄Preloading next image:', nextImagePath);
+			console.log('▶️Preloading next image:', nextImagePath);
 			preloadData(`/viewer/${encodeURIComponent(nextImagePath)}`);
 		}
 	});

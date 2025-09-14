@@ -36,10 +36,9 @@
 		imgEl; // for reactivity
 
 		return () => {
-			console.warn('Revoke URL✋', !!imgEl);
 			if (!imgEl) return;
 
-			console.warn('Revoke URL🦷:', imgEl.src);
+			console.log('🐟Revoke URL:', imgEl.src);
 			const srcUrl = imgEl.src;
 			URL.revokeObjectURL(srcUrl);
 		};

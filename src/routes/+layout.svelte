@@ -1,6 +1,9 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
 	import Toast from '$lib/components/ui/Toast.svelte';
+	import { dragAndDropService, type DragAndDropResult } from '$lib/services/drag-and-drop';
 	import { initializeLogger } from '$lib/services/logger';
+	import { onMount } from 'svelte';
 	import '../app.css';
 	import type { LayoutProps } from './$types';
 
@@ -8,6 +11,36 @@
 	initializeLogger();
 
 	const { children }: LayoutProps = $props();
+
+	onMount(() => {
+		// ↓のログはロガーの初期化前に終わるのでログに出ない。
+		console.log('💐Setting up drag & drop functionality');
+
+		let unlistenDragDrop: (() => void) | null = null;
+
+		dragAndDropService
+			.setupDragDropListener((result: DragAndDropResult) => {
+				console.log('Drag & drop result:', result);
+
+				switch (result.kind) {
+					case 'file':
+						goto(`/viewer/${encodeURIComponent(result.path)}`);
+						break;
+					case 'directory':
+						goto(`/grid/${encodeURIComponent(result.path)}`);
+						break;
+				}
+			})
+			.then((unlisten) => {
+				unlistenDragDrop = unlisten;
+			});
+
+		// Cleanup function
+		return () => {
+			console.log('Cleaning up drag & drop listener');
+			unlistenDragDrop?.();
+		};
+	});
 </script>
 
 <div class="h-screen min-h-screen">

@@ -1,5 +1,3 @@
-import { goto } from '$app/navigation';
-import { autoNavStore } from './auto-nav-store.svelte';
 import type { NavigationStore } from './navigation-store';
 
 export type NavigationKeyboardOptions = {
@@ -29,15 +27,13 @@ export const createNavigationKeyboardHandler = (options: NavigationKeyboardOptio
 			case 'ArrowLeft':
 				if (navigation.state.previousImagePath) {
 					event.preventDefault();
-					autoNavStore.actions.stop();
-					goto(`/viewer/${encodeURIComponent(navigation.state.previousImagePath)}`);
+					navigation.actions.navigateToPrevious();
 				}
 				break;
 			case 'ArrowRight':
 				if (navigation.state.nextImagePath) {
 					event.preventDefault();
-					autoNavStore.actions.stop();
-					goto(`/viewer/${encodeURIComponent(navigation.state.nextImagePath)}`);
+					navigation.actions.navigateToNext();
 				}
 				break;
 		}

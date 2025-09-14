@@ -25,7 +25,7 @@ const generateToastId = (): string => {
 	return `toast-${++_state.idCounter}-${Date.now()}`;
 };
 
-const showToast = (message: string, type: ToastType = 'info', duration: number = 3000): void => {
+const showToast = (message: string, type: ToastType = 'info', duration: number = 5000): void => {
 	const id = generateToastId();
 	const toast: Toast = { id, message, type, duration };
 

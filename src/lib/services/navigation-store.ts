@@ -2,6 +2,7 @@ import { goto } from '$app/navigation';
 import { path } from '@tauri-apps/api';
 import * as fs from '@tauri-apps/plugin-fs';
 import { autoNavStore } from './auto-nav-store.svelte';
+import { imageCacheStore } from './image-cache-store';
 import { SUPPORTED_IMAGE_EXTS } from './mime-type';
 import { toastStore } from './toast-store.svelte';
 
@@ -18,6 +19,8 @@ export type NavigationActions = {
 	getLastImagePath: () => Promise<string | null>;
 	navigateToNext: () => void;
 	navigateToPrevious: () => void;
+	preloadNextImage: () => Promise<string | null>;
+	preloadPreviousImage: () => Promise<string | null>;
 };
 
 export type NavigationStore = {
@@ -65,20 +68,30 @@ export const createNavigationStore = async (imagePath: string): Promise<Navigati
 		return 0 < updatedImageFiles.length ? updatedImageFiles.at(-1)! : null;
 	};
 
+	const loadImageAsUrl = async (imagePath: string): Promise<string | null> => {
+		return imageCacheStore.actions.load(imagePath);
+	};
+
+	const preloadNextImage = async (): Promise<string | null> => {
+		return nextImagePath ? await loadImageAsUrl(nextImagePath) : null;
+	};
+
+	const preloadPreviousImage = async (): Promise<string | null> => {
+		return previousImagePath ? await loadImageAsUrl(previousImagePath) : null;
+	};
+
 	const navigateToNext = () => {
 		if (!nextImagePath) return;
 
 		autoNavStore.actions.stop();
 
+		// Navigate to new page
+		goto(`/viewer/${encodeURIComponent(nextImagePath)}`);
+
 		// Check if wrapping from last to first
 		if (currentIndex === imageFiles.length - 1) {
 			toastStore.actions.showInfoToast('Moved to first image');
 		}
-
-		// キーボード操作の暗転を防ぐために少し遅延
-		setTimeout(() => {
-			goto(`/viewer/${encodeURIComponent(nextImagePath)}`);
-		}, 16);
 	};
 
 	const navigateToPrevious = () => {
@@ -86,15 +99,13 @@ export const createNavigationStore = async (imagePath: string): Promise<Navigati
 
 		autoNavStore.actions.stop();
 
+		// Navigate to new page
+		goto(`/viewer/${encodeURIComponent(previousImagePath)}`);
+
 		// Check if wrapping from first to last
 		if (currentIndex === 0) {
 			toastStore.actions.showInfoToast('Moved to last image');
 		}
-
-		// キーボード操作の暗転を防ぐために少し遅延
-		setTimeout(() => {
-			goto(`/viewer/${encodeURIComponent(previousImagePath)}`);
-		}, 16);
 	};
 
 	return {
@@ -110,6 +121,8 @@ export const createNavigationStore = async (imagePath: string): Promise<Navigati
 			getLastImagePath,
 			navigateToNext,
 			navigateToPrevious,
+			preloadNextImage,
+			preloadPreviousImage,
 		},
 	};
 };

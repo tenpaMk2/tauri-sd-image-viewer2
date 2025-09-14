@@ -101,3 +101,13 @@ MIT License - 詳細は[LICENSE](LICENSE)ファイルを参照してください
 ## 貢献
 
 [GitHub](https://github.com/tenpaMk2/tauri-sd-image-viewer2/issues)でのIssueやPull Requestを歓迎します。
+
+TODO: ディレクトリ更新時に不要サムネイルチェックと破棄。
+TODO: ダブルクリックでアプリを開く
+TODO: 左ドラッグでの画像パン
+TODO: シングル表示からグリッド表示へ戻ったときに見てた画像へのフォーカス
+FIXME: グリッド表示で削除後にシングル表示でunloadedが表示される問題。
+FIXME: 削除後のフィードバックがない
+FIXME: 画像中央でのマウス移動時にUI表示されない。
+FIXME: ズーム時にパン後のズームインアウトが画像中央を軸にされてしまう
+FIXME: キューイングが不安定。いっそキューもインスタンス化して、初期化するときはインスタンス破棄しちゃおう

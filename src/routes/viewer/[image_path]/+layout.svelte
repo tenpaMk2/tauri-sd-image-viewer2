@@ -7,6 +7,7 @@
 	import NavigationButton from '$lib/components/viewer/NavigationButton.svelte';
 	import SimpleToolbar from '$lib/components/viewer/Toolbar.svelte';
 	import UiWrapper from '$lib/components/viewer/UiWrapper.svelte';
+	import { imageCacheStore } from '$lib/services/image-cache-store';
 	import { createNavigationKeyboardHandler } from '$lib/services/keyboard-shortcut';
 	import type { MetadataStore } from '$lib/services/metadata-store';
 	import { type NavigationStore } from '$lib/services/navigation-store';
@@ -17,7 +18,7 @@
 
 	const { children }: LayoutProps = $props();
 
-	const { navigation, metadataStorePromise, imagePath, title, urlPromise } = $derived(
+	const { navigationStore, metadataStorePromise, imagePath, title, url } = $derived(
 		page.data as ViewerPageData,
 	);
 
@@ -26,27 +27,21 @@
 
 	// SvelteKit推奨の関数ベースContext
 	setContext<() => boolean>('isUiVisible', () => isUiVisible);
-	setContext<() => NavigationStore>('navigationStore', () => navigation);
+	setContext<() => NavigationStore>('navigationStore', () => navigationStore);
 	setContext<() => Promise<MetadataStore>>('metadataStorePromise', () => metadataStorePromise);
 	setContext<() => string>('imagePath', () => imagePath);
 
-	let imgEl = $state<HTMLImageElement | null>(null);
-
+	// Cleanup URLs on unmount
 	$effect(() => {
-		imgEl; // for reactivity
-
 		return () => {
-			if (!imgEl) return;
-
-			console.log('🐟Revoke URL:', imgEl.src);
-			const srcUrl = imgEl.src;
-			URL.revokeObjectURL(srcUrl);
+			console.log('🐟Clear all cache');
+			imageCacheStore.actions.clearAll();
 		};
 	});
 
 	// Keyboard navigation
 	$effect(() => {
-		const navigationHandler = createNavigationKeyboardHandler({ navigation });
+		const navigationHandler = createNavigationKeyboardHandler({ navigation: navigationStore });
 		navigationHandler.addEventListeners();
 
 		return () => {
@@ -83,15 +78,7 @@
 
 			<main>
 				<div class="h-lvh w-full">
-					{#await urlPromise then url}
-						<img
-							bind:this={imgEl}
-							src={url}
-							alt={imagePath}
-							class="h-full w-full object-contain"
-							style="image-rendering: auto;"
-						/>
-					{/await}
+					<img src={url} alt={imagePath} class="h-full w-full object-contain" />
 				</div>
 
 				{@render children()}

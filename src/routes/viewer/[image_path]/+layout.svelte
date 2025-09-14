@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { page } from '$app/state';
+	import { navigating, page } from '$app/state';
 	import BasicInfoSection from '$lib/components/metadata/BasicInfoSection.svelte';
 	import RatingComponent from '$lib/components/metadata/RatingComponent.svelte';
 	import SdParamsSection from '$lib/components/metadata/SdParamsSection.svelte';
@@ -15,6 +15,10 @@
 	import { setContext } from 'svelte';
 	import type { LayoutProps } from './$types';
 	import type { ViewerPageData } from './+page';
+
+	$effect(() => {
+		console.warn('navigating changed:', JSON.stringify(navigating));
+	});
 
 	const { children }: LayoutProps = $props();
 
@@ -62,11 +66,12 @@
 				<SimpleToolbar />
 			</UiWrapper>
 
-			<!-- Navigation buttons -->
+			<!-- Navigation button: left -->
 			<UiWrapper positionClass="top-1/2 left-4 -translate-y-1/2">
 				<NavigationButton direction="left" />
 			</UiWrapper>
 
+			<!-- Navigation button: right -->
 			<UiWrapper positionClass="top-1/2 right-4 -translate-y-1/2">
 				<NavigationButton direction="right" />
 			</UiWrapper>
@@ -75,6 +80,15 @@
 			<UiWrapper positionClass="bottom-4 left-1/2 -translate-x-1/2">
 				<RatingComponent />
 			</UiWrapper>
+
+			{#if navigating.complete}
+				<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+					<div class="h-24 w-24 rounded-full bg-black/20 blur-sm"></div>
+				</div>
+				<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+					<p><span class="loading loading-xl p-8"></span></p>
+				</div>
+			{/if}
 
 			<main>
 				<div class="h-lvh w-full">

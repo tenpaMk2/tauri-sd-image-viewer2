@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { initializeLogger } from '$lib/services/logger';
 	import Toast from '$lib/components/ui/Toast.svelte';
+	import { initializeLogger } from '$lib/services/logger';
 	import '../app.css';
 	import type { LayoutProps } from './$types';
 

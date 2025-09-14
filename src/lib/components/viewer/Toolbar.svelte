@@ -63,7 +63,11 @@
 	</div>
 
 	<div class="flex gap-2">
-		<IconButton icon="image-plus" title="Open File" onClick={openFileDialog} />
+		<!-- TODO: これは左矢印にして左上に配置。Synology Photosを参考にする。 -->
+		<!-- <IconButton icon="layout-grid" title="Grid View" onClick={goToGrid} /> -->
+
+		<IconButton icon="file-image" title="Open File" onClick={openFileDialog} />
+		<IconButton icon="folder-open" title="Open Another Folder" onClick={openDirectoryDialog} />
 		<IconButton
 			icon="clipboard-copy"
 			title="Copy image files to clipboard"
@@ -78,7 +82,5 @@
 			extraClass={autoNavStore.state.isActive ? 'btn-active btn-primary' : ''}
 			spinnerKind={autoNavStore.state.isActive ? 'loading-infinity' : undefined}
 		/>
-		<IconButton icon="layout-grid" title="Grid View" onClick={goToGrid} />
-		<IconButton icon="folder-open" title="Open Another Folder" onClick={openDirectoryDialog} />
 	</div>
 </div>

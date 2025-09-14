@@ -31,6 +31,38 @@
 	setContext<() => Promise<MetadataStore>>('metadataStorePromise', () => metadataStorePromise);
 	setContext<() => string>('imagePath', () => imagePath);
 
+	let hideTimer: ReturnType<typeof setTimeout> | null = null;
+
+	// マウス動作でUI表示制御
+	const handleMouseMove = () => {
+		isUiVisible = true;
+		if (hideTimer) {
+			clearTimeout(hideTimer);
+		}
+		hideTimer = setTimeout(() => {
+			isUiVisible = false;
+		}, 3000);
+	};
+
+	// マウス移動イベントリスナー
+	$effect(() => {
+		const cleanupTimer = () => {
+			if (hideTimer) {
+				clearTimeout(hideTimer);
+				hideTimer = null;
+			}
+		};
+
+		document.addEventListener('mousemove', handleMouseMove);
+		document.addEventListener('keydown', handleMouseMove);
+
+		return () => {
+			document.removeEventListener('mousemove', handleMouseMove);
+			document.removeEventListener('keydown', handleMouseMove);
+			cleanupTimer();
+		};
+	});
+
 	// Cleanup URLs on unmount
 	$effect(() => {
 		return () => {

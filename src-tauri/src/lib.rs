@@ -1,6 +1,7 @@
 mod clipboard_api;
 mod common;
 mod image_file_lock_service;
+mod image_reader_api;
 mod metadata_api;
 mod thumbnail_api;
 
@@ -45,6 +46,10 @@ pub fn run() {
                     .map_err(|e| format!("Failed to initialize AsyncThumbnailService: {}", e))?;
             app.manage(async_thumbnail_service);
 
+            // 非同期画像読み込みサービスを初期化
+            let async_image_reader_service = image_reader_api::AsyncImageReaderService::new();
+            app.manage(async_image_reader_service);
+
             // メタデータキャッシュを初期化
             let metadata_disk_cache_file_path = app
                 .path()
@@ -67,6 +72,7 @@ pub fn run() {
             clipboard_api::set_clipboard_files,
             thumbnail_api::commands::generate_thumbnail_async,
             thumbnail_api::commands::clear_thumbnail_cache,
+            image_reader_api::commands::read_image_async,
             metadata_api::commands::read_image_metadata,
             metadata_api::commands::write_xmp_image_rating,
             metadata_api::commands::clear_metadata_cache,

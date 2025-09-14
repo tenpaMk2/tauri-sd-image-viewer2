@@ -1,4 +1,4 @@
-import * as fs from '@tauri-apps/plugin-fs';
+import { Channel, invoke } from '@tauri-apps/api/core';
 import { detectImageMimeType } from './mime-type';
 
 type CacheEntry = Readonly<{
@@ -37,17 +37,32 @@ const load = async (imagePath: string): Promise<string> => {
 	}
 
 	try {
-		const imageData = await fs.readFile(imagePath);
 		const detectedMimeType = await detectImageMimeType(imagePath);
 		if (!detectedMimeType) {
 			throw new Error('Unsupported image format: ' + imagePath);
 		}
 
-		const blob = new Blob([imageData], { type: detectedMimeType });
-		const url = URL.createObjectURL(blob);
-		cache.set(imagePath, { url, timestamp: Date.now() });
-		cleanupOldCache();
-		return url;
+		const channel = new Channel<Uint8Array>();
+
+		const loadImagePromise = new Promise<string>((resolve, reject) => {
+			channel.onmessage = (data) => {
+				try {
+					const blob = new Blob([new Uint8Array(data)], { type: detectedMimeType });
+					const url = URL.createObjectURL(blob);
+
+					cache.set(imagePath, { url, timestamp: Date.now() });
+					cleanupOldCache();
+
+					resolve(url);
+				} catch (error) {
+					reject(error);
+				}
+			};
+		});
+
+		invoke('read_image_async', { imagePath, channel });
+
+		return await loadImagePromise;
 	} catch (error) {
 		console.error('Failed to load image:', imagePath, error);
 		throw new Error('Failed to load image: ' + imagePath);
@@ -71,7 +86,3 @@ export const imageCacheStore = {
 		clearAll,
 	},
 };
-
-setInterval(() => {
-	console.warn('🌆size: ' + imageCacheStore.state.cache.size);
-}, 5000);

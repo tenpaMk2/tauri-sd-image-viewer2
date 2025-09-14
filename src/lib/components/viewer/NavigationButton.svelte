@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { navigating } from '$app/state';
 	import type { NavigationStore } from '$lib/services/navigation-store';
 	import { getContext } from 'svelte';
 	import IconButton from '../ui/IconButton.svelte';
@@ -27,11 +28,14 @@
 
 {#if imagePath}
 	<div class="flex h-16 w-16 items-center justify-center">
-		<button
-			aria-label={ariaLabel}
-			onclick={handleNavigation}
-		>
-			<IconButton {icon} title={ariaLabel} size="large" circle />
+		<button aria-label={ariaLabel} onclick={handleNavigation}>
+			<IconButton
+				{icon}
+				title={ariaLabel}
+				size="large"
+				circle
+				extraClass={navigating.complete ? 'btn-disabled' : ''}
+			/>
 		</button>
 	</div>
 {/if}

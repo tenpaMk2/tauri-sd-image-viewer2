@@ -1,9 +1,9 @@
 #[cfg(target_os = "macos")]
 use {
     log::info,
-    objc2::rc::{autoreleasepool, Retained},
+    objc2::rc::{Retained, autoreleasepool},
     objc2::runtime::ProtocolObject,
-    objc2::{msg_send, ClassType},
+    objc2::{ClassType, msg_send},
     objc2_app_kit::{NSPasteboard, NSPasteboardWriting},
     objc2_foundation::{NSArray, NSString, NSURL},
 };
@@ -15,8 +15,10 @@ use {
     windows::{
         Win32::Foundation::{BOOL, HANDLE, HWND},
         Win32::System::Com::{CoInitialize, CoUninitialize},
-        Win32::System::DataExchange::{CloseClipboard, EmptyClipboard, OpenClipboard, SetClipboardData},
-        Win32::System::Memory::{GlobalAlloc, GlobalLock, GlobalUnlock, GMEM_MOVEABLE},
+        Win32::System::DataExchange::{
+            CloseClipboard, EmptyClipboard, OpenClipboard, SetClipboardData,
+        },
+        Win32::System::Memory::{GMEM_MOVEABLE, GlobalAlloc, GlobalLock, GlobalUnlock},
         Win32::UI::Shell::DROPFILES,
     },
 };
@@ -118,30 +120,30 @@ pub fn set_clipboard_files(paths: Vec<String>) -> Result<(), String> {
 
             // CF_HDROPフォーマットでファイルパスを設定
             let cf_hdrop = 15u32; // CF_HDROP定数値
-            
+
             // パス文字列を準備（各パスはNull終端、最後は二重Null終端）
             let mut buffer = Vec::new();
             let dropfiles_size = std::mem::size_of::<DROPFILES>();
-            
+
             // DROPFILES構造体のサイズ分を確保
             buffer.resize(dropfiles_size, 0u8);
-            
+
             for path in &paths {
                 let wide_path: Vec<u16> = std::ffi::OsStr::new(path)
                     .encode_wide()
                     .chain(std::iter::once(0))
                     .collect();
-                
+
                 let byte_slice = std::slice::from_raw_parts(
                     wide_path.as_ptr() as *const u8,
                     wide_path.len() * 2,
                 );
                 buffer.extend_from_slice(byte_slice);
             }
-            
+
             // 最終的なNull終端を追加
             buffer.extend_from_slice(&[0u8, 0u8]);
-            
+
             // DROPFILES構造体を設定
             let dropfiles = buffer.as_mut_ptr() as *mut DROPFILES;
             (*dropfiles).pFiles = dropfiles_size as u32;
@@ -158,7 +160,7 @@ pub fn set_clipboard_files(paths: Vec<String>) -> Result<(), String> {
                     return Err("Failed to allocate global memory".to_string());
                 }
             };
-            
+
             if hmem.is_invalid() {
                 let _ = CloseClipboard();
                 return Err("Failed to allocate global memory".to_string());
@@ -175,9 +177,9 @@ pub fn set_clipboard_files(paths: Vec<String>) -> Result<(), String> {
 
             // クリップボードにデータを設定
             let set_result = SetClipboardData(cf_hdrop, HANDLE(hmem.0));
-            
+
             let _ = CloseClipboard();
-            
+
             if let Err(_) = set_result {
                 return Err("Failed to set clipboard data".to_string());
             }

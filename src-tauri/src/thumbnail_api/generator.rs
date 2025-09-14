@@ -16,7 +16,6 @@ impl ThumbnailGenerator {
 
     /// Generate thumbnail from file path asynchronously
     pub async fn generate_from_path(&self, image_path: &str) -> Result<Vec<u8>, String> {
-
         // Read file asynchronously
         let mut file = File::open(image_path)
             .await
@@ -26,7 +25,6 @@ impl ThumbnailGenerator {
         file.read_to_end(&mut buffer)
             .await
             .map_err(|e| format!("Failed to read file {}: {}", image_path, e))?;
-
 
         // Process image in blocking task
         let config = self.config.clone();
@@ -62,7 +60,6 @@ impl ThumbnailGenerator {
         let encoder = Encoder::from_rgba(rgba_data, thumbnail_width, thumbnail_height);
         let webp_memory = encoder.encode(config.quality as f32);
         let webp_data = webp_memory.to_vec();
-
 
         Ok(webp_data)
     }

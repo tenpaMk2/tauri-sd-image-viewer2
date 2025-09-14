@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { toastStore, type ToastType } from '$lib/services/toast-store.svelte';
 	import Icon from '@iconify/svelte';
-	import { fade } from 'svelte/transition';
+	import { scale } from 'svelte/transition';
 
 	const { state: toastState } = toastStore;
 
@@ -34,7 +34,7 @@
 
 <div class="toast-bottom toast-end toast z-50">
 	{#each toastState.toasts as toast (toast.id)}
-		<div class="alert {getToastClass(toast.type)} min-w-64 shadow-lg" out:fade>
+		<div class="alert {getToastClass(toast.type)} min-w-64 shadow-lg" out:scale>
 			<Icon icon={getToastIcon(toast.type)} class="h-5 w-5" />
 			<span class="text-sm">{toast.message}</span>
 			<button

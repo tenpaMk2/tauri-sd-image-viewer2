@@ -139,12 +139,10 @@
 	</Pane>
 	<PaneResizer class="w-2 bg-blue-400/20 transition-colors hover:bg-primary" />
 	<Pane defaultSize={25} maxSize={50} minSize={15} collapsible={true}>
-		<aside class="h-full overflow-y-auto bg-base-200 p-4">
-			<div class="space-y-4">
-				<BasicInfoSection />
-				<SdParamsSection />
-				<XmpSection />
-			</div>
+		<aside class="h-full space-y-4 overflow-y-auto bg-base-200 p-4 select-text">
+			<BasicInfoSection />
+			<SdParamsSection />
+			<XmpSection />
 		</aside>
 	</Pane>
 </PaneGroup>

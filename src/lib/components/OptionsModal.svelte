@@ -43,7 +43,7 @@
 </script>
 
 {#if isOptionsModalOpen}
-	<div class="modal-open modal">
+	<div class="modal-open modal select-text">
 		<div class="modal-box w-11/12 max-w-3xl">
 			<h3 class="mb-6 text-xl font-bold">Options</h3>
 

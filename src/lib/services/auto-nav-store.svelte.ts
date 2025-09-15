@@ -18,15 +18,15 @@ const start = (navigation: NavigationStore): void => {
 	_state.isActive = true;
 
 	// Navigate to latest image immediately
-	navigation.actions.refreshAndNavigateToLatest().catch((error) =>
-		console.error('Initial auto navigation failed: ' + error),
-	);
+	navigation.actions
+		.refreshAndNavigateToLatest()
+		.catch((error) => console.error('Initial auto navigation failed: ' + error));
 
 	// Set up auto navigation interval (every 2 seconds)
 	autoNavTimer = setInterval(() => {
-		navigation.actions.refreshAndNavigateToLatest().catch((error) =>
-			console.error('Auto navigation interval failed: ' + error),
-		);
+		navigation.actions
+			.refreshAndNavigateToLatest()
+			.catch((error) => console.error('Auto navigation interval failed: ' + error));
 	}, 2000);
 };
 

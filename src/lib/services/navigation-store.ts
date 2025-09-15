@@ -1,6 +1,6 @@
-import { goto } from '$app/navigation';
 import { path } from '@tauri-apps/api';
 import * as fs from '@tauri-apps/plugin-fs';
+import { navigateToGrid, navigateToViewer } from './app-navigation';
 import { autoNavStore } from './auto-nav-store.svelte';
 import { imageCacheStore } from './image-cache-store';
 import { SUPPORTED_IMAGE_EXTS } from './mime-type';
@@ -21,6 +21,7 @@ export type NavigationActions = {
 	preloadNextImage: () => Promise<string | null>;
 	preloadPreviousImage: () => Promise<string | null>;
 	refreshAndNavigateToLatest: () => Promise<void>;
+	navigateToParentGrid: () => Promise<void>;
 };
 
 export type NavigationStore = {
@@ -86,7 +87,7 @@ export const createNavigationStore = async (imagePath: string): Promise<Navigati
 		autoNavStore.actions.stop();
 
 		// Navigate to new page
-		goto(`/viewer/${encodeURIComponent(nextImagePath)}`);
+		navigateToViewer(nextImagePath);
 
 		// Check if wrapping from last to first
 		if (currentIndex === imageFiles.length - 1) {
@@ -100,7 +101,7 @@ export const createNavigationStore = async (imagePath: string): Promise<Navigati
 		autoNavStore.actions.stop();
 
 		// Navigate to new page
-		goto(`/viewer/${encodeURIComponent(previousImagePath)}`);
+		navigateToViewer(previousImagePath);
 
 		// Check if wrapping from first to last
 		if (currentIndex === 0) {
@@ -112,9 +113,19 @@ export const createNavigationStore = async (imagePath: string): Promise<Navigati
 		try {
 			const latestImagePath = await refreshAndGetLastImagePath();
 			if (!latestImagePath) return;
-			goto(`/viewer/${encodeURIComponent(latestImagePath)}`);
+			navigateToViewer(latestImagePath);
 		} catch (error) {
 			console.error('Failed to refresh and navigate to latest: ' + error);
+		}
+	};
+
+	const navigateToParentGrid = async (): Promise<void> => {
+		try {
+			const parentDirectory = await path.dirname(directory);
+			if (!parentDirectory) return;
+			navigateToGrid(parentDirectory);
+		} catch (error) {
+			console.error('Failed to navigate to parent grid: ' + error);
 		}
 	};
 
@@ -133,6 +144,7 @@ export const createNavigationStore = async (imagePath: string): Promise<Navigati
 			preloadNextImage,
 			preloadPreviousImage,
 			refreshAndNavigateToLatest,
+			navigateToParentGrid,
 		},
 	};
 };

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
+	import { navigateToGrid, navigateToViewer } from '$lib/services/app-navigation';
 	import { asset } from '$app/paths';
 	import { dialogService } from '$lib/services/dialog';
 	import Icon from '@iconify/svelte';
@@ -9,7 +9,7 @@
 	const openFileDialog = async () => {
 		const result = await dialogService.openFileDialog();
 		if (result) {
-			goto(`/viewer/${encodeURIComponent(result)}`);
+			navigateToViewer(result);
 		}
 	};
 
@@ -17,7 +17,7 @@
 	const openDirectoryDialog = async () => {
 		const result = await dialogService.openDirectoryDialog();
 		if (result) {
-			goto(`/grid/${encodeURIComponent(result)}`);
+			navigateToGrid(result);
 		}
 	};
 

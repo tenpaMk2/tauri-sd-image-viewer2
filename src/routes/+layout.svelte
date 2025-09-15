@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
+	import { navigateToGrid, navigateToViewer } from '$lib/services/app-navigation';
 	import Toast from '$lib/components/ui/Toast.svelte';
 	import { dragAndDropService, type DragAndDropResult } from '$lib/services/drag-and-drop';
 	import { initializeLogger } from '$lib/services/logger';
@@ -24,10 +24,10 @@
 
 				switch (result.kind) {
 					case 'file':
-						goto(`/viewer/${encodeURIComponent(result.path)}`);
+						navigateToViewer(result.path);
 						break;
 					case 'directory':
-						goto(`/grid/${encodeURIComponent(result.path)}`);
+						navigateToGrid(result.path);
 						break;
 				}
 			})

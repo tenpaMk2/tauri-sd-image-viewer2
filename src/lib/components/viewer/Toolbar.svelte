@@ -1,41 +1,31 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
 	import IconButton from '$lib/components/ui/IconButton.svelte';
+	import {
+		navigateToGrid,
+		navigateToViewer,
+		navigateToWelcome,
+	} from '$lib/services/app-navigation';
 	import { autoNavStore } from '$lib/services/auto-nav-store.svelte';
 	import { copyFiles } from '$lib/services/clipboard';
 	import { dialogService } from '$lib/services/dialog';
 	import type { NavigationStore } from '$lib/services/navigation-store';
-	import { path } from '@tauri-apps/api';
 	import { getContext } from 'svelte';
 
 	const navigation = $derived(getContext<() => NavigationStore>('navigationStore')());
-	const isUiVisible = $derived(getContext<() => boolean>('isUiVisible')());
 
 	const openDirectoryDialog = async () => {
 		const result = await dialogService.openDirectoryDialog();
 
 		if (!result) return;
 
-		goto(`/grid/${encodeURIComponent(result)}`);
+		navigateToGrid(result);
 	};
 
 	const openFileDialog = async () => {
 		const result = await dialogService.openFileDialog();
 		if (!result) return;
 
-		goto(`/viewer/${encodeURIComponent(result)}`);
-	};
-
-	const goToGrid = async () => {
-		const currentImagePath = navigation.state.currentImagePath;
-
-		if (!currentImagePath) return;
-
-		const directory = await path.dirname(currentImagePath);
-
-		if (!directory) return;
-
-		goto(`/grid/${encodeURIComponent(directory)}`);
+		navigateToViewer(result);
 	};
 
 	const handleCopyToClipboard = async () => {
@@ -58,14 +48,20 @@
 </script>
 
 <div class="flex items-center justify-between bg-gradient-to-b from-black/70 to-transparent p-4">
+	<div class="flex gap-2">
+		<IconButton icon="home" title="Welcome" onClick={navigateToWelcome} />
+		<IconButton
+			icon="layout-grid"
+			title="Parent Directory"
+			onClick={navigation.actions.navigateToParentGrid}
+		/>
+	</div>
+
 	<div class="text-sm opacity-80">
 		{navigation.state.currentIndex + 1} / {navigation.state.totalImages}
 	</div>
 
 	<div class="flex gap-2">
-		<!-- TODO: これは左矢印にして左上に配置。Synology Photosを参考にする。 -->
-		<!-- <IconButton icon="layout-grid" title="Grid View" onClick={goToGrid} /> -->
-
 		<IconButton icon="file-image" title="Open File" onClick={openFileDialog} />
 		<IconButton icon="folder-open" title="Open Another Folder" onClick={openDirectoryDialog} />
 		<IconButton

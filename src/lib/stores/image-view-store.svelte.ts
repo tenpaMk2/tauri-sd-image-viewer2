@@ -58,7 +58,7 @@ const actions = {
 	},
 
 	// ズーム操作
-	zoom(deltaY: number, zoomFactor: number = 0.1, minZoom: number = 1, maxZoom: number = 3): void {
+	zoom(deltaY: number, zoomFactor: number = 0.1, minZoom: number = 1, maxZoom: number = 5): void {
 		// ズーミング状態を開始
 		_state.isZooming = true;
 

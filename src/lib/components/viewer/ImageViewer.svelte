@@ -1,10 +1,15 @@
 <script lang="ts">
-	import Image from '$lib/Image.svelte';
 	import { imageViewStore } from '$lib/stores/image-view-store.svelte';
-	// import { navigationStore } from '$lib/stores/navigation-store.svelte';
 	import Icon from '@iconify/svelte';
+	import UiWrapper from './UiWrapper.svelte';
 
-	// const { state: navigationState } = navigationStore; // TODO: 新しいアーキテクチャで実装予定
+	type Props = {
+		imageUrl: string;
+		imagePath: string;
+	};
+
+	const { imageUrl, imagePath }: Props = $props();
+
 	const {
 		state: imageViewState,
 		deriveds: imageViewDeriveds,
@@ -14,14 +19,16 @@
 	// トランジションを表示するかどうかの判定（ズーム中かつドラッグ中でない場合のみ）
 	const shouldShowTransition = $derived(imageViewState.isZooming && !imageViewState.isDragging);
 
+	// 拡大・パン機能のイベントハンドラー
 	const onwheel = (event: WheelEvent) => {
 		event.preventDefault();
 		imageViewActions.zoom(event.deltaY);
 	};
 
 	const onmousedown = (event: MouseEvent) => {
-		// ミドルボタン（ボタン1）でドラッグを開始
-		if (event.button === 1) {
+		// 左クリック（ボタン0）またはミドルボタン（ボタン1）でドラッグを開始
+		// ただし、ズーム状態の時のみドラッグを許可
+		if ((event.button === 0 || event.button === 1) && imageViewDeriveds.isZoomed) {
 			event.preventDefault();
 			imageViewActions.startDrag(event.clientX, event.clientY);
 		}
@@ -43,7 +50,7 @@
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 <div
-	class="absolute inset-0 flex items-center justify-center overflow-hidden focus:outline-none"
+	class="h-lvh w-full overflow-hidden focus:outline-none"
 	role="img"
 	tabindex="0"
 	aria-label="画像表示キャンバス"
@@ -53,32 +60,21 @@
 	{onmouseup}
 	onmouseleave={onmouseup}
 >
-	{#if navigationState.currentImagePath}
-		<div
-			class="flex h-full w-full items-center justify-center"
-			class:transition-transform={shouldShowTransition}
-			class:duration-200={shouldShowTransition}
-			style="transform: translate({imageViewState.panX}px, {imageViewState.panY}px) scale({imageViewState.zoomLevel}); transform-origin: center center; cursor: grab;"
-		>
-			{#key navigationState.currentImagePath}
-				<Image
-					imagePath={navigationState.currentImagePath}
-					class="h-full w-full object-contain"
-					alt=""
-					previousImagePath={navigationState.oldImagePath}
-				/>
-			{/key}
-		</div>
-	{:else}
-		<div class="flex flex-col items-center gap-2 text-gray-400">
-			<span class="opacity-80">No content to display</span>
-		</div>
-	{/if}
+	<div
+		class="flex h-full w-full items-center justify-center"
+		class:transition-transform={shouldShowTransition}
+		class:duration-200={shouldShowTransition}
+		style="transform: translate({imageViewState.panX}px, {imageViewState.panY}px) scale({imageViewState.zoomLevel}); transform-origin: center center; cursor: {imageViewState.isDragging ? 'grabbing' : imageViewDeriveds.isZoomed ? 'grab' : 'auto'};"
+	>
+		<img src={imageUrl} alt={imagePath} class="h-full w-full object-contain" />
+	</div>
+</div>
 
-	<!-- ズームリセットボタン -->
-	{#if imageViewDeriveds.isZoomed}
+<!-- Zoom reset button -->
+{#if imageViewDeriveds.isZoomed}
+	<UiWrapper positionClass="bottom-4 right-4">
 		<button
-			class="btn absolute right-4 bottom-4 bg-black/60 text-white btn-ghost backdrop-blur-sm btn-sm hover:bg-black/80"
+			class="btn bg-black/60 text-white btn-ghost backdrop-blur-sm btn-sm hover:bg-black/80"
 			onclick={() => imageViewActions.resetZoom()}
 			title="Reset zoom (1:1)"
 			aria-label="Reset zoom"
@@ -86,5 +82,5 @@
 			<Icon icon="lucide:zoom-out" class="h-4 w-4" />
 			Reset
 		</button>
-	{/if}
-</div>
+	</UiWrapper>
+{/if}

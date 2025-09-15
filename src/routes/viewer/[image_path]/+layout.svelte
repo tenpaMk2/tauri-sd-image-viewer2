@@ -7,6 +7,7 @@
 	import NavigationButton from '$lib/components/viewer/NavigationButton.svelte';
 	import SimpleToolbar from '$lib/components/viewer/Toolbar.svelte';
 	import UiWrapper from '$lib/components/viewer/UiWrapper.svelte';
+	import ImageViewer from '$lib/components/viewer/ImageViewer.svelte';
 	import { imageCacheStore } from '$lib/services/image-cache-store';
 	import { createNavigationKeyboardHandler } from '$lib/services/keyboard-shortcut';
 	import type { MetadataStore } from '$lib/services/metadata-store';
@@ -100,8 +101,14 @@
 <PaneGroup direction="horizontal" role="application" aria-label="Image viewer">
 	<Pane defaultSize={75}>
 		<div class="relative h-full">
+			<main>
+				<ImageViewer imageUrl={url} imagePath={imagePath} />
+
+				{@render children()}
+			</main>
+
 			<!-- Top toolbar -->
-			<UiWrapper positionClass="top-0 right-0 left-0 z-10">
+			<UiWrapper positionClass="top-0 right-0 left-0">
 				<SimpleToolbar />
 			</UiWrapper>
 
@@ -128,14 +135,6 @@
 					<p><span class="loading loading-xl p-8"></span></p>
 				</div>
 			{/if}
-
-			<main>
-				<div class="h-lvh w-full">
-					<img src={url} alt={imagePath} class="h-full w-full object-contain" />
-				</div>
-
-				{@render children()}
-			</main>
 		</div>
 	</Pane>
 	<PaneResizer class="w-2 bg-blue-400/20 transition-colors hover:bg-primary" />

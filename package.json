@@ -1,6 +1,6 @@
 {
 	"name": "tauri-sd-image-viewer",
-	"version": "2.0.1",
+	"version": "2.1.0",
 	"description": "Tauri SD Image Viewer - A desktop image viewer with Stable Diffusion metadata support",
 	"repository": {
 		"type": "git",

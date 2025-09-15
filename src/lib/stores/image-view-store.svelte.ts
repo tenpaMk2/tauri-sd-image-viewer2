@@ -28,7 +28,6 @@ const _state = $state<MutableImageViewState>({ ...INITIAL_IMAGE_VIEW_STATE });
 // ズーム状態が変更されたかどうかを判定
 const isZoomed = $derived(1 < _state.zoomLevel || _state.panX !== 0 || _state.panY !== 0);
 
-
 const actions = {
 	// 状態リセット
 	reset(): void {
@@ -123,7 +122,6 @@ const actions = {
 			document.body.style.cursor = '';
 		}
 	},
-
 };
 
 export const imageViewStore = {

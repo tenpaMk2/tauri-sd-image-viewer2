@@ -11,5 +11,5 @@ export const LOADING_STATUS_CONFIG: Record<LoadingStatusType, StatusDisplayConfi
 	queued: { loadingIcon: 'loading-ring', text: 'Queued' },
 	loading: { loadingIcon: 'loading-spinner', text: 'Loading...' },
 	loaded: { text: 'Loaded' }, // アイコンなし（実際のコンテンツが表示されるため）
-	error: { icon: 'triangle-alert', text: 'Error' }
+	error: { icon: 'triangle-alert', text: 'Error' },
 };

@@ -1,4 +1,3 @@
-
 export type NavigationKeyboardOptions = {
 	navigateToNext: () => void;
 	navigateToPrevious: () => void;

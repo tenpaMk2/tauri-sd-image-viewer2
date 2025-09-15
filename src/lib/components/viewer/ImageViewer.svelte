@@ -64,7 +64,11 @@
 		class="flex h-full w-full items-center justify-center"
 		class:transition-transform={shouldShowTransition}
 		class:duration-200={shouldShowTransition}
-		style="transform: translate({imageViewState.panX}px, {imageViewState.panY}px) scale({imageViewState.zoomLevel}); transform-origin: center center; cursor: {imageViewState.isDragging ? 'grabbing' : imageViewDeriveds.isZoomed ? 'grab' : 'auto'};"
+		style="transform: translate({imageViewState.panX}px, {imageViewState.panY}px) scale({imageViewState.zoomLevel}); transform-origin: center center; cursor: {imageViewState.isDragging
+			? 'grabbing'
+			: imageViewDeriveds.isZoomed
+				? 'grab'
+				: 'auto'};"
 	>
 		<img src={imageUrl} alt={imagePath} class="h-full w-full object-contain" />
 	</div>

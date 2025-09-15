@@ -102,7 +102,7 @@
 	<Pane defaultSize={75}>
 		<div class="relative h-full">
 			<main>
-				<ImageViewer imageUrl={url} imagePath={imagePath} />
+				<ImageViewer imageUrl={url} {imagePath} />
 
 				{@render children()}
 			</main>

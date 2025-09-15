@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { asset } from '$app/paths';
+	import OptionsModal from '$lib/components/OptionsModal.svelte';
+	import IconButton from '$lib/components/ui/IconButton.svelte';
 	import IconTextButton from '$lib/components/ui/IconTextButton.svelte';
 	import { navigateToGrid, navigateToViewer } from '$lib/services/app-navigation';
 	import { dialogService } from '$lib/services/dialog';
@@ -22,11 +24,32 @@
 	};
 
 	const versionPromise = app.getVersion();
+
+	let isOptionsModalOpen = $state(false);
+
+	const openOptionsModal = () => {
+		isOptionsModalOpen = true;
+	};
+
+	const closeOptionsModal = () => {
+		isOptionsModalOpen = false;
+	};
 </script>
 
 <svelte:head>
-	<title>Image Viewer</title>
+	<title>Tauri SD Image Viewer</title>
 </svelte:head>
+
+<!-- Options button positioned at top-right -->
+<div class="absolute top-4 right-4">
+	<IconButton
+		icon="settings"
+		title="Options"
+		size="medium"
+		onClick={openOptionsModal}
+		extraClass="btn-ghost"
+	/>
+</div>
 
 <main class="hero min-h-screen bg-base-200">
 	<div class="hero-content flex-row">
@@ -57,3 +80,5 @@
 		</div>
 	</div>
 </main>
+
+<OptionsModal {isOptionsModalOpen} onClose={closeOptionsModal} />

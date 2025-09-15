@@ -4,10 +4,10 @@
 	import RatingComponent from '$lib/components/metadata/RatingComponent.svelte';
 	import SdParamsSection from '$lib/components/metadata/SdParamsSection.svelte';
 	import XmpSection from '$lib/components/metadata/XmpSection.svelte';
-	import NavigationButton from '$lib/components/viewer/NavigationButton.svelte';
-	import SimpleToolbar from '$lib/components/viewer/Toolbar.svelte';
-	import UiWrapper from '$lib/components/viewer/UiWrapper.svelte';
 	import ImageViewer from '$lib/components/viewer/ImageViewer.svelte';
+	import NavigationButton from '$lib/components/viewer/NavigationButton.svelte';
+	import Toolbar from '$lib/components/viewer/Toolbar.svelte';
+	import UiWrapper from '$lib/components/viewer/UiWrapper.svelte';
 	import { imageCacheStore } from '$lib/services/image-cache-store';
 	import { createNavigationKeyboardHandler } from '$lib/services/keyboard-shortcut';
 	import type { MetadataStore } from '$lib/services/metadata-store';
@@ -109,7 +109,7 @@
 
 			<!-- Top toolbar -->
 			<UiWrapper positionClass="top-0 right-0 left-0">
-				<SimpleToolbar />
+				<Toolbar />
 			</UiWrapper>
 
 			<!-- Navigation button: left -->

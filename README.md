@@ -8,34 +8,33 @@ A desktop image viewer application built with Tauri v2, specifically designed fo
 
 ## Screenshots
 
-### Grid View
-
-![Grid View](images/sample-grid.png)
-
-_Browse images in thumbnail grid with rating system and SD tag filtering_
-
 ### Single Image View
 
 ![Single Image View](images/sample-single.png)
-
 _View images with detailed metadata including Stable Diffusion parameters_
+
+### Grid View
+
+🚧 Work in Progress 🚧
+
+![Grid View](images/sample-grid.png)
+_Browse images in thumbnail grid with rating system and SD tag filtering_
 
 ## Features
 
-- **Image Viewing**: Support for PNG, JPEG, and WebP formats
+- **Image Viewing**: Support for PNG format
 - **Stable Diffusion Metadata**: Extract and display SD parameters from generated images
-- **EXIF Support**: View basic EXIF information
-- **Rating System**: Rate images with star ratings (writes to both EXIF and XMP metadata)
-- **Thumbnail Grid**: Browse images in a grid layout
-- **Keyboard Navigation**: Navigate images with arrow keys
-- **SD Tag Filtering**: Filter images by Stable Diffusion tags
+- **Rating System**: Rate images with star ratings (writes to XMP metadata, not EXIF)
+- **Keyboard Navigation**: Navigate images with <kbd>←</kbd><kbd>→</kbd> keys, rate with <kbd>1</kbd>~<kbd>5</kbd>
+- ~~**Thumbnail Grid**: Browse images in a grid layout~~ 🚧 Work in Progress 🚧
+- ~~**SD Tag Filtering**: Filter images by Stable Diffusion tags~~ 🚧 Work in Progress 🚧
 - **Cross-Platform**: Works on macOS and Windows
 
 ## Technology Stack
 
-- **Frontend**: SvelteKit 5, TypeScript, Tailwind CSS 4, DaisyUI
-- **Backend**: Tauri v2 with Rust
-- **Build Tool**: Bun
+- **Application Build**: Tauri v2, Bun
+- **Frontend**: Svelte 5 (SvelteKit), TypeScript, Tailwind CSS 4, DaisyUI
+- **Backend**: Tauri v2 (Rust)
 
 ## Development
 
@@ -43,6 +42,7 @@ _View images with detailed metadata including Stable Diffusion parameters_
 
 - [Bun](https://bun.sh/) - JavaScript runtime and package manager
 - [Rust](https://rustup.rs/) - Required for Tauri backend
+- [Build Tools for Visual Studio](https://visualstudio.microsoft.com/downloads/?q=build+tools) - Windows only, required for XMP libraries
 
 ### Getting Started
 
@@ -83,18 +83,11 @@ bun run tauri:dev
 
 ## Image Format Support
 
-| Format   | Features                                                        |
-| -------- | --------------------------------------------------------------- |
-| **PNG**  | Full support: SD metadata, EXIF, EXIF+XMP Rating writing        |
-| **JPEG** | Limited support: EXIF, EXIF+XMP Rating writing (no SD metadata) |
-| **WebP** | Basic support: EXIF reading only                                |
-
-## Architecture
-
-- **SPA Architecture**: Single Page Application with SvelteKit
-- **Three View Modes**: Welcome → Grid → Viewer
-- **Unified Metadata Service**: Efficient metadata caching and management
-- **Performance Optimized**: Single I/O operations, image preloading, and caching
+| Format   | Features                                               |
+| -------- | ------------------------------------------------------ |
+| **PNG**  | Full support: SD metadata, XMP rating writing         |
+| **JPEG** | 🚧 Work in Progress 🚧                                 |
+| **WebP** | 🚧 Work in Progress 🚧                                 |
 
 ## License
 
@@ -103,3 +96,10 @@ MIT License - see [LICENSE](LICENSE) file for details.
 ## Contributing
 
 Issues and pull requests are welcome on [GitHub](https://github.com/tenpaMk2/tauri-sd-image-viewer2/issues).
+
+# TODO
+
+- Grid view support
+  - Focus on viewed image when returning from single view to grid view
+- Check and discard unnecessary thumbnails when directory is updated
+- JPEG and WebP support

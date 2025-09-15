@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { navigateToWelcome } from '$lib/services/app-navigation';
 	import IconButton from '$lib/components/ui/IconButton.svelte';
+	import { navigateToWelcome } from '$lib/services/app-navigation';
 	import type { PageData } from './$types';
 
 	const { data }: { data: PageData } = $props();
@@ -24,7 +24,7 @@
 	<!-- Main Content -->
 	<main class="flex flex-1 items-center justify-center p-8">
 		<div class="text-center">
-			<h2 class="mb-4 text-2xl font-bold text-base-content">Under Construction</h2>
+			<h2 class="mb-4 text-2xl font-bold text-base-content">🚧 Under Construction 🚧</h2>
 			<p class="text-base-content/70">Grid view is coming soon...</p>
 		</div>
 	</main>

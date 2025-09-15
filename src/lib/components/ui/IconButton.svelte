@@ -9,6 +9,7 @@
 		spinnerKind?: string;
 		onClick?: () => void;
 		extraClass?: string;
+		dangerous?: boolean;
 	};
 
 	const {
@@ -19,6 +20,7 @@
 		spinnerKind = '',
 		onClick,
 		extraClass = '',
+		dangerous = false,
 	}: Props = $props();
 
 	const CONFIG = {
@@ -28,10 +30,11 @@
 	};
 
 	const { btnSize, iconSize } = $derived(CONFIG[size]);
+	const btnVariant = $derived(dangerous ? 'btn-error' : 'btn-primary');
 </script>
 
 <button
-	class="btn btn-ghost btn-primary {btnSize} {extraClass}"
+	class="btn btn-ghost {btnVariant} {btnSize} {extraClass}"
 	class:btn-circle={circle}
 	onclick={onClick}
 	{title}

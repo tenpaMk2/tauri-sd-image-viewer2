@@ -2,9 +2,13 @@
 	import InfoRow from '$lib/components/metadata/InfoRow.svelte';
 	import { copyText } from '$lib/services/clipboard';
 	import type { MetadataStore } from '$lib/services/metadata-store';
-	import { formatSdTags } from '$lib/utils/image-utils';
+	import type { SdTag } from '$lib/types/shared-types';
 	import IconButton from '../ui/IconButton.svelte';
 	import BaseMetadataSection from './BaseMetadataSection.svelte';
+
+	const formatSdTags = (tags: SdTag[]): string => {
+		return tags.map((tag) => (tag.weight ? `(${tag.name}:${tag.weight})` : tag.name)).join(', ');
+	};
 </script>
 
 {#snippet promptSection(

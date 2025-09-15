@@ -1,13 +1,38 @@
 <script lang="ts">
 	import InfoRow from '$lib/components/metadata/InfoRow.svelte';
 	import type { MetadataStore } from '$lib/services/metadata-store';
-	import { formatTimestamp } from '$lib/utils/date-format';
-	import { formatFileSize } from '$lib/utils/file-size-format';
 	import { getContext } from 'svelte';
 	import BaseMetadataSection from './BaseMetadataSection.svelte';
 
 	const imagePath = $derived(getContext<() => string>('imagePath')());
 	const filename = $derived(imagePath.split('/').pop() || 'Unknown');
+
+	const formatFileSize = (bytes: number): string => {
+		const formatter = new Intl.NumberFormat(undefined, {
+			minimumFractionDigits: 0,
+			maximumFractionDigits: 0,
+		});
+
+		return `${formatter.format(bytes)} Byte`;
+	};
+
+	const formatTimestamp = (timestamp: number): string => {
+		const date = new Date(timestamp * 1000); // JavaScript Dateはミリ秒なので*1000
+
+		// Intl.DateTimeFormatでISO 8601形式（YYYY-MM-DD hh:mm:ss）
+		const formatter = new Intl.DateTimeFormat('ja-JP', {
+			year: 'numeric',
+			month: '2-digit',
+			day: '2-digit',
+			hour: '2-digit',
+			minute: '2-digit',
+			second: '2-digit',
+			hour12: false,
+		});
+
+		// ja-JPロケールは「/」区切りなので「-」に変換
+		return formatter.format(date).replace(/\//g, '-');
+	};
 </script>
 
 <BaseMetadataSection title="Basic Info">

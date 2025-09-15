@@ -1,14 +1,9 @@
 <script lang="ts">
 	import { asset } from '$app/paths';
-	import OptionsModal from '$lib/components/OptionsModal.svelte';
-	import IconButton from '$lib/components/ui/IconButton.svelte';
 	import IconTextButton from '$lib/components/ui/IconTextButton.svelte';
 	import { navigateToGrid, navigateToViewer } from '$lib/services/app-navigation';
 	import { dialogService } from '$lib/services/dialog';
 	import { app } from '@tauri-apps/api';
-
-	// オプションモーダル状態
-	let isOptionsModalOpen = $state(false);
 
 	// ファイル選択ハンドラー
 	const openFileDialog = async () => {
@@ -26,15 +21,6 @@
 		}
 	};
 
-	// オプションモーダル操作
-	const toggleOptionsModal = () => {
-		isOptionsModalOpen = !isOptionsModalOpen;
-	};
-
-	const closeOptionsModal = () => {
-		isOptionsModalOpen = false;
-	};
-
 	const versionPromise = app.getVersion();
 </script>
 
@@ -42,18 +28,7 @@
 	<title>Image Viewer</title>
 </svelte:head>
 
-<div class="hero min-h-screen bg-base-200">
-	<!-- Options button positioned at top-right -->
-	<div class="absolute top-4 right-4">
-		<IconButton
-			icon="settings"
-			title="Options"
-			size="medium"
-			onClick={toggleOptionsModal}
-			extraClass="btn-ghost"
-		/>
-	</div>
-
+<main class="hero min-h-screen bg-base-200">
 	<div class="hero-content flex-row">
 		<img src={asset('/icon.png')} alt="App Icon" class=" w-56 shadow-lg" />
 		<div>
@@ -81,7 +56,4 @@
 			</div>
 		</div>
 	</div>
-</div>
-
-<!-- Options Modal -->
-<OptionsModal {isOptionsModalOpen} onClose={closeOptionsModal} />
+</main>

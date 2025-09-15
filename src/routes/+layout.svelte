@@ -1,6 +1,8 @@
 <script lang="ts">
-	import { navigateToGrid, navigateToViewer } from '$lib/services/app-navigation';
+	import OptionsModal from '$lib/components/OptionsModal.svelte';
+	import IconButton from '$lib/components/ui/IconButton.svelte';
 	import Toast from '$lib/components/ui/Toast.svelte';
+	import { navigateToGrid, navigateToViewer } from '$lib/services/app-navigation';
 	import { dragAndDropService, type DragAndDropResult } from '$lib/services/drag-and-drop';
 	import { initializeLogger } from '$lib/services/logger';
 	import { onMount } from 'svelte';
@@ -41,10 +43,34 @@
 			unlistenDragDrop?.();
 		};
 	});
+
+	// オプションモーダル状態
+	let isOptionsModalOpen = $state(false);
+
+	// オプションモーダル操作
+	const openOptionsModal = () => {
+		isOptionsModalOpen = true;
+	};
+
+	const closeOptionsModal = () => {
+		isOptionsModalOpen = false;
+	};
 </script>
 
 <div class="h-screen min-h-screen">
+	<!-- Options button positioned at top-right -->
+	<div class="absolute top-4 right-4">
+		<IconButton
+			icon="settings"
+			title="Options"
+			size="medium"
+			onClick={openOptionsModal}
+			extraClass="btn-ghost"
+		/>
+	</div>
+
 	{@render children()}
 </div>
 
+<OptionsModal {isOptionsModalOpen} onClose={closeOptionsModal} />
 <Toast />

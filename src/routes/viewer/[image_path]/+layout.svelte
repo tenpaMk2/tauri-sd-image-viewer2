@@ -73,7 +73,18 @@
 
 	// Keyboard navigation
 	$effect(() => {
-		const navigationHandler = createNavigationKeyboardHandler({ navigation: navigationStore });
+		const navigationHandler = createNavigationKeyboardHandler({
+			navigateToNext: () => {
+				if (!navigating.complete) {
+					navigationStore.actions.navigateToNext();
+				}
+			},
+			navigateToPrevious: () => {
+				if (!navigating.complete) {
+					navigationStore.actions.navigateToPrevious();
+				}
+			},
+		});
 		navigationHandler.addEventListeners();
 
 		return () => {

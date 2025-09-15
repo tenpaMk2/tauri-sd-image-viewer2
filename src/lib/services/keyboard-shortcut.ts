@@ -1,7 +1,7 @@
-import type { NavigationStore } from './navigation-store';
 
 export type NavigationKeyboardOptions = {
-	navigation: NavigationStore;
+	navigateToNext: () => void;
+	navigateToPrevious: () => void;
 };
 
 export type RatingKeyboardOptions = {
@@ -9,7 +9,7 @@ export type RatingKeyboardOptions = {
 };
 
 export const createNavigationKeyboardHandler = (options: NavigationKeyboardOptions) => {
-	const { navigation } = options;
+	const { navigateToNext, navigateToPrevious } = options;
 
 	const handleKeyDown = (event: KeyboardEvent) => {
 		// Ignore if focus is on input elements
@@ -25,16 +25,12 @@ export const createNavigationKeyboardHandler = (options: NavigationKeyboardOptio
 
 		switch (event.key) {
 			case 'ArrowLeft':
-				if (navigation.state.previousImagePath) {
-					event.preventDefault();
-					navigation.actions.navigateToPrevious();
-				}
+				event.preventDefault();
+				navigateToPrevious();
 				break;
 			case 'ArrowRight':
-				if (navigation.state.nextImagePath) {
-					event.preventDefault();
-					navigation.actions.navigateToNext();
-				}
+				event.preventDefault();
+				navigateToNext();
 				break;
 		}
 	};

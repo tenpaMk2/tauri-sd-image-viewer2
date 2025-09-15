@@ -29,27 +29,27 @@
 	"devDependencies": {
 		"@sveltejs/adapter-auto": "^6.1.0",
 		"@sveltejs/adapter-static": "^3.0.9",
-		"@sveltejs/kit": "^2.37.0",
-		"@sveltejs/vite-plugin-svelte": "^6.1.3",
-		"@tailwindcss/vite": "^4.1.12",
-		"@tauri-apps/cli": "^2.8.3",
-		"daisyui": "^5.0.54",
+		"@sveltejs/kit": "^2.39.1",
+		"@sveltejs/vite-plugin-svelte": "^6.2.0",
+		"@tailwindcss/vite": "^4.1.13",
+		"@tauri-apps/cli": "^2.8.4",
+		"daisyui": "^5.1.12",
 		"prettier": "^3.6.2",
 		"prettier-plugin-svelte": "^3.4.0",
 		"prettier-plugin-tailwindcss": "^0.6.14",
-		"svelte": "^5.38.6",
+		"svelte": "^5.38.10",
 		"svelte-check": "^4.3.1",
-		"tailwindcss": "^4.1.12",
+		"tailwindcss": "^4.1.13",
 		"typescript": "^5.9.2",
-		"vite": "^7.1.3"
+		"vite": "^7.1.5"
 	},
 	"type": "module",
 	"dependencies": {
 		"@iconify/svelte": "^5.0.1",
 		"@tauri-apps/api": "^2.8.0",
-		"@tauri-apps/plugin-dialog": "^2.3.3",
+		"@tauri-apps/plugin-dialog": "^2.4.0",
 		"@tauri-apps/plugin-fs": "^2.4.2",
-		"@tauri-apps/plugin-log": "^2.6.0",
+		"@tauri-apps/plugin-log": "^2.7.0",
 		"@tauri-apps/plugin-os": "~2.3.1",
 		"paneforge": "^1.0.2"
 	}

@@ -1,10 +1,10 @@
 <script lang="ts">
-	import { navigateToGrid, navigateToViewer } from '$lib/services/app-navigation';
 	import { asset } from '$app/paths';
-	import { dialogService } from '$lib/services/dialog';
 	import OptionsModal from '$lib/components/OptionsModal.svelte';
 	import IconButton from '$lib/components/ui/IconButton.svelte';
-	import Icon from '@iconify/svelte';
+	import IconTextButton from '$lib/components/ui/IconTextButton.svelte';
+	import { navigateToGrid, navigateToViewer } from '$lib/services/app-navigation';
+	import { dialogService } from '$lib/services/dialog';
 	import { app } from '@tauri-apps/api';
 
 	// オプションモーダル状態
@@ -64,14 +64,20 @@
 			{/await}
 			<p class="my-6 text-base-content/70">Please select a file or folder</p>
 			<div class="flex gap-4">
-				<button class="btn btn-lg btn-primary" onclick={openFileDialog}>
-					<Icon icon="lucide:image-plus" class="mr-2 h-5 w-5" />
-					Open Image File
-				</button>
-				<button class="btn btn-lg btn-secondary" onclick={openDirectoryDialog}>
-					<Icon icon="lucide:folder" class="mr-2 h-5 w-5" />
-					Open Folder
-				</button>
+				<IconTextButton
+					text="Open Image File"
+					icon="image-plus"
+					size="large"
+					variant="primary"
+					onClick={openFileDialog}
+				/>
+				<IconTextButton
+					text="Open Folder"
+					icon="folder"
+					size="large"
+					variant="secondary"
+					onClick={openDirectoryDialog}
+				/>
 			</div>
 		</div>
 	</div>

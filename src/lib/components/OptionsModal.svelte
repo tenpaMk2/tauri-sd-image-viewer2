@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { invoke } from '@tauri-apps/api/core';
+	import IconTextButton from '$lib/components/ui/IconTextButton.svelte';
 	import { toastStore } from '$lib/services/toast-store.svelte';
-	import IconButton from '$lib/components/ui/IconButton.svelte';
+	import { invoke } from '@tauri-apps/api/core';
 
 	type Props = {
 		isOptionsModalOpen: boolean;
@@ -44,59 +44,60 @@
 
 {#if isOptionsModalOpen}
 	<div class="modal-open modal">
-		<div class="modal-box">
-			<h3 class="mb-4 text-lg font-bold">Options</h3>
+		<div class="modal-box w-11/12 max-w-3xl">
+			<h3 class="mb-6 text-xl font-bold">Options</h3>
 
-			<div class="space-y-4">
-				<div class="flex items-center justify-between">
-					<div>
-						<div class="font-medium">Clear Thumbnail Cache</div>
+			<div class="grid gap-6">
+				<div class="grid grid-cols-[1fr_auto] items-center gap-4">
+					<div class="space-y-1">
+						<div class="text-base font-medium">Clear Thumbnail Cache</div>
 						<div class="text-sm opacity-70">Remove all cached thumbnails to free up disk space</div>
 					</div>
-					<IconButton
+					<IconTextButton
+						text="Clear"
 						icon="image"
-						title="Clear thumbnail cache"
-						size="small"
+						size="medium"
+						variant="outline"
 						onClick={clearThumbnailCache}
-						extraClass="btn-outline"
 					/>
 				</div>
 
-				<div class="flex items-center justify-between">
-					<div>
-						<div class="font-medium">Clear Metadata Cache</div>
+				<div class="grid grid-cols-[1fr_auto] items-center gap-4">
+					<div class="space-y-1">
+						<div class="text-base font-medium">Clear Metadata Cache</div>
 						<div class="text-sm opacity-70">
 							Remove all cached metadata to refresh image information
 						</div>
 					</div>
-					<IconButton
+					<IconTextButton
+						text="Clear"
 						icon="database"
-						title="Clear metadata cache"
-						size="small"
+						size="medium"
+						variant="outline"
 						onClick={clearMetadataCache}
-						extraClass="btn-outline"
 					/>
 				</div>
 
-				<div class="divider"></div>
+				<div class="divider my-2"></div>
 
-				<div class="flex items-center justify-between">
-					<div>
-						<div class="font-medium">Clear All Caches</div>
+				<div class="grid grid-cols-[1fr_auto] items-center gap-4">
+					<div class="space-y-1">
+						<div class="text-base font-medium">Clear All Caches</div>
 						<div class="text-sm opacity-70">Remove both thumbnail and metadata caches</div>
 					</div>
-					<IconButton
+					<IconTextButton
+						text="Clear All"
 						icon="trash-2"
-						title="Clear all caches"
-						size="small"
+						size="medium"
+						variant="error"
+						extraClass="btn-outline"
 						onClick={clearAllCaches}
-						extraClass="btn-outline btn-warning"
 					/>
 				</div>
 			</div>
 
 			<div class="modal-action">
-				<button class="btn" onclick={onClose}>Close</button>
+				<IconTextButton text="Close" variant="ghost" onClick={onClose} />
 			</div>
 		</div>
 		<form method="dialog" class="modal-backdrop">

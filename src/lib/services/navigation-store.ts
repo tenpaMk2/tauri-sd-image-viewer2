@@ -16,11 +16,11 @@ export type NavigationState = {
 };
 
 export type NavigationActions = {
-	getLastImagePath: () => Promise<string | null>;
 	navigateToNext: () => void;
 	navigateToPrevious: () => void;
 	preloadNextImage: () => Promise<string | null>;
 	preloadPreviousImage: () => Promise<string | null>;
+	refreshAndNavigateToLatest: () => Promise<void>;
 };
 
 export type NavigationStore = {
@@ -63,7 +63,7 @@ export const createNavigationStore = async (imagePath: string): Promise<Navigati
 	const previousImagePath = imageFiles.at((currentIndex - 1) % imageFiles.length)!;
 	const nextImagePath = imageFiles.at((currentIndex + 1) % imageFiles.length)!;
 
-	const getLastImagePath = async (): Promise<string | null> => {
+	const refreshAndGetLastImagePath = async (): Promise<string | null> => {
 		const updatedImageFiles = await getDirectoryImages(directory);
 		return 0 < updatedImageFiles.length ? updatedImageFiles.at(-1)! : null;
 	};
@@ -108,6 +108,16 @@ export const createNavigationStore = async (imagePath: string): Promise<Navigati
 		}
 	};
 
+	const refreshAndNavigateToLatest = async (): Promise<void> => {
+		try {
+			const latestImagePath = await refreshAndGetLastImagePath();
+			if (!latestImagePath) return;
+			goto(`/viewer/${encodeURIComponent(latestImagePath)}`);
+		} catch (error) {
+			console.error('Failed to refresh and navigate to latest: ' + error);
+		}
+	};
+
 	return {
 		state: {
 			previousImagePath,
@@ -118,11 +128,11 @@ export const createNavigationStore = async (imagePath: string): Promise<Navigati
 			totalImages: imageFiles.length,
 		},
 		actions: {
-			getLastImagePath,
 			navigateToNext,
 			navigateToPrevious,
 			preloadNextImage,
 			preloadPreviousImage,
+			refreshAndNavigateToLatest,
 		},
 	};
 };

@@ -1,4 +1,3 @@
-import { goto } from '$app/navigation';
 import type { NavigationStore } from './navigation-store';
 
 type MutableAutoNavState = { isActive: boolean };
@@ -18,24 +17,14 @@ const start = (navigation: NavigationStore): void => {
 
 	_state.isActive = true;
 
-	const navigateToLastWithReloading = async () => {
-		try {
-			const lastImagePath = await navigation.actions.getLastImagePath();
-			if (!lastImagePath) return;
-			goto(`/viewer/${encodeURIComponent(lastImagePath)}`);
-		} catch (error) {
-			console.error('Auto navigation failed: ' + error);
-		}
-	};
-
 	// Navigate to latest image immediately
-	navigateToLastWithReloading().catch((error) =>
+	navigation.actions.refreshAndNavigateToLatest().catch((error) =>
 		console.error('Initial auto navigation failed: ' + error),
 	);
 
 	// Set up auto navigation interval (every 2 seconds)
 	autoNavTimer = setInterval(() => {
-		navigateToLastWithReloading().catch((error) =>
+		navigation.actions.refreshAndNavigateToLatest().catch((error) =>
 			console.error('Auto navigation interval failed: ' + error),
 		);
 	}, 2000);

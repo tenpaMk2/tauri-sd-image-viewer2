@@ -6,6 +6,10 @@ _[English🌐](README.md) | 日本語🇯🇵_
 
 Tauri v2で構築されたデスクトップ画像ビューアーアプリケーション。Stable Diffusionのメタデータ表示と管理に特化しています。
 
+## ダウンロード
+
+[Releasesページからどうぞ。](https://github.com/tenpaMk2/tauri-sd-image-viewer2/releases)
+
 ## スクリーンショット
 
 ### 単一画像表示
@@ -103,3 +107,6 @@ MIT License - 詳細は[LICENSE](LICENSE)ファイルを参照してください
   - シングル表示からグリッド表示へ戻ったときに見てた画像へのフォーカス
 - ディレクトリ更新時に不要サムネイルチェックと破棄。
 - JPEGとWebPサポート
+- FIXME: Lightモードへだとアイコンがみづらい
+- `l` (Last) で自動ナビゲーション開始
+- png crateの `fdeflate` によるサムネイル作成スピードお試し

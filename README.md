@@ -4,7 +4,11 @@
 
 _English🌐 | [日本語🇯🇵](README.ja.md)_
 
-A desktop image viewer application built with Tauri v2, specifically designed for viewing and managing images with Stable Diffusion metadata.
+A desktop image viewer application built with Tauri v2, specialized for viewing and managing images with Stable Diffusion metadata.
+
+## Download
+
+[See Releases page for downloads.](https://github.com/tenpaMk2/tauri-sd-image-viewer2/releases)
 
 ## Screenshots
 
@@ -22,10 +26,10 @@ _Browse images in thumbnail grid with rating system and SD tag filtering_
 
 ## Features
 
-- **Image Viewing**: Support for PNG format
+- **Image Viewing**: PNG format supported
 - **Stable Diffusion Metadata**: Extract and display SD parameters from generated images
 - **Rating System**: Rate images with star ratings (writes to XMP metadata, not EXIF)
-- **Keyboard Navigation**: Navigate images with <kbd>←</kbd><kbd>→</kbd> keys, rate with <kbd>1</kbd>~<kbd>5</kbd>
+- **Keyboard Navigation**: Use <kbd>←</kbd><kbd>→</kbd> keys to navigate images, <kbd>1</kbd>~<kbd>5</kbd> to rate
 - ~~**Thumbnail Grid**: Browse images in a grid layout~~ 🚧 Work in Progress 🚧
 - ~~**SD Tag Filtering**: Filter images by Stable Diffusion tags~~ 🚧 Work in Progress 🚧
 - **Cross-Platform**: Works on macOS and Windows
@@ -83,11 +87,11 @@ bun run tauri:dev
 
 ## Image Format Support
 
-| Format   | Features                                               |
-| -------- | ------------------------------------------------------ |
-| **PNG**  | Full support: SD metadata, XMP rating writing         |
-| **JPEG** | 🚧 Work in Progress 🚧                                 |
-| **WebP** | 🚧 Work in Progress 🚧                                 |
+| Format   | Features                                      |
+| -------- | --------------------------------------------- |
+| **PNG**  | Full support: SD metadata, XMP rating writing |
+| **JPEG** | 🚧 Work in Progress 🚧                        |
+| **WebP** | 🚧 Work in Progress 🚧                        |
 
 ## License
 
@@ -103,3 +107,6 @@ Issues and pull requests are welcome on [GitHub](https://github.com/tenpaMk2/tau
   - Focus on viewed image when returning from single view to grid view
 - Check and discard unnecessary thumbnails when directory is updated
 - JPEG and WebP support
+- FIXME: Icon is hard to see in Light mode
+- Start auto navigation with `l` (Last)
+- Try thumbnail creation speed with png crate's `fdeflate`

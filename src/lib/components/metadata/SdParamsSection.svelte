@@ -35,15 +35,6 @@
 {/snippet}
 
 <BaseMetadataSection title="Stable Diffusion">
-	{#snippet titleActions(metadataState: MetadataStore['state'])}
-		<IconButton
-			icon="copy"
-			title="Copy raw text"
-			size="small"
-			onClick={async () => await copyText(metadataState.sd_parameters?.raw || '')}
-		/>
-	{/snippet}
-
 	{#snippet metadataContent(metadataState: MetadataStore['state'])}
 		{@const sdParameters = metadataState?.sd_parameters}
 		<div class="space-y-2 text-xs">

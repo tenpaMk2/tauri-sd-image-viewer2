@@ -7,10 +7,9 @@
 	type Props = {
 		title: string;
 		metadataContent: Snippet<[MetadataStore['state']]>;
-		titleActions?: Snippet<[MetadataStore['state']]>;
 	};
 
-	const { title, metadataContent, titleActions }: Props = $props();
+	const { title, metadataContent }: Props = $props();
 
 	const metadataStorePromise = $derived(
 		getContext<() => Promise<MetadataStore>>('metadataStorePromise')(),
@@ -26,9 +25,6 @@
 <div class="rounded-lg bg-base-300 p-3">
 	<h3 class="mb-2 flex items-center gap-2 text-sm font-semibold">
 		{title}
-		{#if metadataStore && titleActions}
-			{@render titleActions(metadataStore.state)}
-		{/if}
 	</h3>
 	<div class="space-y-1.5 text-xs">
 		{#await metadataStorePromise}

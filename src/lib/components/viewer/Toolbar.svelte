@@ -99,7 +99,7 @@
 		/>
 	</div>
 
-	<div class="text-sm opacity-80">
+	<div class="text-sm">
 		{navigation.state.currentIndex + 1} / {navigation.state.totalImages}
 	</div>
 

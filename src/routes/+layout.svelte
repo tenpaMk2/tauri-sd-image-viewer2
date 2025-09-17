@@ -43,7 +43,7 @@
 	});
 </script>
 
-<div class="select-none h-screen min-h-screen">
+<div class="h-screen min-h-screen bg-base-200 select-none">
 	{@render children()}
 </div>
 

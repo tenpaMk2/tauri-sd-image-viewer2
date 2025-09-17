@@ -99,7 +99,7 @@
 </svelte:head>
 
 <PaneGroup direction="horizontal" role="application" aria-label="Image viewer">
-	<Pane defaultSize={75}>
+	<Pane defaultSize={75} data-theme="dark">
 		<div class="relative h-full">
 			<main>
 				<ImageViewer imageUrl={url} {imagePath} />
@@ -137,7 +137,7 @@
 			{/if}
 		</div>
 	</Pane>
-	<PaneResizer class="w-2 bg-blue-400/20 transition-colors hover:bg-primary" />
+	<PaneResizer class="w-2 bg-blue-400/20 transition-colors hover:bg-primary" data-theme="dark" />
 	<Pane defaultSize={25} maxSize={50} minSize={15} collapsible={true}>
 		<aside class="h-full space-y-4 overflow-y-auto bg-base-200 p-4 select-text">
 			<BasicInfoSection />

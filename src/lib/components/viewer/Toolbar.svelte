@@ -11,6 +11,7 @@
 	import type { NavigationStore } from '$lib/services/navigation-store';
 	import { toastStore } from '$lib/services/toast-store.svelte';
 	import * as fs from '@tauri-apps/plugin-fs';
+	import { platform } from '@tauri-apps/plugin-os';
 	import { getContext } from 'svelte';
 
 	const navigation = $derived(getContext<() => NavigationStore>('navigationStore')());
@@ -105,11 +106,13 @@
 	<div class="flex gap-2">
 		<IconButton icon="file-image" title="Open File" onClick={openFileDialog} />
 		<IconButton icon="folder-open" title="Open Another Folder" onClick={openDirectoryDialog} />
-		<IconButton
-			icon="clipboard-copy"
-			title="Copy image files to clipboard"
-			onClick={handleCopyToClipboard}
-		/>
+		{#if platform() === 'macos' || platform() === 'windows'}
+			<IconButton
+				icon="clipboard-copy"
+				title="Copy image files to clipboard"
+				onClick={handleCopyToClipboard}
+			/>
+		{/if}
 		<IconButton
 			icon="skip-forward"
 			title={autoNavStore.state.isActive

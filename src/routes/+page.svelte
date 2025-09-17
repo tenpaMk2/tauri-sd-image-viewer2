@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { asset } from '$app/paths';
-	import OptionsModal from '$lib/components/OptionsModal.svelte';
 	import IconButton from '$lib/components/ui/IconButton.svelte';
 	import IconTextButton from '$lib/components/ui/IconTextButton.svelte';
+	import OptionsModal from '$lib/components/welcome/OptionsModal.svelte';
 	import { navigateToGrid, navigateToViewer } from '$lib/services/app-navigation';
 	import { dialogService } from '$lib/services/dialog';
 	import { app } from '@tauri-apps/api';

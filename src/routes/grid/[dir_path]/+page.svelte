@@ -1,13 +1,16 @@
 <script lang="ts">
 	import LoadingState from '$lib/components/ui/LoadingState.svelte';
 	import { navigateToViewer } from '$lib/services/app-navigation';
-	import { thumbnailQueue } from '$lib/stores/thumbnail-store.svelte';
 	import { getContext } from 'svelte';
 	import type { GridPageData } from './+page';
 
-	// Context から データを取得
-	const imagePaths = getContext<() => string[]>('imagePaths')();
-	const thumbnailStores = getContext<() => GridPageData['thumbnailStores']>('thumbnailStores')();
+	const imagePaths = $derived(getContext<() => string[]>('imagePaths')());
+	const thumbnailStores = $derived(
+		getContext<() => GridPageData['thumbnailStores']>('thumbnailStores')(),
+	);
+	const thumbnailQueue = $derived(
+		getContext<() => GridPageData['thumbnailQueue']>('thumbnailQueue')(),
+	);
 
 	const handleImageClick = (imagePath: string): void => {
 		navigateToViewer(imagePath);

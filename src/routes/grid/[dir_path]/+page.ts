@@ -1,10 +1,11 @@
 import { getDirectoryImages } from '$lib/services/image-directory-service';
 import {
+	createThumbnailQueue,
 	createThumbnailStore,
-	thumbnailQueue,
 	type ThumbnailStore,
 } from '$lib/stores/thumbnail-store.svelte';
 import { path } from '@tauri-apps/api';
+import type PQueue from 'p-queue';
 import type { QueueAddOptions } from 'p-queue';
 import type { PageLoad } from './$types';
 
@@ -13,6 +14,7 @@ export type GridPageData = {
 	dirPath: string;
 	imagePaths: string[];
 	thumbnailStores: Map<string, ThumbnailStore>;
+	thumbnailQueue: PQueue;
 };
 
 export const load: PageLoad = async ({ params }): Promise<GridPageData> => {
@@ -28,6 +30,9 @@ export const load: PageLoad = async ({ params }): Promise<GridPageData> => {
 			thumbnailStores.set(imagePath, createThumbnailStore(imagePath));
 		}
 
+		// サムネイル専用キューインスタンスを作成
+		const thumbnailQueue = createThumbnailQueue();
+
 		// 全サムネイルをp-queueに一括enqueue（AbortSignal対応）
 		const thumbnailTasks = Array.from(thumbnailStores.values()).map(
 			(store) => (options: QueueAddOptions) => store.actions.load(options.signal),
@@ -42,6 +47,7 @@ export const load: PageLoad = async ({ params }): Promise<GridPageData> => {
 			dirPath,
 			imagePaths,
 			thumbnailStores,
+			thumbnailQueue,
 		};
 	} catch (error) {
 		console.error('Failed to load grid page: ' + error);
@@ -52,6 +58,7 @@ export const load: PageLoad = async ({ params }): Promise<GridPageData> => {
 			dirPath,
 			imagePaths: [],
 			thumbnailStores: new Map(),
+			thumbnailQueue: createThumbnailQueue(),
 		};
 	}
 };

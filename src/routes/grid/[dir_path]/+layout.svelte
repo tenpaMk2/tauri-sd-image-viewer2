@@ -7,12 +7,15 @@
 
 	const { children }: LayoutProps = $props();
 
-	const { title, dirPath, imagePaths, thumbnailStores } = $derived(page.data as GridPageData);
+	const { title, dirPath, imagePaths, thumbnailStores, thumbnailQueue } = $derived(
+		page.data as GridPageData,
+	);
 
 	// Context for child components
 	setContext<() => string>('dirPath', () => dirPath);
 	setContext<() => string[]>('imagePaths', () => imagePaths);
 	setContext<() => GridPageData['thumbnailStores']>('thumbnailStores', () => thumbnailStores);
+	setContext<() => GridPageData['thumbnailQueue']>('thumbnailQueue', () => thumbnailQueue);
 </script>
 
 <svelte:head>
@@ -21,7 +24,7 @@
 
 <div class="flex h-full flex-col bg-base-100">
 	<!-- Header -->
-	<Toolbar title={title} imageCount={imagePaths.length} />
+	<Toolbar {title} imageCount={imagePaths.length} />
 
 	<!-- Main Content -->
 	<main class="flex-1 overflow-auto">

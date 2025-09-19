@@ -2,8 +2,12 @@ import { path } from '@tauri-apps/api';
 import { Channel, invoke } from '@tauri-apps/api/core';
 import PQueue from 'p-queue';
 
-// サムネイル専用キューインスタンス（同時実行数10に制限）
-export const thumbnailQueue = new PQueue({ concurrency: 10 });
+/**
+ * サムネイル専用キューインスタンスを作成（同時実行数10に制限）
+ */
+export const createThumbnailQueue = (): PQueue => {
+	return new PQueue({ concurrency: 10 });
+};
 
 /**
  * サムネイルロード状態

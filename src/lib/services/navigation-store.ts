@@ -28,7 +28,6 @@ export type NavigationStore = {
 	actions: NavigationActions;
 };
 
-
 export const createNavigationStore = async (imagePath: string): Promise<NavigationStore> => {
 	const directory = await path.dirname(imagePath);
 	const imageFiles = await getDirectoryImages(directory);
@@ -98,9 +97,8 @@ export const createNavigationStore = async (imagePath: string): Promise<Navigati
 
 	const navigateToParentGrid = async (): Promise<void> => {
 		try {
-			const parentDirectory = await path.dirname(directory);
-			if (!parentDirectory) return;
-			navigateToGrid(parentDirectory);
+			if (!directory) return;
+			navigateToGrid(directory);
 		} catch (error) {
 			console.error('Failed to navigate to parent grid: ' + error);
 		}

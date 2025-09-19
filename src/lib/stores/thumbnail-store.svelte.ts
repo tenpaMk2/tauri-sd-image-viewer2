@@ -1,25 +1,26 @@
-import { thumbnailQueue } from '$lib/services/thumbnail-queue';
+import { path } from '@tauri-apps/api';
 import { Channel, invoke } from '@tauri-apps/api/core';
+import PQueue from 'p-queue';
+
+// サムネイル専用キューインスタンス（同時実行数10に制限）
+export const thumbnailQueue = new PQueue({ concurrency: 10 });
 
 /**
  * サムネイルロード状態
  */
-type LoadingStatus = 'unloaded' | 'queued' | 'loading' | 'loaded' | 'error';
+type LoadingStatus = 'queued' | 'loading' | 'loaded' | 'error';
 
 type MutableThumbnailState = {
 	thumbnailUrl: string | undefined;
 	loadingStatus: LoadingStatus;
 	loadError: string | undefined;
-	// 内部管理用（外部からは触らない）
-	_isDestroyed: boolean;
 };
 
 export type ThumbnailState = Readonly<MutableThumbnailState>;
 
 export type ThumbnailActions = {
-	_load: () => Promise<void>;
-	ensureLoaded: () => Promise<void>;
-	destroy: () => void; // メモリリーク防止用
+	load: (abortSignal?: AbortSignal) => Promise<void>;
+	destroy: () => void;
 };
 
 export type ThumbnailStore = {
@@ -33,108 +34,50 @@ export type ThumbnailStore = {
 export const createThumbnailStore = (imagePath: string): ThumbnailStore => {
 	const state = $state<MutableThumbnailState>({
 		thumbnailUrl: undefined,
-		loadingStatus: 'unloaded',
+		loadingStatus: 'queued',
 		loadError: undefined,
-		_isDestroyed: false,
 	});
 
 	const actions: ThumbnailActions = {
-		ensureLoaded: async (): Promise<void> => {
-			// 破棄済みチェック
-			if (state._isDestroyed) {
-				throw new Error('Store is destroyed');
+		load: async (abortSignal?: AbortSignal): Promise<void> => {
+			if (abortSignal?.aborted) {
+				throw new Error('Aborted');
 			}
 
-			// 既にロード済みの場合は何もしない
-			if (state.loadingStatus === 'loaded') {
-				return;
-			}
-
-			// キュー済み、ロード中の場合は完了まで待機
-			if (state.loadingStatus === 'queued' || state.loadingStatus === 'loading') {
-				// ロード完了まで待機
-				await new Promise<void>((resolve, reject) => {
-					const checkStatus = () => {
-						if (state._isDestroyed) {
-							reject(new Error('Store is destroyed'));
-							return;
-						}
-						if (state.loadingStatus === 'loaded') {
-							resolve();
-							return;
-						}
-						if (state.loadingStatus === 'error') {
-							reject(new Error(state.loadError || 'Loading failed'));
-							return;
-						}
-						// まだロード中の場合は少し待ってから再チェック
-						setTimeout(checkStatus, 10);
-					};
-					checkStatus();
-				});
-				return;
-			}
-
-			// 状態を'queued'に変更
-			state.loadingStatus = 'queued';
-
-			// キューサービス経由でロード処理を開始
 			try {
-				await thumbnailQueue.enqueue(imagePath, () => actions._load(), { debugLabel: 'thumbnail' });
-			} catch (error) {
-				// エラー時も破棄済みでなければ状態更新
-				if (!state._isDestroyed) {
-					state.loadingStatus = 'error';
-					state.loadError = error instanceof Error ? error.message : String(error);
-				}
-				throw error;
-			}
-		},
-
-		_load: async (): Promise<void> => {
-			try {
-				// 破棄済みチェック
-				if (state._isDestroyed) {
-					throw new Error('Aborted');
-				}
-
-				// ロード開始時に状態を'loading'に変更
 				state.loadingStatus = 'loading';
-				console.log('🔄 Loading thumbnail: ' + imagePath.split('/').pop());
+				console.log(`🔄 Loading thumbnail: ${await path.basename(imagePath)}`);
 
 				const channel = new Channel<Uint8Array>();
 
 				// onmessageをPromise化
 				const thumbnailPromise = new Promise<void>((resolve, reject) => {
 					channel.onmessage = (data) => {
-						// 破棄済みチェック
-						if (state._isDestroyed) {
-							reject(new Error('Thumbnail generation aborted'));
+						console.log(
+							`Thumbnail data received: ${imagePath}, data size: ${data?.length ?? 'undefined'}`,
+						);
+
+						// AbortSignalチェック（URL.createObjectURL前）
+						if (abortSignal?.aborted) {
+							console.log(`🛑 Thumbnail generation aborted after completion: ${imagePath}`);
+							reject(new Error('Aborted'));
 							return;
 						}
 
-						console.log(
-							'Thumbnail data received: ' +
-								imagePath +
-								' data size: ' +
-								(data?.length || 'undefined'),
-						);
 						try {
 							const blob = new Blob([new Uint8Array(data)], { type: 'image/webp' });
 							const thumbnailUrl = URL.createObjectURL(blob);
 
-							console.log(
-								'Thumbnail generated successfully: ' + imagePath + ' URL: ' + thumbnailUrl,
-							);
+							console.log(`Thumbnail generated successfully: ${imagePath}, URL: ${thumbnailUrl}`);
 
 							// リアクティブ状態を更新
 							state.thumbnailUrl = thumbnailUrl;
 							state.loadError = undefined;
 							state.loadingStatus = 'loaded';
-							resolve(); // データ受信完了時にPromise解決
+							resolve();
 						} catch (error) {
 							console.error('Thumbnail data processing failed: ' + imagePath + ' ' + error);
-							if (!state._isDestroyed) {
+							if (!abortSignal?.aborted) {
 								state.loadError = 'Failed to process thumbnail data';
 								state.loadingStatus = 'error';
 							}
@@ -143,46 +86,43 @@ export const createThumbnailStore = (imagePath: string): ThumbnailStore => {
 					};
 				});
 
-				// 破棄済みチェック
-				if (state._isDestroyed) {
-					throw new Error('Aborted');
+				// AbortSignal監視
+				if (abortSignal) {
+					abortSignal.addEventListener('abort', () => {
+						console.log('🛑 Thumbnail loading aborted: ' + imagePath.split('/').pop());
+					});
 				}
 
-				// invokeは非同期で開始（awaitしない）
+				// invokeは非同期で開始（Rust側は中断不可）
 				invoke('generate_thumbnail_async', {
 					imagePath: imagePath,
 					config: null,
 					channel,
 				}).catch((error) => {
-					// invokeのエラーだけキャッチ
-					if (!state._isDestroyed) {
+					if (!abortSignal?.aborted) {
 						state.loadingStatus = 'error';
 						state.loadError = error instanceof Error ? error.message : String(error);
 					}
 				});
 
-				// onmessageのPromiseだけをawait
+				// onmessageのPromiseを待機
 				await thumbnailPromise;
 
 				console.log('✅ Thumbnail loaded: ' + imagePath.split('/').pop());
 			} catch (error) {
-				// エラー時も破棄済みチェック
-				if (state._isDestroyed) {
-					return; // 破棄済みなら状態更新しない
+				if (abortSignal?.aborted) {
+					console.log('🛑 Thumbnail loading was aborted: ' + imagePath.split('/').pop());
+					// Abort時は状態を更新しない
+				} else {
+					state.loadingStatus = 'error';
+					console.error('❌ Thumbnail load failed: ' + imagePath.split('/').pop() + ' ' + error);
+					state.loadError = error instanceof Error ? error.message : String(error);
 				}
-
-				// エラー時の状態変更
-				state.loadingStatus = 'error';
-				console.error('❌ Thumbnail load failed: ' + imagePath.split('/').pop() + ' ' + error);
-				state.loadError = error instanceof Error ? error.message : String(error);
-				throw error; // エラーを再スロー
+				throw error;
 			}
 		},
 
 		destroy: (): void => {
-			// 破棄フラグを設定（以降の操作を無効化）
-			state._isDestroyed = true;
-
 			// BlobURLを解放
 			if (state.thumbnailUrl) {
 				try {
@@ -194,7 +134,7 @@ export const createThumbnailStore = (imagePath: string): ThumbnailStore => {
 
 			// 状態をクリア
 			state.thumbnailUrl = undefined;
-			state.loadingStatus = 'unloaded';
+			state.loadingStatus = 'queued';
 			state.loadError = undefined;
 		},
 	};

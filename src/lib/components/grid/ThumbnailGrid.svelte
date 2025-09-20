@@ -1,29 +1,12 @@
-<script module lang="ts">
-	export const SELECTION_STATE = Symbol('selectionState');
-	export type SelectionState = {
-		selectedImagePaths: SvelteSet<string>;
-		lastSelectedIndex: number | null;
-	};
-</script>
-
 <script lang="ts">
 	import type { GridPageData } from '$lib/../routes/grid/[dir_path]/+page';
-	import { getContext, setContext } from 'svelte';
-	import { SvelteSet } from 'svelte/reactivity';
+	import { getContext } from 'svelte';
 	import ThumbnailCard from './ThumbnailCard.svelte';
 
 	const imagePaths = $derived(getContext<() => string[]>('imagePaths')());
 	const thumbnailStores = $derived(
 		getContext<() => GridPageData['thumbnailStores']>('thumbnailStores')(),
 	);
-
-	let selectionState: SelectionState = $state({
-		selectedImagePaths: new SvelteSet<string>(),
-		lastSelectedIndex: null as number | null,
-	});
-
-	// Context for child components - 選択状態を提供
-	setContext<() => typeof selectionState>(SELECTION_STATE, () => selectionState);
 </script>
 
 {#if imagePaths.length === 0}

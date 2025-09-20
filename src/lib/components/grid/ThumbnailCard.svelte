@@ -1,9 +1,9 @@
 <script lang="ts">
 	import type { ThumbnailStore } from '$lib/components/grid/thumbnail-store.svelte';
-	import Thumbnail from './Thumbnail.svelte';
 	import { navigateToViewer } from '$lib/services/app-navigation';
 	import { getContext } from 'svelte';
-	import { SELECTION_STATE, type SelectionState } from './ThumbnailGrid.svelte';
+	import Thumbnail from './Thumbnail.svelte';
+	import { SELECTION_STATE, type SelectionState } from './selection';
 
 	type Props = {
 		imagePath: string;

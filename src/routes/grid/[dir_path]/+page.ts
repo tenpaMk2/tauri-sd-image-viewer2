@@ -1,9 +1,9 @@
-import { getDirectoryImages } from '$lib/services/image-directory-service';
 import {
 	createThumbnailQueue,
 	createThumbnailStore,
 	type ThumbnailStore,
-} from '$lib/services/thumbnail-store.svelte';
+} from '$lib/components/grid/thumbnail-store.svelte';
+import { getDirectoryImages } from '$lib/services/image-directory-service';
 import { path } from '@tauri-apps/api';
 import type PQueue from 'p-queue';
 import type { QueueAddOptions } from 'p-queue';

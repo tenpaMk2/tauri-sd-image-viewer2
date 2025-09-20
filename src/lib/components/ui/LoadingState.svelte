@@ -28,11 +28,11 @@
 	</div>
 {:else if variant === 'big'}
 	<!-- ページ遷移用の大きなレイアウト -->
-	<div class="flex flex-col items-center justify-center py-8">
+	<div class="flex flex-col items-center justify-center gap-2">
 		{#if config.icon}
-			<Icon icon="lucide:{config.icon}" class="mb-4 text-6xl" />
+			<Icon icon="lucide:{config.icon}" class="text-6xl" />
 		{:else if config.loadingIcon}
-			<span class="loading mb-4 loading-xl {config.loadingIcon}"></span>
+			<span class="loading loading-xl {config.loadingIcon}"></span>
 		{/if}
 		<div class="text-lg">
 			{config.text}
@@ -40,11 +40,11 @@
 	</div>
 {:else}
 	<!-- デフォルトレイアウト -->
-	<div class="flex flex-col items-center justify-center py-4">
+	<div class="flex flex-col items-center justify-center gap-2">
 		{#if config.icon}
-			<Icon icon="lucide:{config.icon}" class="mb-1 text-xl" />
+			<Icon icon="lucide:{config.icon}" class="text-xl" />
 		{:else if config.loadingIcon}
-			<span class="loading mb-2 loading-sm {config.loadingIcon}"></span>
+			<span class="loading loading-sm {config.loadingIcon}"></span>
 		{/if}
 		<div class="text-xs">
 			{config.text}

@@ -112,7 +112,7 @@ export const createThumbnailStore = (imagePath: string): ThumbnailStore => {
 				// onmessageのPromiseを待機
 				await thumbnailPromise;
 
-				console.log('✅ Thumbnail loaded: ' + imagePath.split('/').pop());
+				console.log('✅ Thumbnail loaded: ' + (await path.basename(imagePath)));
 			} catch (error) {
 				if (abortSignal?.aborted) {
 					console.log('🛑 Thumbnail loading was aborted: ' + imagePath.split('/').pop());

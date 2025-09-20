@@ -54,7 +54,7 @@ export const load: PageLoad = async ({ params }): Promise<GridPageData> => {
 
 		// エラー時は空の配列を返す
 		return {
-			title: `Grid View - ${dirPath.split('/').pop() || 'Root'} (Error)`,
+			title: `Grid View - ${(await path.basename(dirPath)) || 'Root'} (Error)`,
 			dirPath,
 			imagePaths: [],
 			thumbnailStores: new Map(),

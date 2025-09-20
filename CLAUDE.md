@@ -38,20 +38,11 @@ Stable Diffusionの生成メタデータを表示可能。
 src/
 ├── lib/
 │   ├── components/         # Svelteコンポーネント
-│   ├── hooks/              # カスタムフック
-│   ├── image/              # 画像処理関連
 │   ├── services/           # ビジネスロジック
-│   ├── stores/             # グローバル状態管理
-│   ├── types/              # 型定義
-│   ├── ui/                 # UI関連
-│   ├── utils/              # ユーティリティ関数
-│   └── *.svelte
+│   └── types/              # Rustとの共通型定義
 ├── routes/                 # SvelteKitルーティング
-│   ├── +layout.svelte
-│   ├── +layout.ts
-│   └── +page.svelte
-├── app.css                # グローバルスタイル
-└── app.html               # HTMLテンプレート
+├── app.css                 # グローバルスタイル
+└── app.html                # HTMLテンプレート
 
 src-tauri/src/
 ├── metadata_api/               # メタデータ処理API
@@ -129,14 +120,11 @@ src-tauri/src/
   - 状態が必要なもののみ `class` を使い、それ以外はアロー関数を使う。
   - `interface` は使わず、 `type` を使う。
   - なるべくDaisyUIのクラスを有効利用する。
+    - モーダルは `<dialog>` を使う。
   - **ユーザー向けUI表示は全て英語で統一する。**
   - **コンソールログ（console.log, console.error等）も英語で統一する**
-  - `console.debug` , `console.log` , `console.warn` , `console.error` は文字列結合して第１引数のみを使う。
-    - 第２引数は使えない。Rust側にログを転送する制限上そうなっている。
   - `invoke` でRustのAPIをコールするときは引数をlowerCamelCaseにする。
-  - **Props vs Store使い分けルール:**
-    - **Props使用**: 単純データ（文字列、数値、boolean）、親コンポーネントから渡されるイベントハンドラー、コンポーネント間の直接的な依存関係
-    - **Store使用**: アプリケーション全体で共有される状態、複雑なビジネスロジックを含む処理、非同期処理が必要な操作
+  - Contextを最大限活用する。アプリ全体で管理が必要なもののみグローバルストアで管理する。
 - バックエンド（Rust）
   - 型チェックは `cargo check` でやる（src-tauriディレクトリで実行）
 - Git

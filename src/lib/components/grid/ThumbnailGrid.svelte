@@ -1,12 +1,44 @@
 <script lang="ts">
 	import type { GridPageData } from '$lib/../routes/grid/[dir_path]/+page';
-	import { getContext } from 'svelte';
+	import { lastViewedImageStore } from '$lib/components/app/last-viewed-image-store.svelte';
+	import { getContext, onMount } from 'svelte';
 	import ThumbnailCard from './ThumbnailCard.svelte';
 
 	const imagePaths = $derived(getContext<() => string[]>('imagePaths')());
 	const thumbnailStores = $derived(
 		getContext<() => GridPageData['thumbnailStores']>('thumbnailStores')(),
 	);
+	const dirPath = $derived(getContext<() => string>('dirPath')());
+
+	let gridContainer = $state<HTMLDivElement | null>(null);
+
+	const scrollToImage = (imagePath: string) => {
+		if (!gridContainer) return;
+
+		const targetIndex = imagePaths.indexOf(imagePath);
+		if (targetIndex === -1) return;
+
+		const thumbnailCards = gridContainer.querySelectorAll('[data-image-path]');
+		const targetCard = thumbnailCards[targetIndex] as HTMLElement;
+		if (!targetCard) return;
+
+		targetCard.scrollIntoView({
+			behavior: 'smooth',
+			block: 'center',
+		});
+		console.log('Scrolled to last viewed image:', imagePath);
+	};
+
+	onMount(() => {
+		const lastViewedImagePath = lastViewedImageStore.actions.getLastViewedImageInDirectory(dirPath);
+
+		// Always clear the state when grid is mounted
+		lastViewedImageStore.actions.clear();
+
+		if (!lastViewedImagePath) return;
+
+		scrollToImage(lastViewedImagePath);
+	});
 </script>
 
 {#if imagePaths.length === 0}
@@ -18,7 +50,10 @@
 		</div>
 	</div>
 {:else}
-	<div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8">
+	<div
+		bind:this={gridContainer}
+		class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8"
+	>
 		{#each imagePaths as imagePath (imagePath)}
 			{@const thumbnailStore = thumbnailStores.get(imagePath)!}
 			<ThumbnailCard {imagePath} {thumbnailStore} />

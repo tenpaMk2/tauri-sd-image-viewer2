@@ -78,6 +78,7 @@
 			? 'shadow-xl ring-2 ring-primary hover:ring-4 hover:ring-primary hover:ring-offset-2 hover:ring-offset-base-100'
 			: 'hover:shadow-lg hover:ring-2 hover:ring-primary hover:ring-offset-2 hover:ring-offset-base-100',
 	]}
+	data-image-path={imagePath}
 	onclick={handleImageClick}
 	ondblclick={() => navigateToViewer(imagePath)}
 	title={imagePath.split('/').pop()}

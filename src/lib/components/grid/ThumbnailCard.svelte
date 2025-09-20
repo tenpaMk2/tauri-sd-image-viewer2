@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { ThumbnailStore } from '$lib/components/grid/thumbnail-store.svelte';
-	import LoadingState from '$lib/components/ui/LoadingState.svelte';
+	import Thumbnail from './Thumbnail.svelte';
 	import { navigateToViewer } from '$lib/services/app-navigation';
 	import { getContext } from 'svelte';
 	import { SELECTION_STATE, type SelectionState } from './ThumbnailGrid.svelte';
@@ -11,8 +11,6 @@
 	};
 
 	let { imagePath, thumbnailStore }: Props = $props();
-
-	const thumbnailState = $derived(thumbnailStore.state);
 	const imagePaths = $derived(getContext<() => string[]>('imagePaths')());
 	const selectionState = $derived(getContext<() => SelectionState>(SELECTION_STATE)());
 
@@ -84,16 +82,5 @@
 	ondblclick={() => navigateToViewer(imagePath)}
 	title={imagePath.split('/').pop()}
 >
-	{#if thumbnailState.loadingStatus === 'loaded'}
-		<img
-			src={thumbnailState.thumbnailUrl}
-			alt="thumbnail"
-			class="h-full w-full object-contain transition-transform group-hover:scale-105"
-			loading="lazy"
-		/>
-	{:else}
-		<div class="flex h-full items-center justify-center">
-			<LoadingState status={thumbnailState.loadingStatus} />
-		</div>
-	{/if}
+	<Thumbnail {thumbnailStore} {imagePath} />
 </button>

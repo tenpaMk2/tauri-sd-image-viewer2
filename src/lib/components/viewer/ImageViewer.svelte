@@ -20,9 +20,6 @@
 		isZooming: boolean;
 	};
 
-	// 画像ビューの状態型定義（読み取り専用）
-	type ImageViewState = Readonly<MutableImageViewState>;
-
 	// 初期状態
 	const INITIAL_IMAGE_VIEW_STATE: MutableImageViewState = {
 		zoomLevel: 1,
@@ -37,7 +34,9 @@
 	const imageViewState = $state<MutableImageViewState>({ ...INITIAL_IMAGE_VIEW_STATE });
 
 	// ズーム状態が変更されたかどうかを判定
-	const isZoomed = $derived(1 < imageViewState.zoomLevel || imageViewState.panX !== 0 || imageViewState.panY !== 0);
+	const isZoomed = $derived(
+		1 < imageViewState.zoomLevel || imageViewState.panX !== 0 || imageViewState.panY !== 0,
+	);
 
 	const imageViewActions = {
 		// 状態リセット
@@ -67,7 +66,66 @@
 			imageViewState.isZooming = false;
 		},
 
-		// ズーム操作
+		// ズーム操作（マウス位置基準）
+		zoomAtPoint(
+			deltaY: number,
+			mouseX: number,
+			mouseY: number,
+			containerWidth: number,
+			containerHeight: number,
+			zoomFactor: number = 0.1,
+			minZoom: number = 1,
+			maxZoom: number = 5,
+		): void {
+			// ズーミング状態を開始
+			imageViewState.isZooming = true;
+
+			const oldZoomLevel = imageViewState.zoomLevel;
+			let newZoomLevel: number;
+
+			if (deltaY < 0) {
+				// 拡大
+				newZoomLevel = Math.min(oldZoomLevel + zoomFactor, maxZoom);
+			} else {
+				// 縮小
+				newZoomLevel = Math.max(oldZoomLevel - zoomFactor, minZoom);
+			}
+
+			// ズームレベルが変わらない場合は何もしない
+			if (newZoomLevel === oldZoomLevel) {
+				imageViewState.isZooming = false;
+				return;
+			}
+
+			// マウス位置を基準にしたズーム調整
+			if (newZoomLevel > 1) {
+				// コンテナの中心からマウス位置への相対位置
+				const centerX = containerWidth / 2;
+				const centerY = containerHeight / 2;
+				const offsetX = mouseX - centerX;
+				const offsetY = mouseY - centerY;
+
+				// ズーム比率
+				const zoomRatio = newZoomLevel / oldZoomLevel;
+
+				// パン位置を調整してマウス位置でズームするように
+				imageViewState.panX = imageViewState.panX * zoomRatio - offsetX * (zoomRatio - 1);
+				imageViewState.panY = imageViewState.panY * zoomRatio - offsetY * (zoomRatio - 1);
+			} else {
+				// ズームレベルが1以下になった時はパン位置をリセット
+				imageViewState.panX = 0;
+				imageViewState.panY = 0;
+			}
+
+			imageViewState.zoomLevel = newZoomLevel;
+
+			// 次フレームでズーミング状態を終了（トランジション開始後）
+			requestAnimationFrame(() => {
+				imageViewState.isZooming = false;
+			});
+		},
+
+		// ズーム操作（中央基準、後方互換性のため残す）
 		zoom(deltaY: number, zoomFactor: number = 0.1, minZoom: number = 1, maxZoom: number = 5): void {
 			// ズーミング状態を開始
 			imageViewState.isZooming = true;
@@ -179,17 +237,23 @@
 	{onmouseup}
 	onmouseleave={onmouseup}
 >
-	<div
-		class="flex h-full w-full items-center justify-center"
-		class:transition-transform={shouldShowTransition}
-		class:duration-200={shouldShowTransition}
-		style="transform: translate({imageViewState.panX}px, {imageViewState.panY}px) scale({imageViewState.zoomLevel}); transform-origin: center center; cursor: {imageViewState.isDragging
-			? 'grabbing'
-			: isZoomed
-				? 'grab'
-				: 'auto'};"
-	>
-		<img src={imageUrl} alt={imagePath} class="h-full w-full object-contain" />
+	<div class="relative h-full w-full">
+		<div
+			class="absolute"
+			class:transition-all={shouldShowTransition}
+			class:duration-200={shouldShowTransition}
+			style="width: {imageViewState.zoomLevel * 100}%; height: {imageViewState.zoomLevel * 100}%; left: 50%; top: 50%; transform: translate(calc(-50% + {imageViewState.panX}px), calc(-50% + {imageViewState.panY}px)); cursor: {imageViewState.isDragging
+				? 'grabbing'
+				: isZoomed
+					? 'grab'
+					: 'auto'};"
+		>
+			<img
+				src={imageUrl}
+				alt={imagePath}
+				class="h-full w-full object-contain"
+			/>
+		</div>
 	</div>
 </div>
 

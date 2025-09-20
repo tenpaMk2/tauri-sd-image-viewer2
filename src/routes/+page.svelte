@@ -84,10 +84,9 @@
 </main>
 
 {#if navigating.complete}
-	<!-- オーバーレイ背景 -->
-	<div class="fixed inset-0 bg-base-200/70"></div>
-	<!-- スピナー -->
-	<div class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+	<div
+		class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-base-100/60 px-8 py-4"
+	>
 		<LoadingState status="loading" variant="big" />
 	</div>
 {/if}

@@ -1,8 +1,9 @@
 <script lang="ts">
-	import { page } from '$app/state';
+	import { navigating, page } from '$app/state';
 	import BottomBar from '$lib/components/grid/BottomBar.svelte';
 	import { SELECTION_STATE, type SelectionState } from '$lib/components/grid/selection';
 	import Toolbar from '$lib/components/grid/Toolbar.svelte';
+	import LoadingState from '$lib/components/ui/LoadingState.svelte';
 	import { setContext } from 'svelte';
 	import { SvelteSet } from 'svelte/reactivity';
 	import type { LayoutProps } from './$types';
@@ -44,3 +45,11 @@
 	<!-- Bottom Bar -->
 	<BottomBar />
 </div>
+
+{#if navigating.complete}
+	<div
+		class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-base-100/60 px-8 py-4"
+	>
+		<LoadingState status="loading" variant="big" />
+	</div>
+{/if}

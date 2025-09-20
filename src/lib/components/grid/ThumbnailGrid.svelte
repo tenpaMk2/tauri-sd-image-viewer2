@@ -1,43 +1,37 @@
 <script lang="ts">
 	import type { GridPageData } from '$lib/../routes/grid/[dir_path]/+page';
 	import { lastViewedImageStore } from '$lib/components/app/last-viewed-image-store.svelte';
-	import { getContext, onMount } from 'svelte';
+	import { getContext, onMount, setContext } from 'svelte';
+	import { SCROLL_TARGET_CONTEXT, type SetScrollTargetElement } from './scroll-target';
 	import ThumbnailCard from './ThumbnailCard.svelte';
 
 	const imagePaths = $derived(getContext<() => string[]>('imagePaths')());
 	const thumbnailStores = $derived(
 		getContext<() => GridPageData['thumbnailStores']>('thumbnailStores')(),
 	);
-	const dirPath = $derived(getContext<() => string>('dirPath')());
 
 	let gridContainer = $state<HTMLDivElement | null>(null);
+	let scrollTargetElement = $state<HTMLElement | null>(null);
 
-	const scrollToImage = (imagePath: string) => {
-		if (!gridContainer) return;
+	const setScrollTargetElement: SetScrollTargetElement = (element: HTMLElement) => {
+		scrollTargetElement = element;
+	};
 
-		const targetIndex = imagePaths.indexOf(imagePath);
-		if (targetIndex === -1) return;
+	setContext(SCROLL_TARGET_CONTEXT, setScrollTargetElement);
 
-		const thumbnailCards = gridContainer.querySelectorAll('[data-image-path]');
-		const targetCard = thumbnailCards[targetIndex] as HTMLElement;
-		if (!targetCard) return;
+	onMount(() => {
+		// Always clear the state when grid is mounted
+		lastViewedImageStore.actions.clear();
+	});
 
-		targetCard.scrollIntoView({
+	$effect(() => {
+		if (!scrollTargetElement) return;
+
+		scrollTargetElement.scrollIntoView({
 			behavior: 'smooth',
 			block: 'center',
 		});
-		console.log('Scrolled to last viewed image:', imagePath);
-	};
-
-	onMount(() => {
-		const lastViewedImagePath = lastViewedImageStore.actions.getLastViewedImageInDirectory(dirPath);
-
-		// Always clear the state when grid is mounted
-		lastViewedImageStore.actions.clear();
-
-		if (!lastViewedImagePath) return;
-
-		scrollToImage(lastViewedImagePath);
+		console.log('Scrolled to last viewed image');
 	});
 </script>
 

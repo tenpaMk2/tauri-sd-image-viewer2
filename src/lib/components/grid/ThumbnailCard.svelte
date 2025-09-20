@@ -1,9 +1,11 @@
 <script lang="ts">
+	import { lastViewedImageStore } from '$lib/components/app/last-viewed-image-store.svelte';
 	import type { ThumbnailStore } from '$lib/components/grid/thumbnail-store.svelte';
 	import { navigateToViewer } from '$lib/services/app-navigation';
 	import { getContext } from 'svelte';
-	import Thumbnail from './Thumbnail.svelte';
+	import { SCROLL_TARGET_CONTEXT, type SetScrollTargetElement } from './scroll-target';
 	import { SELECTION_STATE, type SelectionState } from './selection';
+	import Thumbnail from './Thumbnail.svelte';
 
 	type Props = {
 		imagePath: string;
@@ -11,8 +13,10 @@
 	};
 
 	let { imagePath, thumbnailStore }: Props = $props();
+	let buttonElement: HTMLButtonElement;
 	const imagePaths = $derived(getContext<() => string[]>('imagePaths')());
 	const selectionState = $derived(getContext<() => SelectionState>(SELECTION_STATE)());
+	const setScrollTargetElement = getContext<SetScrollTargetElement>(SCROLL_TARGET_CONTEXT);
 
 	const selected = $derived(selectionState.selectedImagePaths.has(imagePath));
 
@@ -69,16 +73,22 @@
 		}
 		console.log('Current selection size:', selectionState.selectedImagePaths.size);
 	};
+
+	$effect(() => {
+		if (buttonElement && lastViewedImageStore.state?.imagePath === imagePath) {
+			setScrollTargetElement(buttonElement);
+		}
+	});
 </script>
 
 <button
+	bind:this={buttonElement}
 	class={[
 		'group aspect-square overflow-hidden rounded-lg bg-gray-700 transition-all focus:outline-none',
 		selected
 			? 'shadow-xl ring-2 ring-primary hover:ring-4 hover:ring-primary hover:ring-offset-2 hover:ring-offset-base-100'
 			: 'hover:shadow-lg hover:ring-2 hover:ring-primary hover:ring-offset-2 hover:ring-offset-base-100',
 	]}
-	data-image-path={imagePath}
 	onclick={handleImageClick}
 	ondblclick={() => navigateToViewer(imagePath)}
 	title={imagePath.split('/').pop()}

@@ -1,8 +1,9 @@
 <script lang="ts">
 	import { getContext } from 'svelte';
+	import type { ClassValue } from 'svelte/elements';
 
 	type Props = {
-		positionClass: string;
+		positionClass: ClassValue;
 		children: import('svelte').Snippet;
 	};
 

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte';
+	import type { ClassValue } from 'svelte/elements';
 
 	type Props = {
 		icon: string;
@@ -8,7 +9,7 @@
 		size?: 'large' | 'medium' | 'small';
 		spinnerKind?: string;
 		onClick?: () => void;
-		extraClass?: string;
+		extraClass?: ClassValue;
 		dangerous?: boolean;
 	};
 
@@ -19,7 +20,7 @@
 		size = 'medium',
 		spinnerKind = '',
 		onClick,
-		extraClass = '',
+		extraClass = undefined,
 		dangerous = false,
 	}: Props = $props();
 

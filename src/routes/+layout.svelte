@@ -3,7 +3,7 @@
 	import { navigateToGrid, navigateToViewer } from '$lib/services/app-navigation';
 	import { dragAndDropService, type DragAndDropResult } from '$lib/services/drag-and-drop';
 	import { initializeLogger } from '$lib/services/logger';
-	import { onMount } from 'svelte';
+	import {} from 'svelte';
 	import '../app.css';
 	import type { LayoutProps } from './$types';
 
@@ -12,11 +12,11 @@
 
 	const { children }: LayoutProps = $props();
 
-	onMount(() => {
+	let unlistenDragDrop: (() => void) | null = null;
+
+	$effect(() => {
 		// ↓のログはロガーの初期化前に終わるのでログに出ない。
 		console.log('💐Setting up drag & drop functionality');
-
-		let unlistenDragDrop: (() => void) | null = null;
 
 		dragAndDropService
 			.setupDragDropListener((result: DragAndDropResult) => {

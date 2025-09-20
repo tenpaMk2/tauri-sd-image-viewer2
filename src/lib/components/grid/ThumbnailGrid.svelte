@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { GridPageData } from '$lib/../routes/grid/[dir_path]/+page';
 	import { lastViewedImageStore } from '$lib/components/app/last-viewed-image-store.svelte';
-	import { getContext, onMount, setContext } from 'svelte';
+	import { getContext, setContext } from 'svelte';
 	import { SCROLL_TARGET_CONTEXT, type SetScrollTargetElement } from './scroll-target';
 	import ThumbnailCard from './ThumbnailCard.svelte';
 
@@ -19,8 +19,8 @@
 
 	setContext(SCROLL_TARGET_CONTEXT, setScrollTargetElement);
 
-	onMount(() => {
-		// Always clear the state when grid is mounted
+	$effect(() => {
+		// Always clear the state when imagePaths changes
 		lastViewedImageStore.actions.clear();
 	});
 

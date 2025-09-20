@@ -9,6 +9,15 @@
 	};
 
 	let { isOptionsModalOpen, onClose }: Props = $props();
+	let optionsModal: HTMLDialogElement;
+
+	$effect(() => {
+		if (isOptionsModalOpen) {
+			optionsModal.showModal();
+		} else {
+			optionsModal.close();
+		}
+	});
 
 	const clearThumbnailCache = async () => {
 		try {
@@ -42,66 +51,64 @@
 	};
 </script>
 
-{#if isOptionsModalOpen}
-	<div class="modal-open modal select-text">
-		<div class="modal-box w-11/12 max-w-3xl">
-			<h3 class="mb-6 text-xl font-bold">Options</h3>
+<dialog bind:this={optionsModal} class="modal select-text" onclose={onClose}>
+	<div class="modal-box w-11/12 max-w-3xl">
+		<h3 class="mb-6 text-xl font-bold">Options</h3>
 
-			<div class="grid gap-6">
-				<div class="grid grid-cols-[1fr_auto] items-center gap-4">
-					<div class="space-y-1">
-						<div class="text-base font-medium">Clear Thumbnail Cache</div>
-						<div class="text-sm opacity-70">Remove all cached thumbnails to free up disk space</div>
-					</div>
-					<IconTextButton
-						text="Clear"
-						icon="image"
-						size="medium"
-						variant="outline"
-						onClick={clearThumbnailCache}
-					/>
+		<div class="grid gap-6">
+			<div class="grid grid-cols-[1fr_auto] items-center gap-4">
+				<div class="space-y-1">
+					<div class="text-base font-medium">Clear Thumbnail Cache</div>
+					<div class="text-sm opacity-70">Remove all cached thumbnails to free up disk space</div>
 				</div>
-
-				<div class="grid grid-cols-[1fr_auto] items-center gap-4">
-					<div class="space-y-1">
-						<div class="text-base font-medium">Clear Metadata Cache</div>
-						<div class="text-sm opacity-70">
-							Remove all cached metadata to refresh image information
-						</div>
-					</div>
-					<IconTextButton
-						text="Clear"
-						icon="database"
-						size="medium"
-						variant="outline"
-						onClick={clearMetadataCache}
-					/>
-				</div>
-
-				<div class="divider my-2"></div>
-
-				<div class="grid grid-cols-[1fr_auto] items-center gap-4">
-					<div class="space-y-1">
-						<div class="text-base font-medium">Clear All Caches</div>
-						<div class="text-sm opacity-70">Remove both thumbnail and metadata caches</div>
-					</div>
-					<IconTextButton
-						text="Clear All"
-						icon="trash-2"
-						size="medium"
-						variant="error"
-						extraClass="btn-outline"
-						onClick={clearAllCaches}
-					/>
-				</div>
+				<IconTextButton
+					text="Clear"
+					icon="image"
+					size="medium"
+					variant="outline"
+					onClick={clearThumbnailCache}
+				/>
 			</div>
 
-			<div class="modal-action">
-				<IconTextButton text="Close" variant="ghost" onClick={onClose} />
+			<div class="grid grid-cols-[1fr_auto] items-center gap-4">
+				<div class="space-y-1">
+					<div class="text-base font-medium">Clear Metadata Cache</div>
+					<div class="text-sm opacity-70">
+						Remove all cached metadata to refresh image information
+					</div>
+				</div>
+				<IconTextButton
+					text="Clear"
+					icon="database"
+					size="medium"
+					variant="outline"
+					onClick={clearMetadataCache}
+				/>
+			</div>
+
+			<div class="divider my-2"></div>
+
+			<div class="grid grid-cols-[1fr_auto] items-center gap-4">
+				<div class="space-y-1">
+					<div class="text-base font-medium">Clear All Caches</div>
+					<div class="text-sm opacity-70">Remove both thumbnail and metadata caches</div>
+				</div>
+				<IconTextButton
+					text="Clear All"
+					icon="trash-2"
+					size="medium"
+					variant="error"
+					extraClass="btn-outline"
+					onClick={clearAllCaches}
+				/>
 			</div>
 		</div>
-		<form method="dialog" class="modal-backdrop">
-			<button type="button" onclick={onClose}>close</button>
-		</form>
+
+		<div class="modal-action">
+			<IconTextButton text="Close" variant="ghost" onClick={onClose} />
+		</div>
 	</div>
-{/if}
+	<form method="dialog" class="modal-backdrop">
+		<button>close</button>
+	</form>
+</dialog>

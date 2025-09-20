@@ -1,7 +1,7 @@
 <script lang="ts">
 	import LoadingState from '$lib/components/ui/LoadingState.svelte';
 	import { navigateToViewer } from '$lib/services/app-navigation';
-	import type { ThumbnailStore } from '$lib/stores/thumbnail-store.svelte';
+	import type { ThumbnailStore } from '$lib/services/thumbnail-store.svelte';
 	import { getContext } from 'svelte';
 	import { SELECTION_STATE, type SelectionState } from './ThumbnailGrid.svelte';
 

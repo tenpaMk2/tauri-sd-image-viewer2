@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { imageViewStore } from '$lib/stores/image-view-store.svelte';
+	import { imageViewStore } from '$lib/services/image-view-store.svelte';
 	import Icon from '@iconify/svelte';
 	import UiWrapper from './UiWrapper.svelte';
 

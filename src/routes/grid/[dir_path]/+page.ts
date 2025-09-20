@@ -3,7 +3,7 @@ import {
 	createThumbnailQueue,
 	createThumbnailStore,
 	type ThumbnailStore,
-} from '$lib/stores/thumbnail-store.svelte';
+} from '$lib/services/thumbnail-store.svelte';
 import { path } from '@tauri-apps/api';
 import type PQueue from 'p-queue';
 import type { QueueAddOptions } from 'p-queue';

@@ -7,7 +7,7 @@
 
 	type Props = {
 		status: LoadingStatusType;
-		variant?: 'default' | 'compact';
+		variant?: 'default' | 'compact' | 'big';
 	};
 
 	const { status, variant = 'default' }: Props = $props();
@@ -25,6 +25,18 @@
 		<span class="text-xs">
 			{config.text}
 		</span>
+	</div>
+{:else if variant === 'big'}
+	<!-- ページ遷移用の大きなレイアウト -->
+	<div class="flex flex-col items-center justify-center py-8">
+		{#if config.icon}
+			<Icon icon="lucide:{config.icon}" class="mb-4 text-6xl" />
+		{:else if config.loadingIcon}
+			<span class="loading mb-4 loading-xl {config.loadingIcon}"></span>
+		{/if}
+		<div class="text-lg">
+			{config.text}
+		</div>
 	</div>
 {:else}
 	<!-- デフォルトレイアウト -->

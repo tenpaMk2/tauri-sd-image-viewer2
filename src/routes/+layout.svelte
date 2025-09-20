@@ -48,12 +48,12 @@
 <div class="h-screen min-h-screen bg-base-200 select-none">
 	{@render children()}
 
-	{#if !navigating.complete}
+	{#if navigating.complete}
 		<!-- オーバーレイ背景 -->
 		<div class="fixed inset-0 bg-base-200/70"></div>
 		<!-- スピナー -->
 		<div class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-			<LoadingState status="loading" />
+			<LoadingState status="loading" variant="big" />
 		</div>
 	{/if}
 </div>

@@ -1,5 +1,5 @@
+import { toastStore } from '$lib/components/ui/toast-store.svelte';
 import { invoke } from '@tauri-apps/api/core';
-import { toastStore } from './toast-store.svelte';
 
 /**
  * クリップボードにテキストをコピーする共通関数

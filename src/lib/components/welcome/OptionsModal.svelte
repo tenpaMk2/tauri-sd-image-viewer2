@@ -1,6 +1,6 @@
 <script lang="ts">
 	import IconTextButton from '$lib/components/ui/IconTextButton.svelte';
-	import { toastStore } from '$lib/services/toast-store.svelte';
+	import { toastStore } from '$lib/components/ui/toast-store.svelte';
 	import { invoke } from '@tauri-apps/api/core';
 
 	type Props = {

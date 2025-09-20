@@ -9,7 +9,7 @@
 	import { copyFiles } from '$lib/services/clipboard';
 	import { dialogService } from '$lib/services/dialog';
 	import type { NavigationStore } from '$lib/services/navigation-store';
-	import { toastStore } from '$lib/services/toast-store.svelte';
+	import { toastStore } from '$lib/components/ui/toast-store.svelte';
 	import * as fs from '@tauri-apps/plugin-fs';
 	import { platform } from '@tauri-apps/plugin-os';
 	import { getContext } from 'svelte';

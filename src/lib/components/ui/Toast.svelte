@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { toastStore, type ToastType } from '$lib/services/toast-store.svelte';
 	import Icon from '@iconify/svelte';
 	import { scale } from 'svelte/transition';
+	import { toastStore, type ToastType } from './toast-store.svelte';
 
 	const { state: toastState } = toastStore;
 

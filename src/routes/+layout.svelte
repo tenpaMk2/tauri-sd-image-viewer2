@@ -1,6 +1,4 @@
 <script lang="ts">
-	import { navigating } from '$app/state';
-	import LoadingState from '$lib/components/ui/LoadingState.svelte';
 	import Toast from '$lib/components/ui/Toast.svelte';
 	import { navigateToGrid, navigateToViewer } from '$lib/services/app-navigation';
 	import { dragAndDropService, type DragAndDropResult } from '$lib/services/drag-and-drop';
@@ -47,15 +45,6 @@
 
 <div class="h-screen min-h-screen bg-base-200 select-none">
 	{@render children()}
-
-	{#if navigating.complete}
-		<!-- オーバーレイ背景 -->
-		<div class="fixed inset-0 bg-base-200/70"></div>
-		<!-- スピナー -->
-		<div class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-			<LoadingState status="loading" variant="big" />
-		</div>
-	{/if}
 </div>
 
 <Toast />

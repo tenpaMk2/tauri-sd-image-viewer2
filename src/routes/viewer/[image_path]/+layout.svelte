@@ -4,6 +4,7 @@
 	import RatingComponent from '$lib/components/metadata/RatingComponent.svelte';
 	import SdParamsSection from '$lib/components/metadata/SdParamsSection.svelte';
 	import XmpSection from '$lib/components/metadata/XmpSection.svelte';
+	import LoadingState from '$lib/components/ui/LoadingState.svelte';
 	import ImageViewer from '$lib/components/viewer/ImageViewer.svelte';
 	import { type NavigationStore } from '$lib/components/viewer/navigation-store';
 	import NavigationButton from '$lib/components/viewer/NavigationButton.svelte';
@@ -128,11 +129,10 @@
 			</UiWrapper>
 
 			{#if navigating.complete}
-				<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-					<div class="h-24 w-24 rounded-full bg-black/20 blur-sm"></div>
-				</div>
-				<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-					<p><span class="loading loading-xl p-8"></span></p>
+				<div
+					class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-base-100/30 px-8 py-4"
+				>
+					<LoadingState status="loading" variant="big" />
 				</div>
 			{/if}
 		</div>

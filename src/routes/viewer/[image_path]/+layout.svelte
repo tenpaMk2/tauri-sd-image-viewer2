@@ -5,13 +5,13 @@
 	import SdParamsSection from '$lib/components/metadata/SdParamsSection.svelte';
 	import XmpSection from '$lib/components/metadata/XmpSection.svelte';
 	import ImageViewer from '$lib/components/viewer/ImageViewer.svelte';
+	import { type NavigationStore } from '$lib/components/viewer/navigation-store';
 	import NavigationButton from '$lib/components/viewer/NavigationButton.svelte';
 	import Toolbar from '$lib/components/viewer/Toolbar.svelte';
 	import UiWrapper from '$lib/components/viewer/UiWrapper.svelte';
 	import { imageCacheStore } from '$lib/services/image-cache-store';
 	import { createNavigationKeyboardHandler } from '$lib/services/keyboard-shortcut';
 	import type { MetadataStore } from '$lib/services/metadata-store';
-	import { type NavigationStore } from '$lib/services/navigation-store';
 	import { Pane, PaneGroup, PaneResizer } from 'paneforge';
 	import { setContext } from 'svelte';
 	import type { LayoutProps } from './$types';

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { navigating } from '$app/state';
-	import type { NavigationStore } from '$lib/services/navigation-store';
+	import type { NavigationStore } from '$lib/components/viewer/navigation-store';
 	import { getContext } from 'svelte';
 	import IconButton from '../ui/IconButton.svelte';
 

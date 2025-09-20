@@ -1,9 +1,9 @@
 import { toastStore } from '$lib/components/ui/toast-store.svelte';
 import { path } from '@tauri-apps/api';
-import { navigateToGrid, navigateToViewer } from './app-navigation';
+import { navigateToGrid, navigateToViewer } from '../../services/app-navigation';
+import { imageCacheStore } from '../../services/image-cache-store';
+import { getDirectoryImages } from '../../services/image-directory-service';
 import { autoNavStore } from './auto-nav-store.svelte';
-import { imageCacheStore } from './image-cache-store';
-import { getDirectoryImages } from './image-directory-service';
 
 export type NavigationState = {
 	previousImagePath: string | null;

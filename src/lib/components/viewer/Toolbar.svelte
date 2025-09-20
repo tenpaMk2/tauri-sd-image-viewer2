@@ -1,15 +1,15 @@
 <script lang="ts">
 	import IconButton from '$lib/components/ui/IconButton.svelte';
+	import { toastStore } from '$lib/components/ui/toast-store.svelte';
+	import { autoNavStore } from '$lib/components/viewer/auto-nav-store.svelte';
+	import type { NavigationStore } from '$lib/components/viewer/navigation-store';
 	import {
 		navigateToGrid,
 		navigateToViewer,
 		navigateToWelcome,
 	} from '$lib/services/app-navigation';
-	import { autoNavStore } from '$lib/services/auto-nav-store.svelte';
 	import { copyFiles } from '$lib/services/clipboard';
 	import { dialogService } from '$lib/services/dialog';
-	import type { NavigationStore } from '$lib/services/navigation-store';
-	import { toastStore } from '$lib/components/ui/toast-store.svelte';
 	import * as fs from '@tauri-apps/plugin-fs';
 	import { platform } from '@tauri-apps/plugin-os';
 	import { getContext } from 'svelte';

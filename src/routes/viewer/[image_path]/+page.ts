@@ -1,4 +1,7 @@
-import { createMetadataStore, type MetadataStore } from '$lib/components/metadata/metadata-store';
+import {
+	createMetadataStore,
+	type MetadataStore,
+} from '$lib/components/metadata/metadata-store.svelte';
 import {
 	createNavigationStore,
 	type NavigationStore,
@@ -11,21 +14,24 @@ export type ViewerPageData = {
 	url: string;
 	imagePath: string;
 	navigationStore: NavigationStore;
-	metadataStorePromise: Promise<MetadataStore>;
+	metadataStore: MetadataStore;
 };
 
 export const load: PageLoad = async ({ params }): Promise<ViewerPageData> => {
 	const imagePath = decodeURIComponent(params.image_path);
 
-	const metadataStorePromise = createMetadataStore(imagePath);
+	const metadataStore = createMetadataStore(imagePath);
 	const url = await imageCacheStore.actions.load(imagePath);
 	const navigationStore = await createNavigationStore(imagePath);
+
+	// metadata読み込みを開始（awaitはしない）
+	metadataStore.actions.load();
 
 	return {
 		title: imagePath,
 		url,
 		imagePath,
 		navigationStore,
-		metadataStorePromise,
+		metadataStore,
 	};
 };

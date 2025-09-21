@@ -1,21 +1,13 @@
 <script lang="ts">
-	import type { MetadataStore } from '$lib/components/metadata/metadata-store';
+	import type { MetadataStore } from '$lib/components/metadata/metadata-store.svelte';
 	import { createRatingKeyboardHandler } from '$lib/services/keyboard-shortcut';
 	import { getContext } from 'svelte';
 	import LoadingState from '../ui/LoadingState.svelte';
 
 	const imagePath = $derived(getContext<() => string>('imagePath')());
-	const metadataStorePromise = $derived(
-		getContext<() => Promise<MetadataStore>>('metadataStorePromise')(),
-	);
-	let metadataStore = $state<MetadataStore | null>(null);
-	$effect(() => {
-		metadataStorePromise.then((store) => {
-			metadataStore = store;
-		});
-	});
+	const metadataStore = $derived(getContext<() => MetadataStore>('metadataStore')());
 
-	let currentRating = $derived(metadataStore?.state.rating ?? 0);
+	let currentRating = $derived(metadataStore.state.metadata?.rating ?? 0);
 
 	let isRatingHovered = $state(false);
 	let hoveredRating = $state(0);
@@ -37,7 +29,7 @@
 		currentRating = newRating;
 
 		try {
-			await metadataStore?.actions.updateRating(newRating);
+			await metadataStore.actions.updateRating(newRating);
 		} catch (error) {
 			// エラーが発生したら元の値に戻す
 			currentRating = oldRating;
@@ -89,11 +81,11 @@
 	aria-label="Image Rating"
 	{onmouseleave}
 >
-	{#await metadataStorePromise}
+	{#if metadataStore.state.loadingStatus === 'loading'}
 		<LoadingState status="loading" variant="compact" />
-	{:then}
-		{@render starRating(isRatingHovered ? hoveredRating : currentRating)}
-	{:catch}
+	{:else if metadataStore.state.loadingStatus === 'error'}
 		<LoadingState status="error" variant="compact" />
-	{/await}
+	{:else}
+		{@render starRating(isRatingHovered ? hoveredRating : currentRating)}
+	{/if}
 </div>

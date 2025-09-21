@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { MetadataStore } from '$lib/components/metadata/metadata-store';
+	import type { MetadataStore } from '$lib/components/metadata/metadata-store.svelte';
 	import type { Snippet } from 'svelte';
 	import { getContext } from 'svelte';
 	import LoadingState from '../ui/LoadingState.svelte';
@@ -11,15 +11,7 @@
 
 	const { title, metadataContent }: Props = $props();
 
-	const metadataStorePromise = $derived(
-		getContext<() => Promise<MetadataStore>>('metadataStorePromise')(),
-	);
-	let metadataStore = $state<MetadataStore | null>(null);
-	$effect(() => {
-		metadataStorePromise.then((store) => {
-			metadataStore = store;
-		});
-	});
+	const metadataStore = $derived(getContext<() => MetadataStore>('metadataStore')());
 </script>
 
 <div class="rounded-lg bg-base-300 p-3">
@@ -27,16 +19,14 @@
 		{title}
 	</h3>
 	<div class="space-y-1.5 text-xs">
-		{#await metadataStorePromise}
+		{#if metadataStore.state.loadingStatus === 'loading'}
 			<LoadingState status="loading" />
-		{:then}
-			{#if !metadataStore}
-				<p class="text-xs text-base-content/50">No metadata available.</p>
-			{:else}
-				{@render metadataContent(metadataStore.state)}
-			{/if}
-		{:catch error}
+		{:else if metadataStore.state.loadingStatus === 'error'}
 			<LoadingState status="error" />
-		{/await}
+		{:else if !metadataStore.state.metadata}
+			<p class="text-xs text-base-content/50">No metadata available.</p>
+		{:else}
+			{@render metadataContent(metadataStore.state)}
+		{/if}
 	</div>
 </div>

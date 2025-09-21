@@ -1,6 +1,6 @@
 <script lang="ts">
 	import InfoRow from '$lib/components/metadata/InfoRow.svelte';
-	import type { MetadataStore } from '$lib/components/metadata/metadata-store';
+	import type { MetadataStore } from '$lib/components/metadata/metadata-store.svelte';
 	import { getContext } from 'svelte';
 	import BaseMetadataSection from './BaseMetadataSection.svelte';
 
@@ -43,19 +43,24 @@
 			extraClass="overflow-wrap-anywhere max-w-[60%] text-right font-mono break-words"
 		/>
 
-		<InfoRow label="Size" value={formatFileSize(metadataState!.file_size)} />
+		<InfoRow label="Size" value={formatFileSize(metadataState!.metadata!.file_size)} />
 
-		<InfoRow label="Resolution" value={`${metadataState!.width} × ${metadataState!.height}`} />
+		<InfoRow
+			label="Resolution"
+			value={`${metadataState!.metadata!.width} × ${metadataState!.metadata!.height}`}
+		/>
 
 		<InfoRow
 			label="Created"
-			value={metadataState!.created_time ? formatTimestamp(metadataState!.created_time) : 'Unknown'}
+			value={metadataState!.metadata!.created_time
+				? formatTimestamp(metadataState!.metadata!.created_time)
+				: 'Unknown'}
 			extraClass="text-right font-mono text-xs"
 		/>
 
 		<InfoRow
 			label="Modified"
-			value={formatTimestamp(metadataState!.modified_time)}
+			value={formatTimestamp(metadataState!.metadata!.modified_time)}
 			extraClass="text-right font-mono text-xs"
 		/>
 	{/snippet}

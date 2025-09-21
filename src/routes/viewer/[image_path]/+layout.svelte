@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { navigating, page } from '$app/state';
 	import BasicInfoSection from '$lib/components/metadata/BasicInfoSection.svelte';
-	import type { MetadataStore } from '$lib/components/metadata/metadata-store';
+	import type { MetadataStore } from '$lib/components/metadata/metadata-store.svelte';
 	import RatingComponent from '$lib/components/metadata/RatingComponent.svelte';
 	import SdParamsSection from '$lib/components/metadata/SdParamsSection.svelte';
 	import XmpSection from '$lib/components/metadata/XmpSection.svelte';
@@ -20,7 +20,7 @@
 
 	const { children }: LayoutProps = $props();
 
-	const { navigationStore, metadataStorePromise, imagePath, title, url } = $derived(
+	const { navigationStore, metadataStore, imagePath, title, url } = $derived(
 		page.data as ViewerPageData,
 	);
 
@@ -30,7 +30,7 @@
 	// SvelteKit推奨の関数ベースContext
 	setContext<() => boolean>('isUiVisible', () => isUiVisible);
 	setContext<() => NavigationStore>('navigationStore', () => navigationStore);
-	setContext<() => Promise<MetadataStore>>('metadataStorePromise', () => metadataStorePromise);
+	setContext<() => MetadataStore>('metadataStore', () => metadataStore);
 	setContext<() => string>('imagePath', () => imagePath);
 
 	let hideTimer: ReturnType<typeof setTimeout> | null = null;

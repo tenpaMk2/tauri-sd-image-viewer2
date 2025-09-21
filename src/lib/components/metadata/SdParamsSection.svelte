@@ -1,6 +1,6 @@
 <script lang="ts">
 	import InfoRow from '$lib/components/metadata/InfoRow.svelte';
-	import type { MetadataStore } from '$lib/components/metadata/metadata-store';
+	import type { MetadataStore } from '$lib/components/metadata/metadata-store.svelte';
 	import { copyText } from '$lib/services/clipboard';
 	import type { SdTag } from '$lib/types/shared-types';
 	import IconButton from '../ui/IconButton.svelte';
@@ -36,7 +36,7 @@
 
 <BaseMetadataSection title="Stable Diffusion">
 	{#snippet metadataContent(metadataState: MetadataStore['state'])}
-		{@const sdParameters = metadataState?.sd_parameters}
+		{@const sdParameters = metadataState?.metadata?.sd_parameters}
 		<div class="space-y-2 text-xs">
 			<!-- ポジティブプロンプト -->
 			{#if 0 < (sdParameters?.positive_sd_tags.length ?? 0)}

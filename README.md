@@ -15,14 +15,14 @@ A desktop image viewer application built with Tauri v2, specialized for viewing 
 ### Single Image View
 
 ![Single Image View](images/sample-single.png)
-_View images with detailed metadata including Stable Diffusion parameters_
+View images with detailed metadata including Stable Diffusion parameters.
 
 ### Grid View
 
-🚧 Work in Progress 🚧
-
 ![Grid View](images/sample-grid.png)
-_Browse images in thumbnail grid with rating system and SD tag filtering_
+Browse images in a thumbnail grid with a rating system.
+
+🚧 SD tag filtering is Work in Progress 🚧
 
 ## Features
 
@@ -30,7 +30,7 @@ _Browse images in thumbnail grid with rating system and SD tag filtering_
 - **Stable Diffusion Metadata**: Extract and display SD parameters from generated images
 - **Rating System**: Rate images with star ratings (writes to XMP metadata, not EXIF)
 - **Keyboard Navigation**: Use <kbd>←</kbd><kbd>→</kbd> keys to navigate images, <kbd>1</kbd>~<kbd>5</kbd> to rate
-- ~~**Thumbnail Grid**: Browse images in a grid layout~~ 🚧 Work in Progress 🚧
+- **Thumbnail Grid**: Browse images in a grid layout
 - ~~**SD Tag Filtering**: Filter images by Stable Diffusion tags~~ 🚧 Work in Progress 🚧
 - **Cross-Platform**: Works on macOS and Windows
 
@@ -103,10 +103,11 @@ Issues and pull requests are welcome on [GitHub](https://github.com/tenpaMk2/tau
 
 # TODO
 
-- Grid view support
-  - Focus on viewed image when returning from single view to grid view
+- Add custom icons for SD tags
+- SD tag filtering
+- Auto-reload in Grid view
+- Prioritized thumbnail & metadata loading in Grid view
+- Start thumbnail creation from Viewer
 - Check and discard unnecessary thumbnails when directory is updated
 - JPEG and WebP support
-- FIXME: Icon is hard to see in Light mode
 - Start auto navigation with `l` (Last)
-- Try thumbnail creation speed with png crate's `fdeflate`

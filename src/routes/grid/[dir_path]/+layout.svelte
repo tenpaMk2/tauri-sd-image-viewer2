@@ -131,6 +131,15 @@
 		filterState.isActive = 0 <= filterState.ratingValue || filterState.filenamePattern !== '';
 	};
 
+	const cleanupSelectionAfterFilter = () => {
+		// Clean up selection when filter changes
+		const currentFiltered = filterActions.filterImages(
+			directoryImagePathsState.imagePaths,
+			metadataStores,
+		);
+		selectionActions.removeHiddenImages(currentFiltered);
+	};
+
 	const filterActions: FilterContext['actions'] = {
 		toggleFilterPanel: () => {
 			filterState.isFilterPanelVisible = !filterState.isFilterPanelVisible;
@@ -138,20 +147,24 @@
 		setRatingValue: (rating: number) => {
 			filterState.ratingValue = Math.max(0, Math.min(5, rating));
 			updateActiveState();
+			cleanupSelectionAfterFilter();
 		},
 		setRatingOperator: (operator) => {
 			filterState.ratingOperator = operator;
 			updateActiveState();
+			cleanupSelectionAfterFilter();
 		},
 		setFilenamePattern: (pattern: string) => {
 			filterState.filenamePattern = pattern.trim();
 			updateActiveState();
+			cleanupSelectionAfterFilter();
 		},
 		clearFilters: () => {
 			filterState.ratingValue = 0;
 			filterState.ratingOperator = '>=';
 			filterState.filenamePattern = '';
-			filterState.isActive = false;
+			updateActiveState();
+			cleanupSelectionAfterFilter();
 		},
 		filterImages: (imagePaths: string[], metadataStores: Map<string, any>) => {
 			let filtered = imagePaths;
@@ -229,6 +242,7 @@
 			console.log('After rating filter:', filtered.length);
 
 			console.log('Final filtered count:', filtered.length);
+
 			return filtered;
 		},
 	};
@@ -272,11 +286,6 @@
 	const filteredImagePaths = $derived(
 		filterActions.filterImages(directoryImagePathsState.imagePaths, metadataStores),
 	);
-
-	// Clean up selection when filtered images change
-	$effect(() => {
-		selectionActions.removeHiddenImages(filteredImagePaths);
-	});
 </script>
 
 <svelte:head>

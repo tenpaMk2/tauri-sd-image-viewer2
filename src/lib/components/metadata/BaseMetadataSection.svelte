@@ -1,5 +1,9 @@
 <script lang="ts">
 	import type { MetadataStore } from '$lib/components/metadata/metadata-store.svelte';
+	import {
+		VIEWER_PAGE_DATA_CONTEXT,
+		type ViewerPageDataContext,
+	} from '$lib/components/viewer/viewer-page-data';
 	import type { Snippet } from 'svelte';
 	import { getContext } from 'svelte';
 	import LoadingState from '../ui/LoadingState.svelte';
@@ -11,7 +15,10 @@
 
 	const { title, metadataContent }: Props = $props();
 
-	const metadataStore = $derived(getContext<() => MetadataStore>('metadataStore')());
+	const viewerPageData = $derived(
+		getContext<() => ViewerPageDataContext>(VIEWER_PAGE_DATA_CONTEXT)().state,
+	);
+	const metadataStore = $derived(viewerPageData.metadataStore);
 </script>
 
 <div class="rounded-lg bg-base-300 p-3">

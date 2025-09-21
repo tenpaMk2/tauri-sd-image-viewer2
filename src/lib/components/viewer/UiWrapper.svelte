@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { getContext } from 'svelte';
 	import type { ClassValue } from 'svelte/elements';
+	import { UI_VISIBILITY_CONTEXT, type UiVisibilityContext } from './ui-visibility';
 
 	type Props = {
 		positionClass: ClassValue;
@@ -8,7 +9,9 @@
 	};
 
 	const { positionClass, children }: Props = $props();
-	const isUiVisible = $derived(getContext<() => boolean>('isUiVisible')());
+	const isUiVisible = $derived(
+		getContext<() => UiVisibilityContext>(UI_VISIBILITY_CONTEXT)().state,
+	);
 </script>
 
 <div

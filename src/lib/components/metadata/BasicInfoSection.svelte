@@ -1,10 +1,17 @@
 <script lang="ts">
 	import InfoRow from '$lib/components/metadata/InfoRow.svelte';
 	import type { MetadataStore } from '$lib/components/metadata/metadata-store.svelte';
+	import {
+		VIEWER_PAGE_DATA_CONTEXT,
+		type ViewerPageDataContext,
+	} from '$lib/components/viewer/viewer-page-data';
 	import { getContext } from 'svelte';
 	import BaseMetadataSection from './BaseMetadataSection.svelte';
 
-	const imagePath = $derived(getContext<() => string>('imagePath')());
+	const viewerPageData = $derived(
+		getContext<() => ViewerPageDataContext>(VIEWER_PAGE_DATA_CONTEXT)().state,
+	);
+	const imagePath = $derived(viewerPageData.imagePath);
 	const filename = $derived(imagePath.split('/').pop() || 'Unknown');
 
 	const formatFileSize = (bytes: number): string => {

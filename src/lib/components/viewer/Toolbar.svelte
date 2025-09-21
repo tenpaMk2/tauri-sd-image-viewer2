@@ -2,7 +2,10 @@
 	import IconButton from '$lib/components/ui/IconButton.svelte';
 	import { toastStore } from '$lib/components/ui/toast-store.svelte';
 	import { autoNavStore } from '$lib/components/viewer/auto-nav-store.svelte';
-	import type { NavigationStore } from '$lib/components/viewer/navigation-store';
+	import {
+		VIEWER_PAGE_DATA_CONTEXT,
+		type ViewerPageDataContext,
+	} from '$lib/components/viewer/viewer-page-data';
 	import {
 		navigateToGrid,
 		navigateToViewer,
@@ -14,7 +17,10 @@
 	import { platform } from '@tauri-apps/plugin-os';
 	import { getContext } from 'svelte';
 
-	const navigation = $derived(getContext<() => NavigationStore>('navigationStore')());
+	const viewerPageData = $derived(
+		getContext<() => ViewerPageDataContext>(VIEWER_PAGE_DATA_CONTEXT)().state,
+	);
+	const navigation = $derived(viewerPageData.navigationStore);
 
 	let deleteConfirmationModal: HTMLDialogElement;
 

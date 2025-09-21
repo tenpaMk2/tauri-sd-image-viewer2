@@ -1,11 +1,17 @@
 <script lang="ts">
-	import type { MetadataStore } from '$lib/components/metadata/metadata-store.svelte';
+	import {
+		VIEWER_PAGE_DATA_CONTEXT,
+		type ViewerPageDataContext,
+	} from '$lib/components/viewer/viewer-page-data';
 	import { createRatingKeyboardHandler } from '$lib/services/keyboard-shortcut';
 	import { getContext } from 'svelte';
 	import LoadingState from '../ui/LoadingState.svelte';
 
-	const imagePath = $derived(getContext<() => string>('imagePath')());
-	const metadataStore = $derived(getContext<() => MetadataStore>('metadataStore')());
+	const viewerPageData = $derived(
+		getContext<() => ViewerPageDataContext>(VIEWER_PAGE_DATA_CONTEXT)().state,
+	);
+	const imagePath = $derived(viewerPageData.imagePath);
+	const metadataStore = $derived(viewerPageData.metadataStore);
 
 	let currentRating = $derived(metadataStore.state.metadata?.rating ?? 0);
 

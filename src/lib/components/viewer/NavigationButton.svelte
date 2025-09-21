@@ -1,6 +1,9 @@
 <script lang="ts">
 	import { navigating } from '$app/state';
-	import type { NavigationStore } from '$lib/components/viewer/navigation-store';
+	import {
+		VIEWER_PAGE_DATA_CONTEXT,
+		type ViewerPageDataContext,
+	} from '$lib/components/viewer/viewer-page-data';
 	import { getContext } from 'svelte';
 	import IconButton from '../ui/IconButton.svelte';
 
@@ -9,7 +12,10 @@
 	};
 	const { direction }: Props = $props();
 
-	const navigation = $derived(getContext<() => NavigationStore>('navigationStore')());
+	const viewerPageData = $derived(
+		getContext<() => ViewerPageDataContext>(VIEWER_PAGE_DATA_CONTEXT)().state,
+	);
+	const navigation = $derived(viewerPageData.navigationStore);
 
 	const imagePath = $derived(
 		direction === 'left' ? navigation.state.previousImagePath : navigation.state.nextImagePath,

@@ -1,6 +1,6 @@
 [package]
 name = "tauri-sd-image-viewer"
-version = "2.2.0"
+version = "2.2.1"
 description = "Tauri SD Image Viewer"
 authors = ["tenpaMk2"]
 edition = "2024"

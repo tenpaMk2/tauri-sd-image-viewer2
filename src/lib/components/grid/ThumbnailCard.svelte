@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { lastViewedImageStore } from '$lib/components/app/last-viewed-image-store.svelte';
 	import type { ThumbnailStore } from '$lib/components/grid/thumbnail-store.svelte';
+	import type { MetadataStore } from '$lib/components/metadata/metadata-store.svelte';
 	import RatingComponent from '$lib/components/metadata/RatingComponent.svelte';
 	import { navigateToViewer } from '$lib/services/app-navigation';
 	import { getContext } from 'svelte';
@@ -8,7 +9,6 @@
 		DIRECTORY_IMAGE_PATHS_CONTEXT,
 		type DirectoryImagePathsContext,
 	} from './directory-image-paths';
-	import { GRID_METADATA_CONTEXT, type GridMetadataContext } from './grid-metadata';
 	import { SCROLL_TARGET_CONTEXT, type ScrollTargetContext } from './scroll-target';
 	import { SELECTION_CONTEXT, type SelectionContext } from './selection';
 	import Thumbnail from './Thumbnail.svelte';
@@ -16,9 +16,10 @@
 	type Props = {
 		imagePath: string;
 		thumbnailStore: ThumbnailStore;
+		metadataStore: MetadataStore;
 	};
 
-	let { imagePath, thumbnailStore }: Props = $props();
+	let { imagePath, thumbnailStore, metadataStore }: Props = $props();
 	let buttonElement: HTMLButtonElement;
 	const directoryImagePathsContext = $derived(
 		getContext<() => DirectoryImagePathsContext>(DIRECTORY_IMAGE_PATHS_CONTEXT)(),
@@ -28,12 +29,8 @@
 	const scrollTargetContext = $derived(
 		getContext<() => ScrollTargetContext>(SCROLL_TARGET_CONTEXT)(),
 	);
-	const gridMetadataContext = $derived(
-		getContext<() => GridMetadataContext>(GRID_METADATA_CONTEXT)(),
-	);
 
 	const selected = $derived(selectionContext.state.selectedImagePaths.has(imagePath));
-	const metadataStore = $derived(gridMetadataContext.actions.getMetadataStore(imagePath));
 
 	const handleImageClick = (event: MouseEvent): void => {
 		console.log(

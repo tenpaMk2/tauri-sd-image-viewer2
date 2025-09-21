@@ -18,6 +18,7 @@
 		getContext<() => GridPageDataContext>(GRID_PAGE_DATA_CONTEXT)(),
 	);
 	const thumbnailStores = $derived(gridPageDataContext.state.thumbnailStores);
+	const metadataStores = $derived(gridPageDataContext.state.metadataStores);
 
 	let scrollTargetState = $state<ScrollTargetContext['state']>({
 		targetElement: null,
@@ -62,7 +63,8 @@
 	<div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8">
 		{#each imagePaths as imagePath (imagePath)}
 			{@const thumbnailStore = thumbnailStores.get(imagePath)!}
-			<ThumbnailCard {imagePath} {thumbnailStore} />
+			{@const metadataStore = metadataStores.get(imagePath)!}
+			<ThumbnailCard {imagePath} {thumbnailStore} {metadataStore} />
 		{/each}
 	</div>
 {/if}

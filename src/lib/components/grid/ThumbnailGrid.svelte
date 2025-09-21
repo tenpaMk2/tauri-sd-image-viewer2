@@ -6,6 +6,10 @@
 		type DirectoryImagePathsContext,
 	} from './directory-image-paths';
 	import { FILTER_CONTEXT, type FilterContext } from './filter';
+	import {
+		FILTERED_IMAGE_PATHS_CONTEXT,
+		type FilteredImagePathsContext,
+	} from './filtered-image-paths';
 	import { GRID_PAGE_DATA_CONTEXT, type GridPageDataContext } from './grid-page-data';
 	import { SCROLL_TARGET_CONTEXT, type ScrollTargetContext } from './scroll-target';
 	import ThumbnailCard from './ThumbnailCard.svelte';
@@ -39,6 +43,10 @@
 	setContext<() => ScrollTargetContext>(SCROLL_TARGET_CONTEXT, () => ({
 		state: scrollTargetState,
 		actions: scrollTargetActions,
+	}));
+
+	setContext<() => FilteredImagePathsContext>(FILTERED_IMAGE_PATHS_CONTEXT, () => ({
+		state: { imagePaths },
 	}));
 
 	$effect(() => {

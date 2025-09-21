@@ -14,5 +14,6 @@ export type SelectionContext = {
 		toggle: (imagePath: string, index: number) => void;
 		selectRange: (startIndex: number, endIndex: number, imagePaths: string[]) => void;
 		selectAll: (imagePaths: string[]) => void;
+		removeHiddenImages: (visibleImagePaths: string[]) => void;
 	};
 };

@@ -88,6 +88,21 @@
 			imagePaths.forEach((path) => selectionState.selectedImagePaths.add(path));
 			selectionState.lastSelectedIndex = imagePaths.length - 1;
 		},
+		removeHiddenImages: (visibleImagePaths: string[]) => {
+			const visibleSet = new Set(visibleImagePaths);
+			const originalSize = selectionState.selectedImagePaths.size;
+
+			// Set同士の積演算（intersection）
+			const intersection = selectionState.selectedImagePaths.intersection(visibleSet);
+
+			selectionState.selectedImagePaths.clear();
+			intersection.forEach((path) => selectionState.selectedImagePaths.add(path));
+
+			const removedCount = originalSize - selectionState.selectedImagePaths.size;
+			if (0 < removedCount) {
+				console.log('Removed hidden images from selection:', removedCount);
+			}
+		},
 	};
 
 	// Metadata context management
@@ -257,6 +272,11 @@
 	const filteredImagePaths = $derived(
 		filterActions.filterImages(directoryImagePathsState.imagePaths, metadataStores),
 	);
+
+	// Clean up selection when filtered images change
+	$effect(() => {
+		selectionActions.removeHiddenImages(filteredImagePaths);
+	});
 </script>
 
 <svelte:head>

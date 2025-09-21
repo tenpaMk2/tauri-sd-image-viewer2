@@ -6,9 +6,9 @@
 	import { navigateToViewer } from '$lib/services/app-navigation';
 	import { getContext } from 'svelte';
 	import {
-		DIRECTORY_IMAGE_PATHS_CONTEXT,
-		type DirectoryImagePathsContext,
-	} from './directory-image-paths';
+		FILTERED_IMAGE_PATHS_CONTEXT,
+		type FilteredImagePathsContext,
+	} from './filtered-image-paths';
 	import { SCROLL_TARGET_CONTEXT, type ScrollTargetContext } from './scroll-target';
 	import { SELECTION_CONTEXT, type SelectionContext } from './selection';
 	import Thumbnail from './Thumbnail.svelte';
@@ -21,10 +21,10 @@
 
 	let { imagePath, thumbnailStore, metadataStore }: Props = $props();
 	let buttonElement: HTMLButtonElement;
-	const directoryImagePathsContext = $derived(
-		getContext<() => DirectoryImagePathsContext>(DIRECTORY_IMAGE_PATHS_CONTEXT)(),
+	const filteredImagePathsContext = $derived(
+		getContext<() => FilteredImagePathsContext>(FILTERED_IMAGE_PATHS_CONTEXT)(),
 	);
-	const imagePaths = $derived(directoryImagePathsContext.state.imagePaths);
+	const filteredImagePaths = $derived(filteredImagePathsContext.state.imagePaths);
 	const selectionContext = $derived(getContext<() => SelectionContext>(SELECTION_CONTEXT)());
 	const scrollTargetContext = $derived(
 		getContext<() => ScrollTargetContext>(SCROLL_TARGET_CONTEXT)(),
@@ -44,14 +44,14 @@
 			event.shiftKey,
 		);
 
-		const currentIndex = imagePaths.indexOf(imagePath);
+		const currentIndex = filteredImagePaths.indexOf(imagePath);
 
 		if (event.shiftKey && selectionContext.state.lastSelectedIndex !== null) {
-			// Shift+クリック: 範囲選択
+			// Shift+クリック: 範囲選択（フィルタされた画像のみ）
 			const startIndex = Math.min(selectionContext.state.lastSelectedIndex, currentIndex);
 			const endIndex = Math.max(selectionContext.state.lastSelectedIndex, currentIndex);
 
-			selectionContext.actions.selectRange(startIndex, endIndex, imagePaths);
+			selectionContext.actions.selectRange(startIndex, endIndex, filteredImagePaths);
 			console.log('Range selection from', startIndex, 'to', endIndex);
 		} else if (event.ctrlKey || event.metaKey) {
 			// Ctrl/Cmd+クリック: 複数選択切り替え

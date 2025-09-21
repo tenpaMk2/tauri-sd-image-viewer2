@@ -37,7 +37,9 @@
 		state: page.data as ViewerPageData,
 	}));
 
-	const { navigationStore, imagePath, title, url } = $derived(page.data as ViewerPageData);
+	const { navigationStore, imagePath, title, url, metadataStore } = $derived(
+		page.data as ViewerPageData,
+	);
 
 	let hideTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -131,7 +133,7 @@
 
 			<!-- Rating overlay -->
 			<UiWrapper positionClass="bottom-4 left-1/2 -translate-x-1/2">
-				<RatingComponent />
+				<RatingComponent {imagePath} {metadataStore} />
 			</UiWrapper>
 
 			{#if navigating.complete}

@@ -6,6 +6,10 @@
 		type DirectoryImagePathsContext,
 	} from '$lib/components/grid/directory-image-paths';
 	import {
+		GRID_METADATA_CONTEXT,
+		type GridMetadataContext,
+	} from '$lib/components/grid/grid-metadata';
+	import {
 		GRID_PAGE_DATA_CONTEXT,
 		type GridPageDataContext,
 	} from '$lib/components/grid/grid-page-data';
@@ -83,6 +87,18 @@
 		},
 	};
 
+	// Metadata context management
+	const metadataStores = $derived((page.data as GridPageData).metadataStores);
+
+	const gridMetadataActions = {
+		getMetadataStore: (imagePath: string) => {
+			return metadataStores.get(imagePath);
+		},
+		cleanup: () => {
+			// クリーンアップは+page.svelteで行うため、ここでは何もしない
+		},
+	};
+
 	// Context for child components
 	setContext<() => GridPageDataContext>(GRID_PAGE_DATA_CONTEXT, () => ({
 		state: page.data as GridPageData,
@@ -90,6 +106,10 @@
 	setContext<() => SelectionContext>(SELECTION_CONTEXT, () => ({
 		state: selectionState,
 		actions: selectionActions,
+	}));
+	setContext<() => GridMetadataContext>(GRID_METADATA_CONTEXT, () => ({
+		state: { metadataStores },
+		actions: gridMetadataActions,
 	}));
 </script>
 

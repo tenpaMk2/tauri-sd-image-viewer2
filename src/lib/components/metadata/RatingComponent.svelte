@@ -1,19 +1,16 @@
 <script lang="ts">
-	import {
-		VIEWER_PAGE_DATA_CONTEXT,
-		type ViewerPageDataContext,
-	} from '$lib/components/viewer/viewer-page-data';
+	import type { MetadataStore } from '$lib/components/metadata/metadata-store.svelte';
 	import { createRatingKeyboardHandler } from '$lib/services/keyboard-shortcut';
-	import { getContext } from 'svelte';
 	import LoadingState from '../ui/LoadingState.svelte';
 
-	const viewerPageData = $derived(
-		getContext<() => ViewerPageDataContext>(VIEWER_PAGE_DATA_CONTEXT)().state,
-	);
-	const imagePath = $derived(viewerPageData.imagePath);
-	const metadataStore = $derived(viewerPageData.metadataStore);
+	type Props = {
+		imagePath: string;
+		metadataStore: MetadataStore | undefined;
+	};
 
-	let currentRating = $derived(metadataStore.state.metadata?.rating ?? 0);
+	let { imagePath, metadataStore }: Props = $props();
+
+	let currentRating = $derived(metadataStore?.state.metadata?.rating ?? 0);
 
 	let isRatingHovered = $state(false);
 	let hoveredRating = $state(0);
@@ -30,6 +27,11 @@
 	};
 
 	const updateRating = async (newRating: number) => {
+		if (!metadataStore || !imagePath) {
+			console.error('No metadata store or image path available for rating update');
+			return;
+		}
+
 		// 楽観的UIのため、$derivedした値を直接override
 		const oldRating = currentRating;
 		currentRating = newRating;
@@ -87,7 +89,9 @@
 	aria-label="Image Rating"
 	{onmouseleave}
 >
-	{#if metadataStore.state.loadingStatus === 'loading'}
+	{#if !metadataStore}
+		<LoadingState status="loading" variant="compact" />
+	{:else if metadataStore.state.loadingStatus === 'loading'}
 		<LoadingState status="loading" variant="compact" />
 	{:else if metadataStore.state.loadingStatus === 'error'}
 		<LoadingState status="error" variant="compact" />

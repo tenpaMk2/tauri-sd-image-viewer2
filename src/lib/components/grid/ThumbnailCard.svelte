@@ -1,12 +1,14 @@
 <script lang="ts">
 	import { lastViewedImageStore } from '$lib/components/app/last-viewed-image-store.svelte';
 	import type { ThumbnailStore } from '$lib/components/grid/thumbnail-store.svelte';
+	import RatingComponent from '$lib/components/metadata/RatingComponent.svelte';
 	import { navigateToViewer } from '$lib/services/app-navigation';
 	import { getContext } from 'svelte';
 	import {
 		DIRECTORY_IMAGE_PATHS_CONTEXT,
 		type DirectoryImagePathsContext,
 	} from './directory-image-paths';
+	import { GRID_METADATA_CONTEXT, type GridMetadataContext } from './grid-metadata';
 	import { SCROLL_TARGET_CONTEXT, type ScrollTargetContext } from './scroll-target';
 	import { SELECTION_CONTEXT, type SelectionContext } from './selection';
 	import Thumbnail from './Thumbnail.svelte';
@@ -26,8 +28,12 @@
 	const scrollTargetContext = $derived(
 		getContext<() => ScrollTargetContext>(SCROLL_TARGET_CONTEXT)(),
 	);
+	const gridMetadataContext = $derived(
+		getContext<() => GridMetadataContext>(GRID_METADATA_CONTEXT)(),
+	);
 
 	const selected = $derived(selectionContext.state.selectedImagePaths.has(imagePath));
+	const metadataStore = $derived(gridMetadataContext.actions.getMetadataStore(imagePath));
 
 	const handleImageClick = (event: MouseEvent): void => {
 		console.log(
@@ -88,7 +94,7 @@
 <button
 	bind:this={buttonElement}
 	class={[
-		'group aspect-square overflow-hidden rounded-lg bg-gray-700 transition-all focus:outline-none',
+		'group relative aspect-square overflow-hidden rounded-lg bg-gray-700 transition-all focus:outline-none',
 		selected
 			? 'shadow-xl ring-2 ring-primary hover:ring-4 hover:ring-primary hover:ring-offset-2 hover:ring-offset-base-100'
 			: 'hover:shadow-lg hover:ring-2 hover:ring-primary hover:ring-offset-2 hover:ring-offset-base-100',
@@ -98,4 +104,9 @@
 	title={imagePath.split('/').pop()}
 >
 	<Thumbnail {thumbnailStore} {imagePath} />
+
+	<!-- Rating overlay -->
+	<div class="leftpointer-events-auto absolute bottom-1 left-1/2 -translate-x-1/2">
+		<RatingComponent {imagePath} {metadataStore} />
+	</div>
 </button>

@@ -5,6 +5,7 @@
 		DIRECTORY_IMAGE_PATHS_CONTEXT,
 		type DirectoryImagePathsContext,
 	} from './directory-image-paths';
+	import { FILTER_CONTEXT, type FilterContext } from './filter';
 	import { GRID_PAGE_DATA_CONTEXT, type GridPageDataContext } from './grid-page-data';
 	import { SCROLL_TARGET_CONTEXT, type ScrollTargetContext } from './scroll-target';
 	import ThumbnailCard from './ThumbnailCard.svelte';
@@ -12,13 +13,18 @@
 	const directoryImagePathsContext = $derived(
 		getContext<() => DirectoryImagePathsContext>(DIRECTORY_IMAGE_PATHS_CONTEXT)(),
 	);
-	const imagePaths = $derived(directoryImagePathsContext.state.imagePaths);
+	const allImagePaths = $derived(directoryImagePathsContext.state.imagePaths);
 
 	const gridPageDataContext = $derived(
 		getContext<() => GridPageDataContext>(GRID_PAGE_DATA_CONTEXT)(),
 	);
 	const thumbnailStores = $derived(gridPageDataContext.state.thumbnailStores);
 	const metadataStores = $derived(gridPageDataContext.state.metadataStores);
+
+	const filterContext = $derived(getContext<() => FilterContext>(FILTER_CONTEXT)());
+
+	// Apply filters to get the displayed images
+	const imagePaths = $derived(filterContext.actions.filterImages(allImagePaths, metadataStores));
 
 	let scrollTargetState = $state<ScrollTargetContext['state']>({
 		targetElement: null,
@@ -36,7 +42,7 @@
 	}));
 
 	$effect(() => {
-		// Always clear the state when imagePaths changes
+		// Always clear the state when allImagePaths changes
 		lastViewedImageStore.actions.clear();
 	});
 

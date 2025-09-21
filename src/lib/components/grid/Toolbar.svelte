@@ -11,6 +11,7 @@
 		DIRECTORY_IMAGE_PATHS_CONTEXT,
 		type DirectoryImagePathsContext,
 	} from './directory-image-paths';
+	import { FILTER_CONTEXT, type FilterContext } from './filter';
 	import { SELECTION_CONTEXT, type SelectionContext } from './selection';
 
 	type Props = {
@@ -24,6 +25,7 @@
 	const directoryImagePathsContext = $derived(
 		getContext<() => DirectoryImagePathsContext>(DIRECTORY_IMAGE_PATHS_CONTEXT)(),
 	);
+	const filterContext = $derived(getContext<() => FilterContext>(FILTER_CONTEXT)());
 	const imagePaths = $derived(directoryImagePathsContext.state.imagePaths);
 
 	const isAllSelected = $derived(
@@ -72,6 +74,14 @@
 	</div>
 	<div class="flex gap-2">
 		{#if imageCount > 0}
+			<IconButton
+				icon="filter"
+				title={filterContext.state.isFilterPanelVisible ? 'Hide Filters' : 'Show Filters'}
+				onClick={filterContext.actions.toggleFilterPanel}
+				extraClass={filterContext.state.isActive || filterContext.state.isFilterPanelVisible
+					? 'btn-active btn-primary'
+					: ''}
+			/>
 			<IconButton
 				icon={isAllSelected ? 'square-dashed' : 'square-check-big'}
 				title={isAllSelected ? 'Deselect All' : 'Select All'}

@@ -5,6 +5,8 @@
 		DIRECTORY_IMAGE_PATHS_CONTEXT,
 		type DirectoryImagePathsContext,
 	} from '$lib/components/grid/directory-image-paths';
+	import { FILTER_CONTEXT, type FilterContext } from '$lib/components/grid/filter';
+	import FilterPanel from '$lib/components/grid/FilterPanel.svelte';
 	import {
 		GRID_METADATA_CONTEXT,
 		type GridMetadataContext,
@@ -17,6 +19,7 @@
 	import Toolbar from '$lib/components/grid/Toolbar.svelte';
 	import LoadingState from '$lib/components/ui/LoadingState.svelte';
 	import { getDirectoryImages } from '$lib/services/image-directory-service';
+	import { filterFilesByGlob } from '$lib/utils/glob-utils';
 	import { setContext } from 'svelte';
 	import { SvelteSet } from 'svelte/reactivity';
 	import type { LayoutProps } from './$types';
@@ -99,6 +102,140 @@
 		},
 	};
 
+	// Filter state management
+	let filterState = $state<FilterContext['state']>({
+		isFilterPanelVisible: false,
+		ratingValue: 0,
+		ratingOperator: '<=',
+		filenamePattern: '',
+		isActive: false,
+	});
+
+	const updateActiveState = () => {
+		// フィルタは常に有効。星0≥は実質的な「全て表示」だが、フィルタとしては有効
+		filterState.isActive = 0 <= filterState.ratingValue || filterState.filenamePattern !== '';
+	};
+
+	const filterActions: FilterContext['actions'] = {
+		toggleFilterPanel: () => {
+			filterState.isFilterPanelVisible = !filterState.isFilterPanelVisible;
+		},
+		setRatingValue: (rating: number) => {
+			filterState.ratingValue = Math.max(0, Math.min(5, rating));
+			updateActiveState();
+		},
+		setRatingOperator: (operator) => {
+			filterState.ratingOperator = operator;
+			updateActiveState();
+		},
+		setFilenamePattern: (pattern: string) => {
+			filterState.filenamePattern = pattern.trim();
+			updateActiveState();
+		},
+		clearFilters: () => {
+			filterState.ratingValue = 0;
+			filterState.ratingOperator = '>=';
+			filterState.filenamePattern = '';
+			filterState.isActive = false;
+		},
+		filterImages: (imagePaths: string[], metadataStores: Map<string, any>) => {
+			let filtered = imagePaths;
+
+			console.log('Filter Debug:', {
+				totalImages: imagePaths.length,
+				ratingValue: filterState.ratingValue,
+				ratingOperator: filterState.ratingOperator,
+				filenamePattern: filterState.filenamePattern,
+				metadataStoresSize: metadataStores.size,
+			});
+
+			// Apply filename pattern filter
+			if (filterState.filenamePattern) {
+				filtered = filterFilesByGlob(filtered, filterState.filenamePattern);
+				console.log('After filename filter:', filtered.length);
+			}
+
+			// Apply rating filter
+			// フィルタは常に適用。星0≥は実質的に全て表示だが、フィルタとしては有効
+			const ratingFiltered = filtered.filter((imagePath) => {
+				const metadataStore = metadataStores.get(imagePath);
+
+				// メタデータストアがない場合
+				if (!metadataStore) {
+					console.log('No metadata store for:', imagePath);
+					// 未評価として扱う（rating=0）
+					const rating = 0;
+					return evaluateRatingCondition(
+						rating,
+						filterState.ratingValue,
+						filterState.ratingOperator,
+					);
+				}
+
+				// メタデータが未ロードまたはロード中の場合
+				if (metadataStore.state.loadingStatus !== 'loaded') {
+					console.log(
+						'Metadata not loaded for:',
+						imagePath,
+						'status:',
+						metadataStore.state.loadingStatus,
+					);
+					// 未評価として扱う（rating=0）
+					const rating = 0;
+					return evaluateRatingCondition(
+						rating,
+						filterState.ratingValue,
+						filterState.ratingOperator,
+					);
+				}
+
+				// メタデータがロード済みの場合
+				const rating = metadataStore.state.metadata?.rating || 0;
+				const passes = evaluateRatingCondition(
+					rating,
+					filterState.ratingValue,
+					filterState.ratingOperator,
+				);
+				console.log(
+					'Rating check:',
+					imagePath,
+					'rating:',
+					rating,
+					'operator:',
+					filterState.ratingOperator,
+					'targetRating:',
+					filterState.ratingValue,
+					'passes:',
+					passes,
+				);
+				return passes;
+			});
+			filtered = ratingFiltered;
+			console.log('After rating filter:', filtered.length);
+
+			console.log('Final filtered count:', filtered.length);
+			return filtered;
+		},
+	};
+
+	// Helper function to evaluate rating conditions
+	const evaluateRatingCondition = (
+		rating: number,
+		targetRating: number,
+		operator: string,
+	): boolean => {
+		switch (operator) {
+			case '<=':
+				return targetRating <= rating;
+			case '=':
+				return targetRating === rating;
+			case '>=':
+				return rating <= targetRating;
+			default:
+				return false;
+		}
+	};
+
 	// Context for child components
 	setContext<() => GridPageDataContext>(GRID_PAGE_DATA_CONTEXT, () => ({
 		state: page.data as GridPageData,
@@ -111,6 +248,15 @@
 		state: { metadataStores },
 		actions: gridMetadataActions,
 	}));
+	setContext<() => FilterContext>(FILTER_CONTEXT, () => ({
+		state: filterState,
+		actions: filterActions,
+	}));
+
+	// Compute filtered images for display
+	const filteredImagePaths = $derived(
+		filterActions.filterImages(directoryImagePathsState.imagePaths, metadataStores),
+	);
 </script>
 
 <svelte:head>
@@ -123,6 +269,9 @@
 		title={(page.data as GridPageData).title}
 		imageCount={directoryImagePathsState.imagePaths.length}
 	/>
+
+	<!-- Filter Panel -->
+	<FilterPanel />
 
 	<!-- Main Content -->
 	<main class="flex-1 overflow-auto pb-16">

@@ -2,10 +2,17 @@
 	import type { GridPageData } from '$lib/../routes/grid/[dir_path]/+page';
 	import { lastViewedImageStore } from '$lib/components/app/last-viewed-image-store.svelte';
 	import { getContext, setContext } from 'svelte';
+	import {
+		DIRECTORY_IMAGE_PATHS_STATE,
+		type DirectoryImagePathsState,
+	} from './directory-image-paths';
 	import { SCROLL_TARGET_CONTEXT, type SetScrollTargetElement } from './scroll-target';
 	import ThumbnailCard from './ThumbnailCard.svelte';
 
-	const imagePaths = $derived(getContext<() => string[]>('imagePaths')());
+	const directoryImagePathsState = $derived(
+		getContext<() => DirectoryImagePathsState>(DIRECTORY_IMAGE_PATHS_STATE)(),
+	);
+	const imagePaths = $derived(directoryImagePathsState.imagePaths);
 	const thumbnailStores = $derived(
 		getContext<() => GridPageData['thumbnailStores']>('thumbnailStores')(),
 	);

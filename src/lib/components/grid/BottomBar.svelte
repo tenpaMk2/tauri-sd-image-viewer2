@@ -1,4 +1,8 @@
 <script lang="ts">
+	import {
+		DIRECTORY_IMAGE_PATHS_ACTIONS,
+		type DirectoryImagePathsActions,
+	} from '$lib/components/grid/directory-image-paths';
 	import { SELECTION_STATE, type SelectionState } from '$lib/components/grid/selection';
 	import IconTextButton from '$lib/components/ui/IconTextButton.svelte';
 	import { toastStore } from '$lib/components/ui/toast-store.svelte';
@@ -6,10 +10,12 @@
 	import * as fs from '@tauri-apps/plugin-fs';
 	import { platform } from '@tauri-apps/plugin-os';
 	import { getContext } from 'svelte';
-
 	const selectionState = $derived(getContext<() => SelectionState>(SELECTION_STATE)());
 	const selectedPaths = $derived(Array.from(selectionState.selectedImagePaths) as string[]);
 	const selectedCount = $derived(selectedPaths.length);
+	const directoryImagePathsActions = getContext<DirectoryImagePathsActions>(
+		DIRECTORY_IMAGE_PATHS_ACTIONS,
+	);
 
 	let deleteConfirmationModal: HTMLDialogElement;
 
@@ -38,6 +44,9 @@
 			// Clear selection after successful deletion
 			selectionState.selectedImagePaths.clear();
 			selectionState.lastSelectedIndex = null;
+
+			// Refresh image paths to update the grid
+			await directoryImagePathsActions.refresh();
 		} catch (error) {
 			console.error('Failed to delete images: ' + error);
 			toastStore.actions.showErrorToast('Failed to delete images: ' + error);

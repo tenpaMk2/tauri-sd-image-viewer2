@@ -12,7 +12,7 @@ import type { PageLoad } from './$types';
 export type GridPageData = {
 	title: string;
 	dirPath: string;
-	imagePaths: string[];
+	initialImagePaths: string[];
 	thumbnailStores: Map<string, ThumbnailStore>;
 	thumbnailQueue: PQueue;
 };
@@ -45,7 +45,7 @@ export const load: PageLoad = async ({ params }): Promise<GridPageData> => {
 		return {
 			title: (await path.basename(dirPath)) || 'Root',
 			dirPath,
-			imagePaths,
+			initialImagePaths: imagePaths,
 			thumbnailStores,
 			thumbnailQueue,
 		};
@@ -56,7 +56,7 @@ export const load: PageLoad = async ({ params }): Promise<GridPageData> => {
 		return {
 			title: `Grid View - ${(await path.basename(dirPath)) || 'Root'} (Error)`,
 			dirPath,
-			imagePaths: [],
+			initialImagePaths: [],
 			thumbnailStores: new Map(),
 			thumbnailQueue: createThumbnailQueue(),
 		};

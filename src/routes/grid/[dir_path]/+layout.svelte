@@ -1,9 +1,16 @@
 <script lang="ts">
 	import { navigating, page } from '$app/state';
 	import BottomBar from '$lib/components/grid/BottomBar.svelte';
+	import {
+		DIRECTORY_IMAGE_PATHS_ACTIONS,
+		DIRECTORY_IMAGE_PATHS_STATE,
+		type DirectoryImagePathsActions,
+		type DirectoryImagePathsState,
+	} from '$lib/components/grid/directory-image-paths';
 	import { SELECTION_STATE, type SelectionState } from '$lib/components/grid/selection';
 	import Toolbar from '$lib/components/grid/Toolbar.svelte';
 	import LoadingState from '$lib/components/ui/LoadingState.svelte';
+	import { getDirectoryImages } from '$lib/services/image-directory-service';
 	import { setContext } from 'svelte';
 	import { SvelteSet } from 'svelte/reactivity';
 	import type { LayoutProps } from './$types';
@@ -11,9 +18,31 @@
 
 	const { children }: LayoutProps = $props();
 
-	const { title, dirPath, imagePaths, thumbnailStores, thumbnailQueue } = $derived(
+	const { title, dirPath, initialImagePaths, thumbnailStores, thumbnailQueue } = $derived(
 		page.data as GridPageData,
 	);
+
+	// Image paths state management
+	let directoryImagePathsState: DirectoryImagePathsState = $state({ imagePaths: [] });
+	setContext<() => DirectoryImagePathsState>(
+		DIRECTORY_IMAGE_PATHS_STATE,
+		() => directoryImagePathsState,
+	);
+
+	$effect(() => {
+		directoryImagePathsState.imagePaths = initialImagePaths;
+	});
+
+	setContext<DirectoryImagePathsActions>(DIRECTORY_IMAGE_PATHS_ACTIONS, {
+		refresh: async () => {
+			try {
+				const updatedPaths = await getDirectoryImages(dirPath);
+				directoryImagePathsState.imagePaths = updatedPaths;
+			} catch (error) {
+				console.error('Failed to refresh image paths: ' + error);
+			}
+		},
+	});
 
 	// Selection state management
 	let selectionState: SelectionState = $state({
@@ -23,7 +52,6 @@
 
 	// Context for child components
 	setContext<() => string>('dirPath', () => dirPath);
-	setContext<() => string[]>('imagePaths', () => imagePaths);
 	setContext<() => GridPageData['thumbnailStores']>('thumbnailStores', () => thumbnailStores);
 	setContext<() => GridPageData['thumbnailQueue']>('thumbnailQueue', () => thumbnailQueue);
 	setContext<() => SelectionState>(SELECTION_STATE, () => selectionState);
@@ -35,7 +63,7 @@
 
 <div class="flex h-full flex-col bg-base-100">
 	<!-- Header -->
-	<Toolbar {title} imageCount={imagePaths.length} />
+	<Toolbar {title} imageCount={directoryImagePathsState.imagePaths.length} />
 
 	<!-- Main Content -->
 	<main class="flex-1 overflow-auto pb-16">

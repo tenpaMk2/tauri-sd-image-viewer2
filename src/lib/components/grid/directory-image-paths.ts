@@ -1,10 +1,6 @@
-export const DIRECTORY_IMAGE_PATHS_STATE = Symbol('directoryImagePathsState');
-export const DIRECTORY_IMAGE_PATHS_ACTIONS = Symbol('directoryImagePathsActions');
+export const DIRECTORY_IMAGE_PATHS_CONTEXT = Symbol('directoryImagePathsContext');
 
-export type DirectoryImagePathsState = {
-	imagePaths: string[];
-};
-
-export type DirectoryImagePathsActions = {
-	refresh: () => Promise<void>;
+export type DirectoryImagePathsContext = {
+	state: { imagePaths: string[] };
+	actions: { refresh: () => Promise<void> };
 };

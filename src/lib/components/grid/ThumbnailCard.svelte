@@ -4,8 +4,8 @@
 	import { navigateToViewer } from '$lib/services/app-navigation';
 	import { getContext } from 'svelte';
 	import {
-		DIRECTORY_IMAGE_PATHS_STATE,
-		type DirectoryImagePathsState,
+		DIRECTORY_IMAGE_PATHS_CONTEXT,
+		type DirectoryImagePathsContext,
 	} from './directory-image-paths';
 	import { SCROLL_TARGET_CONTEXT, type SetScrollTargetElement } from './scroll-target';
 	import { SELECTION_STATE, type SelectionState } from './selection';
@@ -18,10 +18,10 @@
 
 	let { imagePath, thumbnailStore }: Props = $props();
 	let buttonElement: HTMLButtonElement;
-	const directoryImagePathsState = $derived(
-		getContext<() => DirectoryImagePathsState>(DIRECTORY_IMAGE_PATHS_STATE)(),
+	const directoryImagePathsContext = $derived(
+		getContext<() => DirectoryImagePathsContext>(DIRECTORY_IMAGE_PATHS_CONTEXT)(),
 	);
-	const imagePaths = $derived(directoryImagePathsState.imagePaths);
+	const imagePaths = $derived(directoryImagePathsContext.state.imagePaths);
 	const selectionState = $derived(getContext<() => SelectionState>(SELECTION_STATE)());
 	const setScrollTargetElement = getContext<SetScrollTargetElement>(SCROLL_TARGET_CONTEXT);
 

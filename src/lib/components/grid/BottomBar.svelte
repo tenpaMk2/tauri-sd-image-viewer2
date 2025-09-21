@@ -1,7 +1,7 @@
 <script lang="ts">
 	import {
-		DIRECTORY_IMAGE_PATHS_ACTIONS,
-		type DirectoryImagePathsActions,
+		DIRECTORY_IMAGE_PATHS_CONTEXT,
+		type DirectoryImagePathsContext,
 	} from '$lib/components/grid/directory-image-paths';
 	import { SELECTION_STATE, type SelectionState } from '$lib/components/grid/selection';
 	import IconTextButton from '$lib/components/ui/IconTextButton.svelte';
@@ -13,8 +13,8 @@
 	const selectionState = $derived(getContext<() => SelectionState>(SELECTION_STATE)());
 	const selectedPaths = $derived(Array.from(selectionState.selectedImagePaths) as string[]);
 	const selectedCount = $derived(selectedPaths.length);
-	const directoryImagePathsActions = getContext<DirectoryImagePathsActions>(
-		DIRECTORY_IMAGE_PATHS_ACTIONS,
+	const directoryImagePathsContext = $derived(
+		getContext<() => DirectoryImagePathsContext>(DIRECTORY_IMAGE_PATHS_CONTEXT)(),
 	);
 
 	let deleteConfirmationModal: HTMLDialogElement;
@@ -46,7 +46,7 @@
 			selectionState.lastSelectedIndex = null;
 
 			// Refresh image paths to update the grid
-			await directoryImagePathsActions.refresh();
+			await directoryImagePathsContext.actions.refresh();
 		} catch (error) {
 			console.error('Failed to delete images: ' + error);
 			toastStore.actions.showErrorToast('Failed to delete images: ' + error);

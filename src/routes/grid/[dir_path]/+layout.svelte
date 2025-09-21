@@ -2,10 +2,8 @@
 	import { navigating, page } from '$app/state';
 	import BottomBar from '$lib/components/grid/BottomBar.svelte';
 	import {
-		DIRECTORY_IMAGE_PATHS_ACTIONS,
-		DIRECTORY_IMAGE_PATHS_STATE,
-		type DirectoryImagePathsActions,
-		type DirectoryImagePathsState,
+		DIRECTORY_IMAGE_PATHS_CONTEXT,
+		type DirectoryImagePathsContext,
 	} from '$lib/components/grid/directory-image-paths';
 	import { SELECTION_STATE, type SelectionState } from '$lib/components/grid/selection';
 	import Toolbar from '$lib/components/grid/Toolbar.svelte';
@@ -23,17 +21,13 @@
 	);
 
 	// Image paths state management
-	let directoryImagePathsState: DirectoryImagePathsState = $state({ imagePaths: [] });
-	setContext<() => DirectoryImagePathsState>(
-		DIRECTORY_IMAGE_PATHS_STATE,
-		() => directoryImagePathsState,
-	);
+	let directoryImagePathsState = $state<DirectoryImagePathsContext['state']>({ imagePaths: [] });
 
 	$effect(() => {
 		directoryImagePathsState.imagePaths = initialImagePaths;
 	});
 
-	setContext<DirectoryImagePathsActions>(DIRECTORY_IMAGE_PATHS_ACTIONS, {
+	const directoryImagePathsActions = {
 		refresh: async () => {
 			try {
 				const updatedPaths = await getDirectoryImages(dirPath);
@@ -42,7 +36,12 @@
 				console.error('Failed to refresh image paths: ' + error);
 			}
 		},
-	});
+	};
+
+	setContext<() => DirectoryImagePathsContext>(DIRECTORY_IMAGE_PATHS_CONTEXT, () => ({
+		state: directoryImagePathsState,
+		actions: directoryImagePathsActions,
+	}));
 
 	// Selection state management
 	let selectionState: SelectionState = $state({

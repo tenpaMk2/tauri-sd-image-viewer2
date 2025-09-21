@@ -8,8 +8,8 @@
 	import { dialogService } from '$lib/services/dialog';
 	import { getContext } from 'svelte';
 	import {
-		DIRECTORY_IMAGE_PATHS_STATE,
-		type DirectoryImagePathsState,
+		DIRECTORY_IMAGE_PATHS_CONTEXT,
+		type DirectoryImagePathsContext,
 	} from './directory-image-paths';
 	import { SELECTION_STATE, type SelectionState } from './selection';
 
@@ -21,15 +21,14 @@
 	const { title, imageCount }: Props = $props();
 
 	const selectionState = $derived(getContext<() => SelectionState>(SELECTION_STATE)());
-	const directoryImagePathsState = $derived(
-		getContext<() => DirectoryImagePathsState>(DIRECTORY_IMAGE_PATHS_STATE)(),
+	const directoryImagePathsContext = $derived(
+		getContext<() => DirectoryImagePathsContext>(DIRECTORY_IMAGE_PATHS_CONTEXT)(),
 	);
-	const imagePaths = $derived(directoryImagePathsState.imagePaths);
+	const imagePaths = $derived(directoryImagePathsContext.state.imagePaths);
 
 	const isAllSelected = $derived(
-		imagePaths.length > 0 && selectionState.selectedImagePaths.size === imagePaths.length,
+		0 < imagePaths.length && selectionState.selectedImagePaths.size === imagePaths.length,
 	);
-	const hasSelection = $derived(selectionState.selectedImagePaths.size > 0);
 
 	const openDirectoryDialog = async () => {
 		const result = await dialogService.openDirectoryDialog();

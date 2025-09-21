@@ -7,8 +7,8 @@
 		DIRECTORY_IMAGE_PATHS_CONTEXT,
 		type DirectoryImagePathsContext,
 	} from './directory-image-paths';
-	import { SCROLL_TARGET_CONTEXT, type SetScrollTargetElement } from './scroll-target';
-	import { SELECTION_STATE, type SelectionState } from './selection';
+	import { SCROLL_TARGET_CONTEXT, type ScrollTargetContext } from './scroll-target';
+	import { SELECTION_CONTEXT, type SelectionContext } from './selection';
 	import Thumbnail from './Thumbnail.svelte';
 
 	type Props = {
@@ -22,10 +22,12 @@
 		getContext<() => DirectoryImagePathsContext>(DIRECTORY_IMAGE_PATHS_CONTEXT)(),
 	);
 	const imagePaths = $derived(directoryImagePathsContext.state.imagePaths);
-	const selectionState = $derived(getContext<() => SelectionState>(SELECTION_STATE)());
-	const setScrollTargetElement = getContext<SetScrollTargetElement>(SCROLL_TARGET_CONTEXT);
+	const selectionContext = $derived(getContext<() => SelectionContext>(SELECTION_CONTEXT)());
+	const scrollTargetContext = $derived(
+		getContext<() => ScrollTargetContext>(SCROLL_TARGET_CONTEXT)(),
+	);
 
-	const selected = $derived(selectionState.selectedImagePaths.has(imagePath));
+	const selected = $derived(selectionContext.state.selectedImagePaths.has(imagePath));
 
 	const handleImageClick = (event: MouseEvent): void => {
 		console.log(
@@ -41,49 +43,44 @@
 
 		const currentIndex = imagePaths.indexOf(imagePath);
 
-		if (event.shiftKey && selectionState.lastSelectedIndex !== null) {
+		if (event.shiftKey && selectionContext.state.lastSelectedIndex !== null) {
 			// Shift+クリック: 範囲選択
-			const startIndex = Math.min(selectionState.lastSelectedIndex, currentIndex);
-			const endIndex = Math.max(selectionState.lastSelectedIndex, currentIndex);
+			const startIndex = Math.min(selectionContext.state.lastSelectedIndex, currentIndex);
+			const endIndex = Math.max(selectionContext.state.lastSelectedIndex, currentIndex);
 
-			for (let i = startIndex; i <= endIndex; i++) {
-				selectionState.selectedImagePaths.add(imagePaths[i]);
-			}
+			selectionContext.actions.selectRange(startIndex, endIndex, imagePaths);
 			console.log('Range selection from', startIndex, 'to', endIndex);
 		} else if (event.ctrlKey || event.metaKey) {
 			// Ctrl/Cmd+クリック: 複数選択切り替え
-			if (selectionState.selectedImagePaths.has(imagePath)) {
-				selectionState.selectedImagePaths.delete(imagePath);
+			if (selectionContext.state.selectedImagePaths.has(imagePath)) {
+				selectionContext.actions.delete(imagePath);
 				console.log('Removed from selection:', imagePath);
 			} else {
-				selectionState.selectedImagePaths.add(imagePath);
+				selectionContext.actions.add(imagePath, currentIndex);
 				console.log('Added to selection:', imagePath);
 			}
-			selectionState.lastSelectedIndex = currentIndex;
 		} else {
 			// 通常クリック
 			if (
-				selectionState.selectedImagePaths.size === 1 &&
-				selectionState.selectedImagePaths.has(imagePath)
+				selectionContext.state.selectedImagePaths.size === 1 &&
+				selectionContext.state.selectedImagePaths.has(imagePath)
 			) {
 				// 選択されたアイテムを再選択: 全解除
-				selectionState.selectedImagePaths.clear();
-				selectionState.lastSelectedIndex = null;
+				selectionContext.actions.clear();
 				console.log('Deselected all');
 			} else {
 				// 単一選択
-				selectionState.selectedImagePaths.clear();
-				selectionState.selectedImagePaths.add(imagePath);
-				selectionState.lastSelectedIndex = currentIndex;
+				selectionContext.actions.clear();
+				selectionContext.actions.add(imagePath, currentIndex);
 				console.log('Single selection:', imagePath);
 			}
 		}
-		console.log('Current selection size:', selectionState.selectedImagePaths.size);
+		console.log('Current selection size:', selectionContext.state.selectedImagePaths.size);
 	};
 
 	$effect(() => {
 		if (buttonElement && lastViewedImageStore.state?.imagePath === imagePath) {
-			setScrollTargetElement(buttonElement);
+			scrollTargetContext.actions.setTargetElement(buttonElement);
 		}
 	});
 </script>

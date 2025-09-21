@@ -6,7 +6,7 @@
 		DIRECTORY_IMAGE_PATHS_CONTEXT,
 		type DirectoryImagePathsContext,
 	} from './directory-image-paths';
-	import { SCROLL_TARGET_CONTEXT, type SetScrollTargetElement } from './scroll-target';
+	import { SCROLL_TARGET_CONTEXT, type ScrollTargetContext } from './scroll-target';
 	import ThumbnailCard from './ThumbnailCard.svelte';
 
 	const directoryImagePathsContext = $derived(
@@ -17,14 +17,20 @@
 		getContext<() => GridPageData['thumbnailStores']>('thumbnailStores')(),
 	);
 
-	let gridContainer = $state<HTMLDivElement | null>(null);
-	let scrollTargetElement = $state<HTMLElement | null>(null);
+	let scrollTargetState = $state<ScrollTargetContext['state']>({
+		targetElement: null,
+	});
 
-	const setScrollTargetElement: SetScrollTargetElement = (element: HTMLElement) => {
-		scrollTargetElement = element;
+	const scrollTargetActions = {
+		setTargetElement: (element: HTMLElement) => {
+			scrollTargetState.targetElement = element;
+		},
 	};
 
-	setContext(SCROLL_TARGET_CONTEXT, setScrollTargetElement);
+	setContext<() => ScrollTargetContext>(SCROLL_TARGET_CONTEXT, () => ({
+		state: scrollTargetState,
+		actions: scrollTargetActions,
+	}));
 
 	$effect(() => {
 		// Always clear the state when imagePaths changes
@@ -32,9 +38,9 @@
 	});
 
 	$effect(() => {
-		if (!scrollTargetElement) return;
+		if (!scrollTargetState.targetElement) return;
 
-		scrollTargetElement.scrollIntoView({
+		scrollTargetState.targetElement.scrollIntoView({
 			behavior: 'smooth',
 			block: 'center',
 		});
@@ -51,10 +57,7 @@
 		</div>
 	</div>
 {:else}
-	<div
-		bind:this={gridContainer}
-		class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8"
-	>
+	<div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8">
 		{#each imagePaths as imagePath (imagePath)}
 			{@const thumbnailStore = thumbnailStores.get(imagePath)!}
 			<ThumbnailCard {imagePath} {thumbnailStore} />

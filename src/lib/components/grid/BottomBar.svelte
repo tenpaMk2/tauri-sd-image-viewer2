@@ -3,16 +3,18 @@
 		DIRECTORY_IMAGE_PATHS_CONTEXT,
 		type DirectoryImagePathsContext,
 	} from '$lib/components/grid/directory-image-paths';
-	import { SELECTION_STATE, type SelectionState } from '$lib/components/grid/selection';
+	import { SELECTION_CONTEXT, type SelectionContext } from '$lib/components/grid/selection';
 	import IconTextButton from '$lib/components/ui/IconTextButton.svelte';
 	import { toastStore } from '$lib/components/ui/toast-store.svelte';
 	import { copyFiles } from '$lib/services/clipboard';
 	import * as fs from '@tauri-apps/plugin-fs';
 	import { platform } from '@tauri-apps/plugin-os';
 	import { getContext } from 'svelte';
-	const selectionState = $derived(getContext<() => SelectionState>(SELECTION_STATE)());
-	const selectedPaths = $derived(Array.from(selectionState.selectedImagePaths) as string[]);
+
+	const selectionContext = $derived(getContext<() => SelectionContext>(SELECTION_CONTEXT)());
+	const selectedPaths = $derived(Array.from(selectionContext.state.selectedImagePaths) as string[]);
 	const selectedCount = $derived(selectedPaths.length);
+
 	const directoryImagePathsContext = $derived(
 		getContext<() => DirectoryImagePathsContext>(DIRECTORY_IMAGE_PATHS_CONTEXT)(),
 	);
@@ -42,8 +44,7 @@
 			toastStore.actions.showSuccessToast(`${selectedCount} image(s) deleted successfully`);
 
 			// Clear selection after successful deletion
-			selectionState.selectedImagePaths.clear();
-			selectionState.lastSelectedIndex = null;
+			selectionContext.actions.clear();
 
 			// Refresh image paths to update the grid
 			await directoryImagePathsContext.actions.refresh();

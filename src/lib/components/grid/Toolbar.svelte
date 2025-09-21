@@ -11,7 +11,7 @@
 		DIRECTORY_IMAGE_PATHS_CONTEXT,
 		type DirectoryImagePathsContext,
 	} from './directory-image-paths';
-	import { SELECTION_STATE, type SelectionState } from './selection';
+	import { SELECTION_CONTEXT, type SelectionContext } from './selection';
 
 	type Props = {
 		title: string;
@@ -20,14 +20,14 @@
 
 	const { title, imageCount }: Props = $props();
 
-	const selectionState = $derived(getContext<() => SelectionState>(SELECTION_STATE)());
+	const selectionContext = $derived(getContext<() => SelectionContext>(SELECTION_CONTEXT)());
 	const directoryImagePathsContext = $derived(
 		getContext<() => DirectoryImagePathsContext>(DIRECTORY_IMAGE_PATHS_CONTEXT)(),
 	);
 	const imagePaths = $derived(directoryImagePathsContext.state.imagePaths);
 
 	const isAllSelected = $derived(
-		0 < imagePaths.length && selectionState.selectedImagePaths.size === imagePaths.length,
+		0 < imagePaths.length && selectionContext.state.selectedImagePaths.size === imagePaths.length,
 	);
 
 	const openDirectoryDialog = async () => {
@@ -52,13 +52,10 @@
 	const handleSelectAll = () => {
 		if (isAllSelected) {
 			// 全解除
-			selectionState.selectedImagePaths.clear();
-			selectionState.lastSelectedIndex = null;
+			selectionContext.actions.clear();
 		} else {
 			// 全選択
-			selectionState.selectedImagePaths.clear();
-			imagePaths.forEach((path) => selectionState.selectedImagePaths.add(path));
-			selectionState.lastSelectedIndex = imagePaths.length - 1;
+			selectionContext.actions.selectAll(imagePaths);
 		}
 	};
 </script>

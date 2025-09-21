@@ -5,7 +5,7 @@
 		DIRECTORY_IMAGE_PATHS_CONTEXT,
 		type DirectoryImagePathsContext,
 	} from '$lib/components/grid/directory-image-paths';
-	import { SELECTION_STATE, type SelectionState } from '$lib/components/grid/selection';
+	import { SELECTION_CONTEXT, type SelectionContext } from '$lib/components/grid/selection';
 	import Toolbar from '$lib/components/grid/Toolbar.svelte';
 	import LoadingState from '$lib/components/ui/LoadingState.svelte';
 	import { getDirectoryImages } from '$lib/services/image-directory-service';
@@ -44,16 +44,51 @@
 	}));
 
 	// Selection state management
-	let selectionState: SelectionState = $state({
+	let selectionState = $state<SelectionContext['state']>({
 		selectedImagePaths: new SvelteSet<string>(),
 		lastSelectedIndex: null as number | null,
 	});
+
+	const selectionActions = {
+		clear: () => {
+			selectionState.selectedImagePaths.clear();
+			selectionState.lastSelectedIndex = null;
+		},
+		add: (imagePath: string, index: number) => {
+			selectionState.selectedImagePaths.add(imagePath);
+			selectionState.lastSelectedIndex = index;
+		},
+		delete: (imagePath: string) => {
+			selectionState.selectedImagePaths.delete(imagePath);
+		},
+		toggle: (imagePath: string, index: number) => {
+			if (selectionState.selectedImagePaths.has(imagePath)) {
+				selectionState.selectedImagePaths.delete(imagePath);
+			} else {
+				selectionState.selectedImagePaths.add(imagePath);
+			}
+			selectionState.lastSelectedIndex = index;
+		},
+		selectRange: (startIndex: number, endIndex: number, imagePaths: string[]) => {
+			for (let i = startIndex; i <= endIndex; i++) {
+				selectionState.selectedImagePaths.add(imagePaths[i]);
+			}
+		},
+		selectAll: (imagePaths: string[]) => {
+			selectionState.selectedImagePaths.clear();
+			imagePaths.forEach((path) => selectionState.selectedImagePaths.add(path));
+			selectionState.lastSelectedIndex = imagePaths.length - 1;
+		},
+	};
 
 	// Context for child components
 	setContext<() => string>('dirPath', () => dirPath);
 	setContext<() => GridPageData['thumbnailStores']>('thumbnailStores', () => thumbnailStores);
 	setContext<() => GridPageData['thumbnailQueue']>('thumbnailQueue', () => thumbnailQueue);
-	setContext<() => SelectionState>(SELECTION_STATE, () => selectionState);
+	setContext<() => SelectionContext>(SELECTION_CONTEXT, () => ({
+		state: selectionState,
+		actions: selectionActions,
+	}));
 </script>
 
 <svelte:head>

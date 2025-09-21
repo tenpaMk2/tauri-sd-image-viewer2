@@ -12,6 +12,7 @@
         "@tauri-apps/plugin-os": "~2.3.1",
         "p-queue": "^8.1.1",
         "paneforge": "^1.0.2",
+        "picomatch": "^4.0.3",
       },
       "devDependencies": {
         "@sveltejs/adapter-auto": "^6.1.0",
@@ -20,6 +21,7 @@
         "@sveltejs/vite-plugin-svelte": "^6.2.0",
         "@tailwindcss/vite": "^4.1.13",
         "@tauri-apps/cli": "^2.8.4",
+        "@types/picomatch": "^4.0.2",
         "daisyui": "^5.1.12",
         "prettier": "^3.6.2",
         "prettier-plugin-svelte": "^3.4.0",
@@ -224,6 +226,8 @@
     "@types/cookie": ["@types/cookie@0.6.0", "", {}, "sha512-4Kh9a6B2bQciAhf7FSuMRRkUWecJgJu9nPnx3yzpsfXX/c50REIqpHY4C82bXP90qrLtXtkDxTZosYO3UpOwlA=="],
 
     "@types/estree": ["@types/estree@1.0.8", "", {}, "sha512-dWHzHa2WqEXI/O1E9OjrocMTKJl2mSrEolh1Iomrv6U+JuNwaHXsXx9bLu5gG7BUWFIN0skIQJQ/L1rIex4X6w=="],
+
+    "@types/picomatch": ["@types/picomatch@4.0.2", "", {}, "sha512-qHHxQ+P9PysNEGbALT8f8YOSHW0KJu6l2xU8DYY0fu/EmGxXdVnuTLvFUvBgPJMSqXq29SYHveejeAha+4AYgA=="],
 
     "acorn": ["acorn@8.15.0", "", { "bin": { "acorn": "bin/acorn" } }, "sha512-NZyJarBfL7nWwIq+FDL6Zp/yHEhePMNnnJ0y3qfieCrmNvYct8uvtiV41UvlSe6apAfk0fY1FbWx+NwfmpvtTg=="],
 

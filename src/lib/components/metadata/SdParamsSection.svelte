@@ -1,7 +1,7 @@
 <script lang="ts">
 	import InfoRow from '$lib/components/metadata/InfoRow.svelte';
+	import type { MetadataStore } from '$lib/components/metadata/metadata-store';
 	import { copyText } from '$lib/services/clipboard';
-	import type { MetadataStore } from '$lib/services/metadata-store';
 	import type { SdTag } from '$lib/types/shared-types';
 	import IconButton from '../ui/IconButton.svelte';
 	import BaseMetadataSection from './BaseMetadataSection.svelte';

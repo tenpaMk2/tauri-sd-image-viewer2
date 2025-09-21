@@ -1,9 +1,9 @@
+import { createMetadataStore, type MetadataStore } from '$lib/components/metadata/metadata-store';
 import {
 	createNavigationStore,
 	type NavigationStore,
 } from '$lib/components/viewer/navigation-store';
 import { imageCacheStore } from '$lib/services/image-cache-store';
-import { createMetadataStore, type MetadataStore } from '$lib/services/metadata-store';
 import type { PageLoad } from './$types';
 
 export type ViewerPageData = {

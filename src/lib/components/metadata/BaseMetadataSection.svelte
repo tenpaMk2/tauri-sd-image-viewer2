@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { MetadataStore } from '$lib/services/metadata-store';
+	import type { MetadataStore } from '$lib/components/metadata/metadata-store';
 	import type { Snippet } from 'svelte';
 	import { getContext } from 'svelte';
 	import LoadingState from '../ui/LoadingState.svelte';

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import InfoRow from '$lib/components/metadata/InfoRow.svelte';
-	import type { MetadataStore } from '$lib/services/metadata-store';
+	import type { MetadataStore } from '$lib/components/metadata/metadata-store';
 	import BaseMetadataSection from './BaseMetadataSection.svelte';
 </script>
 

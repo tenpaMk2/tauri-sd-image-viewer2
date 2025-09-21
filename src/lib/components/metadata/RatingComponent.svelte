@@ -1,6 +1,6 @@
 <script lang="ts">
+	import type { MetadataStore } from '$lib/components/metadata/metadata-store';
 	import { createRatingKeyboardHandler } from '$lib/services/keyboard-shortcut';
-	import type { MetadataStore } from '$lib/services/metadata-store';
 	import { getContext } from 'svelte';
 	import LoadingState from '../ui/LoadingState.svelte';
 

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { navigating, page } from '$app/state';
 	import BasicInfoSection from '$lib/components/metadata/BasicInfoSection.svelte';
+	import type { MetadataStore } from '$lib/components/metadata/metadata-store';
 	import RatingComponent from '$lib/components/metadata/RatingComponent.svelte';
 	import SdParamsSection from '$lib/components/metadata/SdParamsSection.svelte';
 	import XmpSection from '$lib/components/metadata/XmpSection.svelte';
@@ -12,7 +13,6 @@
 	import UiWrapper from '$lib/components/viewer/UiWrapper.svelte';
 	import { imageCacheStore } from '$lib/services/image-cache-store';
 	import { createNavigationKeyboardHandler } from '$lib/services/keyboard-shortcut';
-	import type { MetadataStore } from '$lib/services/metadata-store';
 	import { Pane, PaneGroup, PaneResizer } from 'paneforge';
 	import { setContext } from 'svelte';
 	import type { LayoutProps } from './$types';

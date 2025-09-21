@@ -5,6 +5,10 @@
 		DIRECTORY_IMAGE_PATHS_CONTEXT,
 		type DirectoryImagePathsContext,
 	} from '$lib/components/grid/directory-image-paths';
+	import {
+		GRID_PAGE_DATA_CONTEXT,
+		type GridPageDataContext,
+	} from '$lib/components/grid/grid-page-data';
 	import { SELECTION_CONTEXT, type SelectionContext } from '$lib/components/grid/selection';
 	import Toolbar from '$lib/components/grid/Toolbar.svelte';
 	import LoadingState from '$lib/components/ui/LoadingState.svelte';
@@ -16,9 +20,7 @@
 
 	const { children }: LayoutProps = $props();
 
-	const { title, dirPath, initialImagePaths, thumbnailStores, thumbnailQueue } = $derived(
-		page.data as GridPageData,
-	);
+	const { dirPath, initialImagePaths } = $derived(page.data as GridPageData);
 
 	// Image paths state management
 	let directoryImagePathsState = $state<DirectoryImagePathsContext['state']>({ imagePaths: [] });
@@ -82,9 +84,9 @@
 	};
 
 	// Context for child components
-	setContext<() => string>('dirPath', () => dirPath);
-	setContext<() => GridPageData['thumbnailStores']>('thumbnailStores', () => thumbnailStores);
-	setContext<() => GridPageData['thumbnailQueue']>('thumbnailQueue', () => thumbnailQueue);
+	setContext<() => GridPageDataContext>(GRID_PAGE_DATA_CONTEXT, () => ({
+		state: page.data as GridPageData,
+	}));
 	setContext<() => SelectionContext>(SELECTION_CONTEXT, () => ({
 		state: selectionState,
 		actions: selectionActions,
@@ -92,12 +94,15 @@
 </script>
 
 <svelte:head>
-	<title>{title}</title>
+	<title>{(page.data as GridPageData).title}</title>
 </svelte:head>
 
 <div class="flex h-full flex-col bg-base-100">
 	<!-- Header -->
-	<Toolbar {title} imageCount={directoryImagePathsState.imagePaths.length} />
+	<Toolbar
+		title={(page.data as GridPageData).title}
+		imageCount={directoryImagePathsState.imagePaths.length}
+	/>
 
 	<!-- Main Content -->
 	<main class="flex-1 overflow-auto pb-16">

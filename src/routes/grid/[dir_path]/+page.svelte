@@ -1,14 +1,16 @@
 <script lang="ts">
 	import ThumbnailGrid from '$lib/components/grid/ThumbnailGrid.svelte';
+	import {
+		GRID_PAGE_DATA_CONTEXT,
+		type GridPageDataContext,
+	} from '$lib/components/grid/grid-page-data';
 	import { getContext } from 'svelte';
-	import type { GridPageData } from './+page';
 
-	const thumbnailQueue = $derived(
-		getContext<() => GridPageData['thumbnailQueue']>('thumbnailQueue')(),
+	const gridPageDataContext = $derived(
+		getContext<() => GridPageDataContext>(GRID_PAGE_DATA_CONTEXT)(),
 	);
-	const thumbnailStores = $derived(
-		getContext<() => GridPageData['thumbnailStores']>('thumbnailStores')(),
-	);
+	const thumbnailQueue = $derived(gridPageDataContext.state.thumbnailQueue);
+	const thumbnailStores = $derived(gridPageDataContext.state.thumbnailStores);
 
 	// Cleanup on unmount (ディレクトリ変更時)
 	$effect(() => {

@@ -1,11 +1,11 @@
 <script lang="ts">
-	import type { GridPageData } from '$lib/../routes/grid/[dir_path]/+page';
 	import { lastViewedImageStore } from '$lib/components/app/last-viewed-image-store.svelte';
 	import { getContext, setContext } from 'svelte';
 	import {
 		DIRECTORY_IMAGE_PATHS_CONTEXT,
 		type DirectoryImagePathsContext,
 	} from './directory-image-paths';
+	import { GRID_PAGE_DATA_CONTEXT, type GridPageDataContext } from './grid-page-data';
 	import { SCROLL_TARGET_CONTEXT, type ScrollTargetContext } from './scroll-target';
 	import ThumbnailCard from './ThumbnailCard.svelte';
 
@@ -13,9 +13,11 @@
 		getContext<() => DirectoryImagePathsContext>(DIRECTORY_IMAGE_PATHS_CONTEXT)(),
 	);
 	const imagePaths = $derived(directoryImagePathsContext.state.imagePaths);
-	const thumbnailStores = $derived(
-		getContext<() => GridPageData['thumbnailStores']>('thumbnailStores')(),
+
+	const gridPageDataContext = $derived(
+		getContext<() => GridPageDataContext>(GRID_PAGE_DATA_CONTEXT)(),
 	);
+	const thumbnailStores = $derived(gridPageDataContext.state.thumbnailStores);
 
 	let scrollTargetState = $state<ScrollTargetContext['state']>({
 		targetElement: null,

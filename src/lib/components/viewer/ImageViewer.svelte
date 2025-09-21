@@ -242,17 +242,14 @@
 			class="absolute"
 			class:transition-all={shouldShowTransition}
 			class:duration-200={shouldShowTransition}
-			style="width: {imageViewState.zoomLevel * 100}%; height: {imageViewState.zoomLevel * 100}%; left: 50%; top: 50%; transform: translate(calc(-50% + {imageViewState.panX}px), calc(-50% + {imageViewState.panY}px)); cursor: {imageViewState.isDragging
+			style="width: {imageViewState.zoomLevel * 100}%; height: {imageViewState.zoomLevel *
+				100}%; left: 50%; top: 50%; transform: translate(calc(-50% + {imageViewState.panX}px), calc(-50% + {imageViewState.panY}px)); cursor: {imageViewState.isDragging
 				? 'grabbing'
 				: isZoomed
 					? 'grab'
 					: 'auto'};"
 		>
-			<img
-				src={imageUrl}
-				alt={imagePath}
-				class="h-full w-full object-contain"
-			/>
+			<img src={imageUrl} alt={imagePath} class="h-full w-full object-contain" />
 		</div>
 	</div>
 </div>
